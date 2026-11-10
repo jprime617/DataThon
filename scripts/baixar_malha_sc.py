@@ -4,8 +4,18 @@ O mapa do dashboard colore cada município pelo `saldo_por_10k` e precisa de uma
 malha GeoJSON cujas *features* casem com a `municipio` da tabela agregada — a
 Chave_Municipal de **6 dígitos**. A API de malhas do IBGE entrega os 295
 municípios de SC identificados pelo código IBGE de **7 dígitos** (`codarea`), do
-qual o 7º é verificador; este script baixa a malha e reescreve a propriedade de
-identificação para a chave de 6 dígitos que o dashboard espera.
+qual o 7º é verificador; este script baixa a malha, reescreve a propriedade de
+identificação para a chave de 6 dígitos que o dashboard espera e **rebobina os
+anéis dos polígonos** para a orientação que o Plotly exige (ver abaixo).
+
+Orientação dos anéis
+--------------------
+O RFC 7946 manda que o anel externo de um polígono seja **anti-horário**, e é
+assim que o IBGE entrega. O Plotly desenha mapas com o `d3-geo`, que usa
+geometria esférica e a convenção **oposta**: para ele, um anel anti-horário
+descreve *todo o globo menos aquela área*. O efeito é inconfundível — o mapa
+inteiro fica pintado de uma cor só e cada município aparece como um buraco.
+Por isso invertemos a orientação aqui, uma vez, ao gerar o arquivo.
 
 Uso::
 
@@ -43,6 +53,37 @@ CHAVE = "chave_municipal"
 MUNICIPIOS_SC = 295
 
 
+def _area_assinada(anel: list) -> float:
+    """Área assinada do anel pela fórmula do cadarço (positiva = anti-horário)."""
+    soma = 0.0
+    for (x1, y1), (x2, y2) in zip(anel, anel[1:]):
+        soma += x1 * y2 - x2 * y1
+    return soma / 2
+
+
+def _rebobinar(geometria: dict) -> None:
+    """Inverte os anéis para a convenção do d3-geo: externo horário.
+
+    Modifica a geometria no lugar. O anel externo passa a ter área assinada
+    negativa (horário) e os buracos, positiva (anti-horário) — o inverso do
+    RFC 7946, que é o que o Plotly espera.
+    """
+
+    def corrigir(poligono: list) -> list:
+        externo, *buracos = poligono
+        if _area_assinada(externo) > 0:
+            externo = externo[::-1]
+        buracos = [b if _area_assinada(b) < 0 else b[::-1] for b in buracos]
+        return [externo, *buracos]
+
+    if geometria["type"] == "Polygon":
+        geometria["coordinates"] = corrigir(geometria["coordinates"])
+    elif geometria["type"] == "MultiPolygon":
+        geometria["coordinates"] = [
+            corrigir(poligono) for poligono in geometria["coordinates"]
+        ]
+
+
 def main() -> int:
     print(f"Baixando a malha de SC do IBGE…\n  {URL}")
     with urllib.request.urlopen(URL, timeout=120) as resposta:
@@ -71,6 +112,8 @@ def main() -> int:
         if len(codigo) == 7 and codigo.isdecimal():
             propriedades[CHAVE] = codigo[:6]
             convertidas += 1
+        # Orientação que o Plotly/d3-geo exige (ver docstring do módulo).
+        _rebobinar(feature["geometry"])
 
     if convertidas != len(features):
         print(
@@ -87,7 +130,8 @@ def main() -> int:
     tamanho_kb = DESTINO.stat().st_size / 1024
     print(
         f"Malha gravada em {DESTINO.relative_to(RAIZ)} "
-        f"({convertidas} municípios, {tamanho_kb:.0f} KB)."
+        f"({convertidas} municípios, {tamanho_kb:.0f} KB, anéis externos no "
+        f"sentido horário)."
     )
     return 0
 

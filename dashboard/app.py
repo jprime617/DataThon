@@ -498,10 +498,19 @@ CHAVE_GEOJSON = "chave_municipal"
 # positivos (expansão) em azul — valores negativos e positivos visualmente
 # distinguíveis, como exige R7.2.
 ESCALA_DIVERGENTE = [
-    [0.0, "#b2182b"],  # mínimo (mais negativo) — apagão
-    [0.5, "#f7f7f7"],  # ponto neutro (ancorado no zero via zmid)
-    [1.0, "#2166ac"],  # máximo (mais positivo) — expansão
+    [0.0, "#b2182b"],  # limite negativo da escala — apagão
+    [0.5, "#f7f7f7"],  # zero: o domínio é simétrico, então o branco cai aqui
+    [1.0, "#2166ac"],  # limite positivo da escala — expansão
 ]
+
+# Percentil de |valor| usado como limite da escala do mapa. Um domínio que vai
+# do mínimo ao máximo observados tem dois defeitos: o branco cai no meio do
+# intervalo (e não no zero, deixando municípios positivos pintados de vermelho)
+# e um único extremo comprime todo o resto numa faixa indistinguível. Ancorar o
+# domínio simetricamente num percentil alto resolve os dois: o zero fica branco
+# e a variação do grosso dos municípios fica visível. Os poucos valores além do
+# limite saturam na cor extrema, e a legenda diz isso.
+PERCENTIL_LIMITE_ESCALA = 98
 
 # Colunas que a dispersão renda × escolaridade consome, ambas emitidas pelo
 # Agregador no mesmo recorte do agregado. A escolaridade é o nível **ordinal
@@ -545,10 +554,12 @@ def construir_mapa(df: pd.DataFrame, geojson: dict | None):
     """Constrói o mapa coroplético de SC por `saldo_por_10k` (R7.2) — função pura.
 
     Colore cada município pelo ``saldo_por_10k`` agregado no município, usando uma
-    **escala divergente** ancorada no zero (``zmid=0``), de modo que apagão
-    (negativo) e expansão (positivo) fiquem visualmente distinguíveis. A legenda
-    (barra de cores) é rotulada e expõe os limites mínimo e máximo da escala, que
-    são fixados em ``zmin``/``zmax`` pelos extremos observados no recorte.
+    **escala divergente com domínio simétrico** (``zmin = -limite``,
+    ``zmax = +limite``), de modo que o branco caia exatamente no saldo nulo e
+    apagão (negativo) e expansão (positivo) fiquem visualmente distinguíveis
+    (R7.2). O ``limite`` é o percentil `PERCENTIL_LIMITE_ESCALA` de |valor|, para
+    que um município extremo não achate a variação de todos os outros; a legenda
+    expõe os limites da escala e os extremos reais observados.
 
     O ``saldo_por_10k`` é agregado por município (soma entre seções/macrofamílias/
     meses do recorte filtrado) para produzir **um valor por município**, que é a
@@ -598,6 +609,21 @@ def construir_mapa(df: pd.DataFrame, geojson: dict | None):
     minimo = float(valores.min())
     maximo = float(valores.max())
 
+    # Domínio simétrico em torno do zero, para que o branco da escala divergente
+    # caia exatamente no saldo nulo e negativo/positivo fiquem distinguíveis
+    # (R7.2). O limite vem de um percentil alto de |valor| para que um extremo
+    # isolado não achate o resto do mapa; nunca ultrapassa o máximo observado.
+    extremo = float(valores.abs().max())
+    limite = min(float(valores.abs().quantile(PERCENTIL_LIMITE_ESCALA / 100)), extremo)
+    if limite <= 0:
+        limite = extremo if extremo > 0 else 1.0
+    saturados = int((valores.abs() > limite).sum())
+
+    rotulo_limite = f"±{limite:,.0f}".replace(",", ".")
+    titulo_legenda = "Saldo por 10k hab."
+    if saturados:
+        titulo_legenda += f"<br><sub>escala {rotulo_limite}; {saturados} saturado(s)</sub>"
+
     figura = go.Figure(
         go.Choropleth(
             geojson=geojson,
@@ -605,16 +631,19 @@ def construir_mapa(df: pd.DataFrame, geojson: dict | None):
             z=valores,
             featureidkey=f"properties.{CHAVE_GEOJSON}",
             colorscale=ESCALA_DIVERGENTE,
-            zmid=0,  # ancora o neutro no zero → divergência simétrica (R7.2).
-            zmin=minimo,
-            zmax=maximo,
+            zmin=-limite,
+            zmax=limite,
             marker_line_width=0.3,
             marker_line_color="white",
             colorbar={
-                # Legenda com os limites mínimo e máximo da escala (R7.2).
-                "title": {"text": "Saldo por 10k hab."},
-                "tickvals": [minimo, 0, maximo],
-                "ticktext": [f"{minimo:.2f} (mín)", "0", f"{maximo:.2f} (máx)"],
+                # Legenda com os limites da escala e os extremos reais (R7.2).
+                "title": {"text": titulo_legenda},
+                "tickvals": [-limite, 0, limite],
+                "ticktext": [
+                    f"≤ {-limite:,.0f}".replace(",", ".") + f"  (mín real {minimo:,.0f})".replace(",", "."),
+                    "0",
+                    f"≥ {limite:,.0f}".replace(",", ".") + f"  (máx real {maximo:,.0f})".replace(",", "."),
+                ],
             },
         )
     )
@@ -991,6 +1020,7 @@ __all__ = [
     "render_kpis",
     "CHAVE_GEOJSON",
     "ESCALA_DIVERGENTE",
+    "PERCENTIL_LIMITE_ESCALA",
     "COLUNA_SALARIO_MEDIO_ADMISSAO",
     "COLUNA_GRAU_INSTRUCAO",
     "construir_mapa",

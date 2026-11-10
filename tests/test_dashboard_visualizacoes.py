@@ -19,7 +19,11 @@ Cobertura:
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pandas as pd
+import pytest
 import plotly.graph_objects as go
 from hypothesis import given
 from hypothesis import strategies as st
@@ -134,27 +138,28 @@ def test_ranking_ordenado_nao_crescente(df: pd.DataFrame) -> None:
 # ---------------------------------------------------------------------------
 
 
-def _geojson_minimo() -> dict:
-    """GeoJSON mínimo com duas features de municípios de SC (chave de 6 dígitos)."""
+def _geojson_minimo(chaves: list[str] | None = None) -> dict:
+    """GeoJSON mínimo com uma feature quadrada por chave municipal.
+
+    Os anéis são escritos no sentido **horário**, a convenção do d3-geo que o
+    Plotly usa para desenhar o coroplético — a mesma que
+    `scripts/baixar_malha_sc.py` aplica à malha real.
+    """
+    chaves = chaves if chaves is not None else ["420010", "420020"]
     return {
         "type": "FeatureCollection",
         "features": [
             {
                 "type": "Feature",
-                "properties": {"chave_municipal": "420010"},
+                "properties": {"chave_municipal": chave},
                 "geometry": {
                     "type": "Polygon",
-                    "coordinates": [[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]],
+                    "coordinates": [
+                        [[i, 0], [i, 1], [i + 1, 1], [i + 1, 0], [i, 0]]
+                    ],
                 },
-            },
-            {
-                "type": "Feature",
-                "properties": {"chave_municipal": "420020"},
-                "geometry": {
-                    "type": "Polygon",
-                    "coordinates": [[[1, 1], [1, 2], [2, 2], [2, 1], [1, 1]]],
-                },
-            },
+            }
+            for i, chave in enumerate(chaves)
         ],
     }
 
@@ -176,10 +181,13 @@ def test_construir_mapa_com_dados_minimos_retorna_figura() -> None:
     assert isinstance(trace, go.Choropleth)
     # Um valor por município (dois municípios distintos no recorte).
     assert set(trace.locations) == {"420010", "420020"}
-    # Escala divergente ancorada no zero, com legenda de mín/máx (R7.2).
-    assert trace.zmid == 0
-    assert trace.zmin == -5.0
-    assert trace.zmax == 8.0
+    # Escala divergente ancorada no zero: domínio simétrico (R7.2). O limite
+    # vem de um percentil de |valor|, então nunca ultrapassa o extremo observado.
+    assert trace.zmin == -trace.zmax
+    assert 0 < trace.zmax <= 8.0
+    # A legenda expõe os extremos reais, mesmo quando a escala satura.
+    rotulos = " ".join(trace.colorbar.ticktext)
+    assert "-5" in rotulos and "8" in rotulos
 
 
 def test_construir_mapa_sem_geojson_degrada_para_empty_state() -> None:
@@ -266,3 +274,103 @@ def test_construir_dispersao_sem_colunas_degrada_para_empty_state() -> None:
 
     assert isinstance(figura, go.Figure)
     assert _eh_empty_state(figura)
+
+
+# ---------------------------------------------------------------------------
+# Escala do mapa: branco no zero (R7.2)
+# ---------------------------------------------------------------------------
+
+
+def test_mapa_usa_dominio_simetrico_para_ancorar_o_branco_no_zero():
+    """O domínio da escala é simétrico, então o neutro cai no saldo nulo (R7.2).
+
+    Regressão: com `zmin`/`zmax` nos extremos observados, o branco da escala
+    divergente cai no **meio do intervalo**, não no zero. Num recorte cujo
+    máximo é muito maior que o módulo do mínimo, municípios com saldo positivo
+    acabam pintados do lado negativo da escala — o oposto do que R7.2 pede.
+    """
+    df = pd.DataFrame(
+        {
+            COLUNA_MUNICIPIO: ["420005", "420010", "420020"],
+            COLUNA_SALDO_POR_10K: [-50.0, 20.0, 800.0],
+        }
+    )
+    figura = construir_mapa(df, _geojson_minimo(["420005", "420010", "420020"]))
+    traco = figura.data[0]
+
+    assert traco.zmin == -traco.zmax, "o domínio da escala precisa ser simétrico"
+    assert traco.zmin < 0 < traco.zmax
+    # O zero está exatamente no meio do domínio — onde a escala tem o branco.
+    assert (0 - traco.zmin) / (traco.zmax - traco.zmin) == 0.5
+
+
+def test_mapa_limita_a_escala_sem_ultrapassar_o_extremo_observado():
+    """Um extremo isolado não define sozinho o domínio, mas o limite não o excede."""
+    valores = [1.0] * 50 + [900.0]
+    df = pd.DataFrame(
+        {
+            COLUNA_MUNICIPIO: [f"4200{i:02d}" for i in range(len(valores))],
+            COLUNA_SALDO_POR_10K: valores,
+        }
+    )
+    figura = construir_mapa(
+        df, _geojson_minimo([f"4200{i:02d}" for i in range(len(valores))])
+    )
+    traco = figura.data[0]
+
+    assert traco.zmax <= 900.0, "o limite não pode ultrapassar o máximo observado"
+    assert traco.zmax < 900.0, "um único extremo não deveria definir a escala"
+
+
+# ---------------------------------------------------------------------------
+# Malha de municípios: orientação dos anéis (R7.2)
+# ---------------------------------------------------------------------------
+
+_MALHA = Path(__file__).resolve().parent.parent / "dashboard" / "geo" / "sc_municipios.geojson"
+
+
+def _area_assinada(anel: list) -> float:
+    """Área assinada pela fórmula do cadarço: positiva = anti-horário."""
+    return sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in zip(anel, anel[1:])) / 2
+
+
+def _aneis_externos(geometria: dict):
+    if geometria["type"] == "Polygon":
+        yield geometria["coordinates"][0]
+    elif geometria["type"] == "MultiPolygon":
+        for poligono in geometria["coordinates"]:
+            yield poligono[0]
+
+
+@pytest.mark.skipif(not _MALHA.is_file(), reason="malha de municípios ausente")
+def test_malha_tem_aneis_externos_no_sentido_horario():
+    """Os anéis externos são horários — a convenção do d3-geo, que o Plotly usa.
+
+    Regressão de um defeito mudo: o RFC 7946 manda o anel externo ser
+    anti-horário e é assim que o IBGE entrega, mas o `d3-geo` usa a convenção
+    **oposta** e lê um anel anti-horário como *todo o globo menos aquela área*.
+    O mapa então vira um retângulo de cor única com os municípios como buracos —
+    renderiza sem erro nenhum, o que é exatamente o que torna o defeito difícil
+    de notar. `scripts/baixar_malha_sc.py` rebobina os anéis ao gerar o arquivo.
+    """
+    malha = json.loads(_MALHA.read_text(encoding="utf-8"))
+    anti_horarios = [
+        feature["properties"].get("chave_municipal")
+        for feature in malha["features"]
+        for anel in _aneis_externos(feature["geometry"])
+        if _area_assinada(anel) > 0
+    ]
+    assert not anti_horarios, (
+        f"{len(anti_horarios)} anel(éis) externo(s) anti-horário(s) "
+        f"(ex.: {anti_horarios[:5]}) — rode `python scripts/baixar_malha_sc.py`"
+    )
+
+
+@pytest.mark.skipif(not _MALHA.is_file(), reason="malha de municípios ausente")
+def test_malha_cobre_os_295_municipios_com_chave_de_6_digitos():
+    """Toda feature expõe a `chave_municipal` de 6 dígitos usada pelo agregado."""
+    malha = json.loads(_MALHA.read_text(encoding="utf-8"))
+    chaves = [f["properties"].get("chave_municipal") for f in malha["features"]]
+    assert len(chaves) == 295, f"esperado 295 municípios de SC, veio {len(chaves)}"
+    assert all(c and len(c) == 6 and c.isdecimal() for c in chaves)
+    assert len(set(chaves)) == 295, "há chaves municipais duplicadas na malha"
