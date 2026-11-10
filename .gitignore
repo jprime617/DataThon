@@ -1,0 +1,26 @@
+# Ambiente virtual e caches de ferramentas
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.hypothesis/
+.ipynb_checkpoints/
+
+# Credenciais — nunca versionar (R8.5). As duas variáveis do pipeline
+# (LLM_API_KEY e AZURE_STORAGE_CONNECTION_STRING) vivem só no ambiente.
+.env
+*.env
+!.env.example
+
+# Dados brutos: o CAGED tem ~395 MB e não cabe no repositório (design, §Estrutura).
+# O dicionário e a base de municípios são pequenos e ficam versionados.
+Dados/Novo_Caged_MOV_Limpo.csv
+
+# Artefatos gerados pelo pipeline. O agregado final (~260 KB) é versionado de
+# propósito: é o fallback local do dashboard (R9.6), o que mantém a demonstração
+# funcionando sem o Azure. O bruto (45 MB) é intermediário e descartável.
+data_processed/caged_bruto.parquet
+
+# Saídas do Azure CLI / deploy
+*.zip
+.azure/

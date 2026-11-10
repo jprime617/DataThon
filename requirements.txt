@@ -1,0 +1,25 @@
+# Datathon CAGED SC — dependências com versões exatas fixadas (R8.2).
+# Sem faixas: cada versão é a resolvida no ambiente pyenv (Python 3.11.9).
+
+# Processamento de dados e formato colunar
+pandas==3.0.6
+pyarrow==26.0.1
+
+# Leitura do dicionário de dados (.xlsx)
+openpyxl==3.1.5
+
+# Visualização e dashboard
+plotly==7.1.0
+streamlit==1.67.0
+
+# LLM externo — credencial em env var LLM_API_KEY, provedor em LLM_PROVIDER.
+# Gemini (Google AI Studio) é o padrão: tem camada gratuita e roda sem custo.
+google-genai==3.0.0
+anthropic==2.5.0
+
+# Azure Blob Storage (upload das tabelas agregadas)
+azure-storage-blob==12.31.1
+
+# Testes: property-based (Hypothesis) e framework de testes (pytest)
+hypothesis==6.170.15
+pytest==9.2.0

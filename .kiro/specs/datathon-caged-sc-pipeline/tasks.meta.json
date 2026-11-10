@@ -1,0 +1,1043 @@
+{
+  "pbtResults": {
+    "5.2 Escrever teste de propriedade da normalização de chave": {
+      "status": "passed",
+      "lastRunTimestamp": 1794319260048
+    },
+    "4.2 Escrever testes de propriedade da conversão monetária": {
+      "status": "passed",
+      "lastRunTimestamp": 1794316481121
+    },
+    "3.4 Escrever testes de propriedade do Ingestor": {
+      "status": "passed",
+      "lastRunTimestamp": 1794316576721
+    },
+    "4.4 Escrever teste de propriedade da decodificação de domínios": {
+      "status": "passed",
+      "lastRunTimestamp": 1794316761197
+    },
+    "4.6 Escrever teste de propriedade do filtro de competência": {
+      "status": "passed",
+      "lastRunTimestamp": 1794316976795
+    },
+    "8.2 Escrever testes de propriedade de extração e loteamento": {
+      "status": "passed",
+      "lastRunTimestamp": 1794316979359
+    },
+    "5.4 Escrever testes de propriedade do join": {
+      "status": "passed",
+      "lastRunTimestamp": 1794317157634
+    },
+    "7.2 Escrever testes de propriedade de saldo": {
+      "status": "passed",
+      "lastRunTimestamp": 1794317338874
+    },
+    "7.8 Escrever teste de propriedade do Indice_de_Aquecimento": {
+      "status": "passed",
+      "lastRunTimestamp": 1794317681815
+    },
+    "7.4 Escrever teste de propriedade do Turnover": {
+      "status": "passed",
+      "lastRunTimestamp": 1794317690759
+    },
+    "7.6 Escrever testes de propriedade de salário e escolaridade": {
+      "status": "passed",
+      "lastRunTimestamp": 1794319259168
+    },
+    "8.6 Escrever testes de propriedade do mapeamento e merge (LLM mockado)": {
+      "status": "passed",
+      "lastRunTimestamp": 1794317711370
+    },
+    "10.2 Escrever testes de propriedade da agregação": {
+      "status": "passed",
+      "lastRunTimestamp": 1794318183476
+    },
+    "10.4 Escrever teste de propriedade e de exemplo da exportação": {
+      "status": "passed",
+      "lastRunTimestamp": 1794318459379
+    },
+    "12.4 Escrever teste de propriedade do filtro e exemplo dos KPIs": {
+      "status": "passed",
+      "lastRunTimestamp": 1794319445962
+    },
+    "12.6 Escrever teste de propriedade do ranking e exemplo das visualizações": {
+      "status": "passed",
+      "lastRunTimestamp": 1794319466647
+    }
+  },
+  "executionHistory": {
+    "1. Configurar estrutura do projeto, dependências e tooling de testes": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315158808
+      },
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315178913
+      },
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315483984
+      }
+    ],
+    "2.1 Carregar o `Dicionario_de_dados.xlsx` via openpyxl e expor os dicionários de domínio": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315159079
+      },
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315488780
+      },
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315550787
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794315797760
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794315906809
+      }
+    ],
+    "2.2 Escrever testes de exemplo para o carregamento de domínios": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315159252
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794315911505
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316088214
+      }
+    ],
+    "3.1 Implementar leitura dos arquivos de origem": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315159368
+      },
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315490081
+      },
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315551390
+      }
+    ],
+    "3.2 Implementar validações de schema": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315159476
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794315912241
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316089122
+      }
+    ],
+    "3.3 Implementar orquestração e persistência Parquet": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315159577
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316098594
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316246516
+      }
+    ],
+    "3.4 Escrever testes de propriedade do Ingestor": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315159662
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316265762
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316621840
+      }
+    ],
+    "3.5 Escrever testes de exemplo de leitura e erro de arquivo": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315159756
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794315913324
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316090396
+      }
+    ],
+    "4.1 Implementar conversão monetária BR → float": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315159862
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316099588
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316247465
+      }
+    ],
+    "4.2 Escrever testes de propriedade da conversão monetária": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315159958
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316266910
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316620956
+      }
+    ],
+    "4.3 Implementar decodificação de domínios": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315160051
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316268194
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316624128
+      }
+    ],
+    "4.4 Escrever teste de propriedade da decodificação de domínios": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315160219
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316637276
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316865361
+      }
+    ],
+    "4.5 Implementar filtro de competência e orquestração da limpeza": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315160316
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316637826
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316866790
+      }
+    ],
+    "4.6 Escrever teste de propriedade do filtro de competência": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315160428
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316874256
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317076988
+      }
+    ],
+    "5.1 Implementar normalização das chaves municipais": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315160553
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316100469
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316248575
+      }
+    ],
+    "5.2 Escrever teste de propriedade da normalização de chave": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315160655
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316268728
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316623144
+      }
+    ],
+    "5.3 Implementar o left join com contagens e alerta de limiar": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315160750
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316639441
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316867877
+      }
+    ],
+    "5.4 Escrever testes de propriedade do join": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315160853
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316875679
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317173131
+      }
+    ],
+    "6. Checkpoint — Garantir que todos os testes passam": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315160953
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794320646978
+      }
+    ],
+    "7.1 Implementar Saldo_Liquido e Saldo_por_10k": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315161051
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316876738
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317078160
+      }
+    ],
+    "7.2 Escrever testes de propriedade de saldo": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315161154
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317184021
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317392074
+      }
+    ],
+    "7.3 Implementar Turnover": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315161256
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317179855
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317393486
+      }
+    ],
+    "7.4 Escrever teste de propriedade do Turnover": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315161356
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317563488
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317747903
+      }
+    ],
+    "7.5 Implementar salário médio e distribuição de escolaridade": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315161455
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317180695
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317394419
+      }
+    ],
+    "7.6 Escrever testes de propriedade de salário e escolaridade": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315161572
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317564968
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317747015
+      }
+    ],
+    "7.7 Implementar Indice_de_Aquecimento": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315161670
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317182110
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317395794
+      }
+    ],
+    "7.8 Escrever teste de propriedade do Indice_de_Aquecimento": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315161759
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317566390
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317749304
+      }
+    ],
+    "8.1 Implementar extração de CBOs e loteamento": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315161852
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316639894
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316868874
+      }
+    ],
+    "8.2 Escrever testes de propriedade de extração e loteamento": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315161971
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316878041
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317079676
+      }
+    ],
+    "8.3 Implementar montagem de prompt, chamada ao LLM e validação de resposta": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315162082
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316879070
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317080557
+      }
+    ],
+    "8.4 Escrever testes de exemplo do fluxo de retry e guarda de credencial (LLM mockado)": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315162191
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317409023
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317558223
+      }
+    ],
+    "8.5 Implementar consolidação do mapeamento, persistência e merge": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315162306
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317183277
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317396664
+      }
+    ],
+    "8.6 Escrever testes de propriedade do mapeamento e merge (LLM mockado)": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315162407
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317567262
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317750262
+      }
+    ],
+    "8.7 Escrever teste de exemplo de persistência do prompt": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315162504
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317568307
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317751360
+      }
+    ],
+    "9. Checkpoint — Garantir que todos os testes passam": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315162609
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794320648240
+      }
+    ],
+    "10.1 Implementar a agregação por recorte com indicadores municipais": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315162704
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317762251
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317999780
+      }
+    ],
+    "10.2 Escrever testes de propriedade da agregação": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315162811
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318006223
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318247662
+      }
+    ],
+    "10.3 Implementar exportação com tratamento de falha": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315162905
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318004789
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318246624
+      }
+    ],
+    "10.4 Escrever teste de propriedade e de exemplo da exportação": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315163026
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318266643
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318544286
+      }
+    ],
+    "11.1 Implementar upload das tabelas agregadas com guarda de credencial": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315163119
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318007246
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318248688
+      }
+    ],
+    "11.2 Escrever testes de exemplo/integração do upload (Azure mockado)": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315163221
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318267753
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318545859
+      }
+    ],
+    "12.1 Implementar carregamento de dados com fallback local": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315163329
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318268952
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318546414
+      }
+    ],
+    "12.2 Escrever testes de exemplo do carregamento e fallback (Blob mockado)": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315163430
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318553640
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318970968
+      }
+    ],
+    "12.3 Implementar filtros e KPIs": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315163558
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318551734
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318972228
+      }
+    ],
+    "12.4 Escrever teste de propriedade do filtro e exemplo dos KPIs": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315163651
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318990606
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794319622598
+      }
+    ],
+    "12.5 Implementar mapa coroplético, ranking de setores e dispersão renda × escolaridade": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315163753
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318552662
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318973409
+      }
+    ],
+    "12.6 Escrever teste de propriedade do ranking e exemplo das visualizações": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315163854
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318992197
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794319623942
+      }
+    ],
+    "12.7 Adicionar gráfico bônus de série temporal do saldo mensal": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315163953
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318993113
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794319621127
+      }
+    ],
+    "13.1 Encadear o pipeline ponta a ponta com logging por etapa": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315164053
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318988617
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794319625007
+      }
+    ],
+    "13.2 Escrever teste de integração ponta a ponta sobre fixture pequeno (LLM e Azure mockados)": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315164160
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794319666040
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794320148066
+      }
+    ],
+    "14.1 Escrever `README.md` e documentar premissas": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315164267
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794319664839
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794320147189
+      }
+    ],
+    "14.2 Escrever testes de smoke/checagens documentais": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315164367
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794320168552
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794320486206
+      }
+    ],
+    "15. Checkpoint final — Garantir que todos os testes passam": [
+      {
+        "executionId": "a8c07394-91e8-430e-a8f9-4d661dfedb4d",
+        "chatSessionId": "sess_bbef923b-9c0a-48b9-a58a-b8eef3c37c97",
+        "timestamp": 1794315164475
+      },
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794320649172
+      }
+    ],
+    "2. Implementar tabelas de domínio do dicionário (`src/mapeamentos.py`)": [
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316088340
+      }
+    ],
+    "3. Implementar o Ingestor (`src/ingestao.py`)": [
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794316621943
+      }
+    ],
+    "4. Implementar o Limpador (`src/limpeza.py`)": [
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317077125
+      }
+    ],
+    "5. Implementar a Junta_Relacional (`src/enriquecimento.py`)": [
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317173256
+      }
+    ],
+    "7. Implementar o Calculador_de_Metricas (`src/metricas.py`)": [
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317749411
+      }
+    ],
+    "8. Implementar o Classificador_de_CBO (`src/cbo_ia.py`)": [
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794317751522
+      }
+    ],
+    "10. Implementar o Agregador (`src/agregador.py`)": [
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318544416
+      }
+    ],
+    "11. Implementar o upload para Azure Blob Storage (`src/azure_upload.py`)": [
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794318545980
+      }
+    ],
+    "12. Implementar o Dashboard Streamlit (`dashboard/app.py`)": [
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794319624061
+      }
+    ],
+    "13. Implementar o notebook orquestrador (`notebooks/01_pipeline.ipynb`)": [
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794320148123
+      }
+    ],
+    "14. Escrever README e documentação de premissas": [
+      {
+        "executionId": "3a3441ab-d027-4e33-9bdc-adcfd355e37e",
+        "chatSessionId": "sess_4380a212-e30e-4651-b49a-a18ba186cfc1",
+        "timestamp": 1794320486340
+      }
+    ]
+  }
+}
