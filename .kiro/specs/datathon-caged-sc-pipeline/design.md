@@ -216,17 +216,14 @@ def filtrar_competencia(df, inicio=202509, fim=202608) -> tuple[pd.DataFrame, in
     """Mantém apenas competências no intervalo inclusivo (R2.8);
     retorna df filtrado e contagem de registros excluídos (R2.9)."""
 
-def derivar_estoque_base(df) -> pd.DataFrame:
-    """Traduz o código de faixa de `tamestabjan` para o ponto médio em vínculos,
-    na coluna `estoque_base` — denominador numérico do Turnover (R4.4)."""
-
 def derivar_escolaridade_ordinal(df) -> pd.DataFrame:
     """Traduz o código de `graudeinstrução` para o nível ordinal, na coluna
     `escolaridade_ordinal` — eixo contínuo da dispersão de R7.4."""
 
 def limpar(df_caged, df_municipios, mapas) -> LimpezaResult:
-    """Orquestra todas as etapas de limpeza acima. As duas derivações numéricas
-    rodam ANTES de `decodificar_dominios`, que substitui os códigos por rótulos."""
+    """Orquestra todas as etapas de limpeza acima. A derivação do ordinal de
+    escolaridade roda ANTES de `decodificar_dominios`, que substitui o código
+    pelo rótulo."""
 ```
 
 `mapeamentos.py` carrega do `Dicionario_de_dados.xlsx` (via `openpyxl`) e expõe os dicionários de domínio como constantes: `GRAU_INSTRUCAO`, `RACA_COR`, `SEXO`, `TIPO_MOVIMENTACAO`, `CATEGORIA`, `TAM_ESTAB_JAN`, `UNIDADE_SALARIO`, `SECAO_CNAE`.
@@ -343,7 +340,7 @@ Reflete o CAGED após descartar as colunas de índice, mantendo os nomes origina
 | `sexo` | category | código de domínio |
 | `salário` | float64 | ainda em texto BR na origem |
 | `valorsaláriofixo` | float64 | ainda em texto BR na origem |
-| `tamestabjan` | category | **código de faixa** de tamanho do estabelecimento; origem de `estoque_base` |
+| `tamestabjan` | category | **código de faixa** de tamanho do estabelecimento (domínio de R2.5) |
 | `uf` | int8 | validado = 42 |
 
 > As colunas `indicadordeexclusão` e `competênciaexc` **não existem** neste arquivo — as exclusões já foram aplicadas na origem (R2.10, R8.3a). Documentado no README.
@@ -432,22 +429,35 @@ Por recorte (município × Secao_Industrial) no período set/2025–ago/2026:
 ```
 admissoes      = contagem de saldomovimentação == +1
 desligamentos  = contagem de saldomovimentação == -1
-Turnover = min(admissoes, desligamentos) / estoque_base   , limitado a [0, 1]
-Turnover = NaN                                            , se estoque_base ausente ou <= 0
+Turnover = min(admissoes, desligamentos) / max(admissoes, desligamentos)
+Turnover = NaN     , se o recorte não tem admissão nem desligamento
 ```
 
-O clamp garante `0 ≤ Turnover ≤ 1` mesmo quando o estoque base é menor que o fluxo.
+O resultado está em `[0, 1]` **por construção** — o numerador é o menor dos dois
+contadores e o denominador, o maior. Não há clamp.
 
-**`estoque_base` não é `tamestabjan`.** A coluna `tamestabjan` do CAGED é o
-**código da faixa** de tamanho do estabelecimento em janeiro (1 = "Zero",
-5 = "De 20 a 49", 10 = "1000 ou Mais"), não uma contagem de vínculos — usar o
-código cru como denominador erra por uma ordem de grandeza. O Limpador deriva
-`estoque_base` traduzindo o código para o **ponto médio da faixa**
-(`mapeamentos.TAM_ESTAB_JAN_PONTO_MEDIO`), *antes* da decodificação de domínios,
-que substitui o código pelo rótulo legível exigido por R2.5. Por recorte adota-se
-a **média** dos estoques observados: o CAGED movimentado não traz identificador
-de estabelecimento, então somar contaria o mesmo estabelecimento a cada
-movimentação.
+**Por que o denominador não é o estoque de vínculos.** R4.4 nasceu pedindo
+`min(adm, desl) / estoque`, a fórmula clássica de rotatividade. Esse estoque não
+é recuperável do CAGED movimentado: o arquivo não traz identificador de
+estabelecimento, então um estabelecimento com 50 movimentações aparece 50 vezes
+e não há como saber que é o mesmo. A coluna `tamestabjan` tampouco serve — é o
+**código da faixa** de tamanho (1 = "Zero", 5 = "De 20 a 49", 10 = "1000 ou
+Mais"), não uma contagem. Medido sobre os 3,4 milhões de registros reais:
+
+| denominador | mediana | saturados em 1,0 |
+|---|---|---|
+| ponto médio da faixa (média do recorte) | 1,000 | 62,7% |
+| ponto médio da faixa (soma por linha) | 0,035 | 0,5% |
+| `max(admissões, desligamentos)` | 0,851 | 9,0% |
+
+O denominador adotado mede a mesma coisa e é identificável: sob o modelo natural
+de que o volume de movimentação de um estabelecimento é proporcional ao seu
+tamanho, o total de movimentações do recorte é proporcional ao seu estoque — e
+`min/max` é a fórmula com estoque a menos de uma constante.
+
+A leitura é direta e serve à pergunta de negócio: **1** é rotatividade pura
+(admissões e desligamentos equilibrados, saldo nulo — a assinatura do apagão) e
+**0** é crescimento ou encolhimento puro (só entrada ou só saída).
 
 ### Salário médio de admissão e de desligamento (R4.6)
 
@@ -575,7 +585,7 @@ Se o Blob_Storage estiver inacessível, o dashboard lê a cópia local das tabel
 | Código municipal malformado | R3.6 | Exclui da junção; conta por base |
 | Match municipal > 1% sem correspondência | R3.5 | Alerta com códigos e contagens |
 | População ausente/zero | R4.3 | Saldo_por_10k = NaN |
-| Estoque base ausente/zero | R4.5 | Turnover = NaN |
+| Recorte sem admissão nem desligamento | R4.5 | Turnover = NaN |
 | Sem mês anterior | R4.9 | Componente de variação = 0 |
 | Lote LLM falha/timeout (transitório) | R5.7 | Retry ≤3; depois `Não classificado` + log de falha |
 | LLM recusa definitiva (400/401/403/404: saldo, credencial, modelo) | R5.7, R8.6 | Interrompe imediatamente com `ErroDeValidacao`, sem retry nem fallback — é configuração, e o fallback produziria um mapeamento vazio sem nada falhar |
@@ -681,7 +691,7 @@ As propriedades abaixo resultam da análise de prework de cada critério de acei
 
 ### Property 15: Turnover está sempre em [0, 1] ou é ausente
 
-*Para qualquer* número de admissões, desligamentos e estoque base, o `Turnover` é igual a `min(admissões, desligamentos) / estoque` limitado ao intervalo [0, 1] quando o estoque é maior que zero, e é NaN quando o estoque é zero ou ausente.
+*Para qualquer* número de admissões e desligamentos, o `Turnover` é igual a `min(admissões, desligamentos) / max(admissões, desligamentos)` quando o recorte tem ao menos uma movimentação, e é NaN quando não tem nenhuma. O resultado está em [0, 1] por construção.
 
 **Validates: Requirements 4.4, 4.5**
 

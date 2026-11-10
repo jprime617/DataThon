@@ -17,8 +17,9 @@ Métricas cobertas até aqui:
   município — ``(saldo / populacao) * 10_000`` quando a população é maior que
   zero, ou ``NaN`` quando a população está ausente ou é zero (R4.2, R4.3).
 - `turnover`: rotatividade por recorte (município × Secao_Industrial) como
-  ``min(admissões, desligamentos) / estoque_base`` limitada ao intervalo
-  ``[0, 1]``; ``NaN`` quando o estoque base é zero ou ausente (R4.4, R4.5).
+  ``min(admissões, desligamentos) / max(admissões, desligamentos)``, em
+  ``[0, 1]`` por construção; ``NaN`` quando o recorte não tem movimentação
+  alguma (R4.4, R4.5).
 """
 
 from __future__ import annotations
@@ -30,12 +31,7 @@ import pandas as pd
 # Coluna de movimentação do CAGED: +1 admissão, -1 desligamento (R4.1).
 COLUNA_SALDO_MOVIMENTACAO = "saldomovimentação"
 
-# Coluna do estoque base de vínculos ativos no início do período — denominador
-# do Turnover (R4.4). É a coluna **derivada** por `limpeza.derivar_estoque_base`
-# a partir do código de faixa de `tamestabjan`, já em número de vínculos. A
-# coluna `tamestabjan` original fica com o rótulo legível da faixa (R2.5) e não
-# serve como denominador: é um código de 1 a 10, não uma contagem.
-COLUNA_ESTOQUE_BASE = "estoque_base"
+# O Turnover não usa estoque de vínculos como denominador — ver `turnover`.
 
 # Nome da coluna de turnover produzida por `turnover` (R4.4).
 COLUNA_TURNOVER = "turnover"
@@ -204,65 +200,20 @@ def saldo_por_10k(saldo_df: pd.DataFrame, municipios: pd.DataFrame) -> pd.DataFr
     return resultado
 
 
-def _coagir_estoque(valor: object) -> float:
-    """Coage o estoque base para um número de forma robusta.
-
-    O estoque pode chegar como número (ex.: ``120``/``120.0``), como texto
-    numérico em formato brasileiro (ex.: ``"1.234,0"``) ou como rótulo de faixa
-    decodificado pelo Limpador. Esta função extrai um valor numérico quando
-    possível e devolve ``NaN`` caso contrário (R4.5), deixando a decisão de
-    ausência a cargo de `turnover`.
-
-    Regras de coerção:
-
-    - ``None``/``NaN`` → ``NaN``.
-    - Números (``int``/``float``) → o próprio valor em ``float``.
-    - Texto: tenta converter diretamente; se falhar, normaliza o formato
-      brasileiro (remove separador de milhar ``.`` e troca a vírgula decimal
-      por ponto) e tenta novamente; se ainda assim não for numérico (rótulo de
-      faixa sem número), devolve ``NaN``.
-    """
-    if valor is None:
-        return math.nan
-    if isinstance(valor, bool):
-        # bool é subclasse de int; não representa um estoque válido.
-        return math.nan
-    if isinstance(valor, (int, float)):
-        pop = float(valor)
-        return math.nan if math.isnan(pop) else pop
-
-    texto = str(valor).strip()
-    if not texto:
-        return math.nan
-    try:
-        return float(texto)
-    except ValueError:
-        pass
-    normalizado = texto.replace(".", "").replace(",", ".")
-    try:
-        return float(normalizado)
-    except ValueError:
-        return math.nan
-
-
-def _turnover_valor(admissoes: int, desligamentos: int, estoque: object) -> float:
+def _turnover_valor(admissoes: int, desligamentos: int) -> float:
     """Aplica a fórmula do Turnover a um recorte (R4.4, R4.5).
 
-    ``turnover = min(admissoes, desligamentos) / estoque`` limitado a ``[0, 1]``
-    quando o estoque base é um número maior que zero; ``NaN`` quando o estoque é
-    ausente, zero ou negativo (R4.5).
+    ``turnover = min(admissoes, desligamentos) / max(admissoes, desligamentos)``
+    quando o recorte tem ao menos uma movimentação; ``NaN`` quando não tem
+    nenhuma (não há rotatividade definida sobre o conjunto vazio — R4.5).
+
+    O resultado está em ``[0, 1]`` **por construção**, sem precisar de clamp:
+    o numerador é o menor dos dois contadores e o denominador, o maior.
     """
-    estoque_num = _coagir_estoque(estoque)
-    if math.isnan(estoque_num) or estoque_num <= 0:
+    maior = max(admissoes, desligamentos)
+    if maior <= 0:
         return math.nan
-    bruto = min(admissoes, desligamentos) / estoque_num
-    # Clamp em [0, 1]: admissoes/desligamentos são contagens >= 0, então o piso 0
-    # é garantido; o teto 1 cobre o caso de fluxo maior que o estoque base (R4.4).
-    if bruto < 0:
-        return 0.0
-    if bruto > 1:
-        return 1.0
-    return bruto
+    return min(admissoes, desligamentos) / maior
 
 
 def turnover(df: pd.DataFrame, por: list[str]) -> pd.DataFrame:
@@ -273,29 +224,36 @@ def turnover(df: pd.DataFrame, por: list[str]) -> pd.DataFrame:
     admissões (``saldomovimentação == +1``) e os desligamentos
     (``saldomovimentação == -1``) e aplica:
 
-    ``turnover = min(admissoes, desligamentos) / estoque_base``  limitado a
-    ``[0, 1]`` quando o estoque base é maior que zero (R4.4);
-    ``turnover = NaN``                                           quando o
-    estoque base é zero ou ausente (R4.5).
+    ``turnover = min(admissões, desligamentos) / max(admissões, desligamentos)``
+    quando o recorte tem ao menos uma movimentação (R4.4);
+    ``turnover = NaN`` quando não tem nenhuma (R4.5).
 
-    O estoque base (`estoque_base`, derivado da faixa `tamestabjan` pelo
-    Limpador) é o denominador; o valor é coagido para número de forma robusta e
-    recortes cujo estoque não é um número positivo recebem ``NaN``. Por recorte
-    adota-se a **média** dos estoques observados no grupo, ignorando ausentes: o
-    estoque é característica do estabelecimento, não do fluxo, e a média é o
-    tamanho típico dos estabelecimentos que movimentaram no recorte.
+    **Por que o denominador não é o estoque de vínculos.** R4.4 nasceu pedindo
+    `min(adm, desl) / estoque`, a fórmula clássica de rotatividade. Esse estoque
+    não é recuperável do CAGED movimentado: o arquivo não traz identificador de
+    estabelecimento, então um estabelecimento com 50 movimentações aparece 50
+    vezes e não há como saber que é o mesmo. Qualquer estoque montado a partir da
+    faixa `tamestabjan` erra por um fator desconhecido — usar a faixa média
+    saturava 62,7% dos recortes em 1,0, e somá-la por linha superestimava o
+    estoque e derrubava a mediana para 0,035.
 
-    ponytail: o CAGED movimentado não traz identificador de estabelecimento, então
-    não dá para somar estoques sem contar o mesmo estabelecimento várias vezes.
-    A média da faixa é o melhor proxy disponível; trocar por estoque real se o
-    RAIS entrar na base.
+    O denominador adotado é ``max(admissões, desligamentos)``, que mede a mesma
+    coisa e é identificável. Sob o modelo natural de que o volume de movimentação
+    de um estabelecimento é proporcional ao seu tamanho, o total de movimentações
+    é proporcional ao estoque do recorte — e a razão
+    ``min/max`` é a fórmula com estoque a menos de uma constante.
+
+    A leitura é direta: ``1`` é rotatividade pura (admissões e desligamentos
+    equilibrados, saldo nulo) e ``0`` é crescimento ou encolhimento puro (só
+    entrada ou só saída). É exatamente a distinção entre apagão por rotatividade
+    e expansão/contração líquida que a pergunta de negócio faz.
 
     Quando o DataFrame de entrada é vazio, o retorno é um DataFrame vazio com as
     colunas ``por + ["turnover"]``.
 
     Args:
-        df: base cruzada/enriquecida contendo `saldomovimentação`, `estoque_base`
-            e as colunas de recorte em ``por``. Não é modificada.
+        df: base cruzada/enriquecida contendo `saldomovimentação` e as colunas
+            de recorte em ``por``. Não é modificada.
         por: lista não vazia de colunas que definem o recorte de agregação.
 
     Returns:
@@ -304,15 +262,15 @@ def turnover(df: pd.DataFrame, por: list[str]) -> pd.DataFrame:
 
     Raises:
         ValueError: se ``por`` for vazio.
-        KeyError: se `saldomovimentação`, `estoque_base` ou alguma coluna de
-            ``por`` estiver ausente no DataFrame.
+        KeyError: se `saldomovimentação` ou alguma coluna de ``por`` estiver
+            ausente no DataFrame.
     """
     if not por:
         raise ValueError("A lista de colunas de recorte 'por' não pode ser vazia.")
 
     faltando = [
         coluna
-        for coluna in [*por, COLUNA_SALDO_MOVIMENTACAO, COLUNA_ESTOQUE_BASE]
+        for coluna in [*por, COLUNA_SALDO_MOVIMENTACAO]
         if coluna not in df.columns
     ]
     if faltando:
@@ -328,24 +286,16 @@ def turnover(df: pd.DataFrame, por: list[str]) -> pd.DataFrame:
     trabalho = df[[*por]].copy()
     trabalho["_admissao"] = (movimentacao == 1).astype(int)
     trabalho["_desligamento"] = (movimentacao == -1).astype(int)
-    # Coage linha a linha antes de agregar, para que a média do recorte opere
-    # sobre números (a coluna pode chegar como texto) e ignore os ausentes.
-    trabalho["_estoque"] = df[COLUNA_ESTOQUE_BASE].map(_coagir_estoque).values
-
     agrupado = trabalho.groupby(por, dropna=False)
     agregado = agrupado.agg(
         _admissoes=("_admissao", "sum"),
         _desligamentos=("_desligamento", "sum"),
-        _estoque=("_estoque", "mean"),
     ).reset_index()
 
     agregado[COLUNA_TURNOVER] = [
-        _turnover_valor(int(adm), int(desl), estoque)
-        for adm, desl, estoque in zip(
-            agregado["_admissoes"],
-            agregado["_desligamentos"],
-            agregado["_estoque"],
-            strict=True,
+        _turnover_valor(int(adm), int(desl))
+        for adm, desl in zip(
+            agregado["_admissoes"], agregado["_desligamentos"], strict=True
         )
     ]
 
@@ -358,7 +308,6 @@ __all__ = [
     "COLUNA_SALDO_POR_10K",
     "COLUNA_CHAVE_MUNICIPAL",
     "COLUNA_POPULACAO_2026",
-    "COLUNA_ESTOQUE_BASE",
     "COLUNA_TURNOVER",
     "FATOR_POR_10K",
     "saldo_liquido",

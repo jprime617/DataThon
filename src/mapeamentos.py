@@ -12,8 +12,7 @@ código/rótulo. A maioria dos domínios usa código inteiro; a seção CNAE
 
 Também expõe a constante `MACROFAMILIAS` — o conjunto fechado de macrofamílias
 de CBO (entre 5 e 12, incluindo `Não classificado`) usado por `cbo_ia.py` — e
-`TAM_ESTAB_JAN_PONTO_MEDIO`, que traduz o código de faixa de tamanho do
-estabelecimento para um número de vínculos (ver nota abaixo).
+`MESORREGIAO_POR_MUNICIPIO`, que dá a mesorregião do IBGE de cada município.
 
 Carregamento tardio dos domínios
 --------------------------------
@@ -54,33 +53,6 @@ MACROFAMILIAS: list[str] = [
     "Saúde e Segurança do Trabalho",
     NAO_CLASSIFICADO,
 ]
-
-# Tradução do código de faixa de `tamestabjan` para um número de vínculos (R4.4).
-#
-# `tamestabjan` NÃO é a contagem de vínculos do estabelecimento: é o **código da
-# faixa** de tamanho em janeiro (1='Zero', 5='De 20 a 49', 10='1000 ou Mais'),
-# conforme a aba `tamestabjan` do dicionário de dados. Usar o código cru como
-# denominador do Turnover erra por uma ordem de grandeza (o código 5 viraria 5
-# vínculos, quando a faixa significa 20 a 49). Aqui cada faixa é representada
-# pelo seu **ponto médio**; as faixas sem tamanho definido ('Zero', 'Inválido',
-# 'Ignorado') viram ausente, de modo que o Turnover do recorte fique NaN (R4.5).
-#
-# ponytail: ponto médio é uma aproximação — a faixa aberta '1000 ou Mais' usa
-# 1500 por convenção. Trocar por estoque real se o RAIS/estoque entrar na base.
-TAM_ESTAB_JAN_PONTO_MEDIO: dict[int, float] = {
-    1: float("nan"),  # Zero
-    2: 2.5,  # De 1 a 4
-    3: 7.0,  # De 5 a 9
-    4: 14.5,  # De 10 a 19
-    5: 34.5,  # De 20 a 49
-    6: 74.5,  # De 50 a 99
-    7: 174.5,  # De 100 a 249
-    8: 374.5,  # De 250 a 499
-    9: 749.5,  # De 500 a 999
-    10: 1500.0,  # 1000 ou Mais (faixa aberta)
-    98: float("nan"),  # Inválido
-    99: float("nan"),  # Ignorado
-}
 
 # Mesorregião do IBGE por Chave_Municipal de 6 dígitos (R6.1).
 #
@@ -522,7 +494,6 @@ def __getattr__(nome: str) -> dict[object, str]:
 __all__ = [
     "MACROFAMILIAS",
     "NAO_CLASSIFICADO",
-    "TAM_ESTAB_JAN_PONTO_MEDIO",
     "MESORREGIAO_POR_MUNICIPIO",
     "REGIAO_DESCONHECIDA",
     "CAMINHO_DICIONARIO",

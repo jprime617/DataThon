@@ -228,6 +228,37 @@ def carregar_dados(
     )
 
 
+# Tempo de vida do cache das tabelas agregadas, em segundos. O Streamlit
+# re-executa o script inteiro a cada interação com um widget — sem cache, cada
+# clique num filtro baixaria o Parquet do Blob de novo e o reparsearia. Dez
+# minutos mantêm o painel responsivo e ainda assim fazem ele perceber um
+# re-upload do pipeline sem precisar reiniciar o App Service.
+TTL_CACHE_DADOS = 600
+
+# Função de carregamento já embrulhada pelo cache do Streamlit. Decoramos uma
+# única vez (a decoração a cada execução geraria uma chave nova e anularia o
+# cache) e de forma tardia, para que importar este módulo não exija o Streamlit.
+_carregar_dados_cacheado = None
+
+
+def carregar_dados_para_o_painel():
+    """Carrega as tabelas agregadas com cache entre execuções do script.
+
+    Embrulha `carregar_dados` — que continua pura-ish e testável sem Streamlit —
+    no `st.cache_data`, de modo que a leitura do Blob aconteça uma vez a cada
+    `TTL_CACHE_DADOS` segundos e não a cada clique num filtro.
+    """
+    global _carregar_dados_cacheado
+    if _carregar_dados_cacheado is None:
+        import streamlit as st
+
+        _carregar_dados_cacheado = st.cache_data(
+            ttl=TTL_CACHE_DADOS,
+            show_spinner="Carregando tabelas agregadas…",
+        )(carregar_dados)
+    return _carregar_dados_cacheado()
+
+
 def _opcoes(df: pd.DataFrame, coluna: str) -> list:
     """Valores distintos e ordenados de uma coluna, para alimentar um filtro."""
     if coluna not in df.columns:
@@ -276,7 +307,8 @@ def main() -> None:
     Com dados disponíveis, monta o painel na ordem da narrativa do design —
     *localizar o problema → entender a causa raiz → decidir*:
 
-    1. filtros na barra lateral, que recalculam tudo o que vem abaixo (R7.5);
+    1. filtros na barra lateral, que recalculam tudo o que vem abaixo (R7.5) —
+       sobre os dados em cache, sem reler o Blob a cada interação;
     2. os KPIs do recorte (R7.1), em zero quando o filtro não casa nada (R7.6);
     3. o mapa coroplético, que **localiza** onde está o apagão ou a expansão (R7.2);
     4. o ranking de seções, que diz **em que setor** o problema está (R7.3);
@@ -292,7 +324,7 @@ def main() -> None:
     )
     st.title("Raio-X do Mercado de Trabalho e Vagas Industriais em SC")
 
-    resultado = carregar_dados()
+    resultado = carregar_dados_para_o_painel()
     if not resultado.disponivel:
         st.error(resultado.motivo)
         return
@@ -1012,6 +1044,8 @@ __all__ = [
     "CarregadorBlob",
     "ResultadoCarregamento",
     "carregar_dados",
+    "carregar_dados_para_o_painel",
+    "TTL_CACHE_DADOS",
     "KPI_SALDO_LIQUIDO_TOTAL",
     "KPI_SALDO_POR_10K_MEDIO",
     "KPI_TURNOVER_MEDIO",

@@ -43,19 +43,12 @@ from dataclasses import dataclass, field
 import pandas as pd
 
 from src.logging_pipeline import log_etapa
-from src.mapeamentos import TAM_ESTAB_JAN_PONTO_MEDIO
 
 # Marcador de ausência usado na Base_de_Municipios; deve virar NaN (R2.4).
 MARCADOR_AUSENTE = "-"
 
 # Colunas monetárias do CAGED tratadas pelo Limpador (R2.1).
 COLUNAS_MOEDA_CAGED = ["salário", "valorsaláriofixo"]
-
-# Coluna de faixa de tamanho do estabelecimento em janeiro (código de domínio).
-COLUNA_TAM_ESTAB_JAN = "tamestabjan"
-
-# Coluna derivada com o estoque base numérico, denominador do Turnover (R4.4).
-COLUNA_ESTOQUE_BASE = "estoque_base"
 
 # Coluna de grau de instrução (código de domínio) e a sua versão ordinal derivada.
 COLUNA_GRAU_INSTRUCAO = "graudeinstrução"
@@ -361,50 +354,6 @@ def decodificar_dominios(
     return resultado, nao_mapeados
 
 
-def derivar_estoque_base(df: pd.DataFrame) -> pd.DataFrame:
-    """Deriva o estoque base numérico a partir da faixa `tamestabjan` (R4.4).
-
-    R2.5 manda decodificar `tamestabjan` para o rótulo legível da faixa
-    (``"De 20 a 49"``) e R4.4 manda usar a mesma coluna como **denominador
-    numérico** do Turnover. As duas coisas não cabem numa coluna só, e é daí que
-    vinha o Turnover ausente em todos os recortes: a coluna era decodificada
-    para texto e depois coagida para número, resultando em ``NaN``.
-
-    A solução é separar as responsabilidades: esta função lê o **código cru** da
-    faixa e grava o número de vínculos correspondente em ``estoque_base``
-    (`COLUNA_ESTOQUE_BASE`), deixando `tamestabjan` livre para ser decodificada
-    em rótulo por `decodificar_dominios`. Por isso ela é chamada **antes** da
-    decodificação em `limpar`.
-
-    Cada faixa é representada pelo seu ponto médio
-    (`mapeamentos.TAM_ESTAB_JAN_PONTO_MEDIO`); as faixas sem tamanho definido
-    (``Zero``, ``Inválido``, ``Ignorado``) e os códigos desconhecidos viram
-    ``NaN``, de modo que o Turnover do recorte fique ausente (R4.5).
-
-    Args:
-        df: CAGED com a coluna `tamestabjan` ainda em código. Não é modificado;
-            uma cópia é retornada. Se a coluna estiver ausente, a cópia volta
-            inalterada (sem ``estoque_base``).
-
-    Returns:
-        Uma cópia de ``df`` com a coluna ``estoque_base`` (``float``) anexada.
-    """
-    resultado = df.copy()
-    if COLUNA_TAM_ESTAB_JAN not in resultado.columns:
-        return resultado
-
-    def _ponto_medio(valor: object) -> float:
-        codigo = _normalizar_codigo_categorico(valor)
-        if isinstance(codigo, bool) or not isinstance(codigo, int):
-            return math.nan
-        return TAM_ESTAB_JAN_PONTO_MEDIO.get(codigo, math.nan)
-
-    resultado[COLUNA_ESTOQUE_BASE] = (
-        resultado[COLUNA_TAM_ESTAB_JAN].map(_ponto_medio).astype("float64")
-    )
-    return resultado
-
-
 def derivar_escolaridade_ordinal(df: pd.DataFrame) -> pd.DataFrame:
     """Deriva o nível ordinal de escolaridade a partir de `graudeinstrução` (R4.7).
 
@@ -647,13 +596,11 @@ def limpar(
     Returns:
         Um ``LimpezaResult`` com as bases limpas e os logs coletados.
     """
-    # CAGED: moeda → estoque base → domínios → filtro de competência.
-    # O estoque base e o ordinal de escolaridade são derivados **antes** da
-    # decodificação porque leem os códigos crus de `tamestabjan` e
-    # `graudeinstrução`, que a decodificação substitui pelos rótulos (R4.4, R4.7).
+    # CAGED: moeda → escolaridade ordinal → domínios → filtro de competência.
+    # O ordinal é derivado **antes** da decodificação porque lê o código cru de
+    # `graudeinstrução`, que a decodificação substitui pelo rótulo (R4.7).
     caged_moeda, falhas_moeda = limpar_moeda(df_caged)
-    caged_estoque = derivar_estoque_base(caged_moeda)
-    caged_ordinal = derivar_escolaridade_ordinal(caged_estoque)
+    caged_ordinal = derivar_escolaridade_ordinal(caged_moeda)
     caged_dominios, codigos_nao_mapeados = decodificar_dominios(
         caged_ordinal, mapas
     )
@@ -691,12 +638,9 @@ def limpar(
 __all__ = [
     "MARCADOR_AUSENTE",
     "COLUNAS_MOEDA_CAGED",
-    "COLUNA_TAM_ESTAB_JAN",
-    "COLUNA_ESTOQUE_BASE",
     "COLUNA_GRAU_INSTRUCAO",
     "COLUNA_ESCOLARIDADE_ORDINAL",
     "ESCOLARIDADE_ORDINAL",
-    "derivar_estoque_base",
     "derivar_escolaridade_ordinal",
     "COLUNA_COMPETENCIA",
     "COMPETENCIA_INICIO",

@@ -2,16 +2,16 @@ cbo2002ocupação,macrofamilia
 715505,Operacional de Produção
 632120,Operacional de Produção
 411010,Administrativo
-253405,Não classificado
+253405,Administrativo
 521110,Comercial e Vendas
-371410,Não classificado
+371410,Administrativo
 848520,Operacional de Produção
 715705,Operacional de Produção
 784205,Logística e Transporte
-514320,Operacional de Produção
+514320,Saúde e Segurança do Trabalho
 414105,Logística e Transporte
 521125,Comercial e Vendas
-722315,Manutenção
+722315,Operacional de Produção
 715615,Operacional de Produção
 761435,Operacional de Produção
 517410,Comercial e Vendas
@@ -37,7 +37,7 @@ cbo2002ocupação,macrofamilia
 513415,Operacional de Produção
 715210,Operacional de Produção
 782145,Logística e Transporte
-910105,Operacional de Produção
+910105,Logística e Transporte
 422105,Comercial e Vendas
 768320,Operacional de Produção
 422205,Comercial e Vendas
@@ -48,9 +48,9 @@ cbo2002ocupação,macrofamilia
 724210,Manutenção
 354120,Administrativo
 520110,Comercial e Vendas
-333115,Não classificado
-914425,Operacional de Produção
-514325,Operacional de Produção
+333115,Administrativo
+914425,Logística e Transporte
+514325,Saúde e Segurança do Trabalho
 715305,Operacional de Produção
 318510,Engenharia e Técnico
 513205,Operacional de Produção
@@ -69,9 +69,9 @@ cbo2002ocupação,macrofamilia
 763215,Operacional de Produção
 782310,Logística e Transporte
 514205,Operacional de Produção
-317210,Tecnologia da Informação
+317210,Engenharia e Técnico
 414110,Logística e Transporte
-224120,Não classificado
+224120,Engenharia e Técnico
 782305,Logística e Transporte
 414120,Logística e Transporte
 413205,Administrativo
@@ -81,13 +81,13 @@ cbo2002ocupação,macrofamilia
 725225,Manutenção
 342315,Comercial e Vendas
 763010,Operacional de Produção
-331110,Não classificado
+331110,Administrativo
 519935,Operacional de Produção
 521135,Comercial e Vendas
 831120,Operacional de Produção
 782405,Logística e Transporte
 313105,Engenharia e Técnico
-914405,Operacional de Produção
+914405,Logística e Transporte
 519305,Operacional de Produção
 422305,Comercial e Vendas
 414125,Logística e Transporte
@@ -107,16 +107,16 @@ cbo2002ocupação,macrofamilia
 761005,Operacional de Produção
 828110,Operacional de Produção
 311720,Engenharia e Técnico
-142330,Comercial e Vendas
+142330,Administrativo
 141415,Administrativo
 781110,Logística e Transporte
 312105,Engenharia e Técnico
 763105,Operacional de Produção
 513405,Operacional de Produção
 252105,Administrativo
-391205,Administrativo
+391205,Logística e Transporte
 322205,Saúde e Segurança do Trabalho
-374405,Administrativo
+374405,Não classificado
 141205,Administrativo
 784105,Logística e Transporte
 765235,Operacional de Produção
@@ -132,11 +132,11 @@ cbo2002ocupação,macrofamilia
 632125,Operacional de Produção
 232115,Não classificado
 414215,Logística e Transporte
-519110,Operacional de Produção
+519110,Saúde e Segurança do Trabalho
 766225,Operacional de Produção
 317205,Tecnologia da Informação
-391210,Administrativo
-710205,Engenharia e Técnico
+391210,Logística e Transporte
+710205,Operacional de Produção
 421310,Comercial e Vendas
 732140,Operacional de Produção
 622020,Operacional de Produção
@@ -152,7 +152,7 @@ cbo2002ocupação,macrofamilia
 622505,Operacional de Produção
 772105,Operacional de Produção
 517425,Operacional de Produção
-142335,Comercial e Vendas
+142335,Administrativo
 313315,Engenharia e Técnico
 131305,Administrativo
 782320,Logística e Transporte
@@ -180,13 +180,13 @@ cbo2002ocupação,macrofamilia
 841408,Operacional de Produção
 818105,Operacional de Produção
 351605,Administrativo
-325105,Saúde e Segurança do Trabalho
+325105,Engenharia e Técnico
 411045,Administrativo
 833205,Operacional de Produção
 991305,Operacional de Produção
 422315,Comercial e Vendas
 313220,Engenharia e Técnico
-224140,Saúde e Segurança do Trabalho
+224140,Tecnologia da Informação
 763110,Operacional de Produção
 721215,Manutenção
 314210,Engenharia e Técnico
@@ -198,10 +198,10 @@ cbo2002ocupação,macrofamilia
 331205,Administrativo
 333110,Administrativo
 519210,Operacional de Produção
-510130,Comercial e Vendas
+510130,Administrativo
 513610,Operacional de Produção
 261425,Não classificado
-774105,Manutenção
+774105,Operacional de Produção
 234810,Não classificado
 722215,Manutenção
 521105,Comercial e Vendas
@@ -209,12 +209,12 @@ cbo2002ocupação,macrofamilia
 422110,Administrativo
 715205,Operacional de Produção
 841505,Operacional de Produção
-773130,Manutenção
+773130,Operacional de Produção
 271105,Não classificado
 516310,Operacional de Produção
 823210,Operacional de Produção
 761230,Operacional de Produção
-510135,Operacional de Produção
+510135,Administrativo
 782220,Logística e Transporte
 513615,Operacional de Produção
 252545,Administrativo
@@ -242,7 +242,7 @@ cbo2002ocupação,macrofamilia
 752305,Operacional de Produção
 832125,Operacional de Produção
 312205,Engenharia e Técnico
-351405,Saúde e Segurança do Trabalho
+351405,Administrativo
 862150,Operacional de Produção
 811775,Operacional de Produção
 725205,Manutenção
@@ -258,7 +258,7 @@ cbo2002ocupação,macrofamilia
 725010,Manutenção
 715130,Operacional de Produção
 766305,Operacional de Produção
-773120,Manutenção
+773120,Operacional de Produção
 731175,Operacional de Produção
 823125,Operacional de Produção
 721225,Manutenção
@@ -269,7 +269,7 @@ cbo2002ocupação,macrofamilia
 251530,Não classificado
 842120,Operacional de Produção
 373220,Não classificado
-992115,Operacional de Produção
+992115,Saúde e Segurança do Trabalho
 862305,Operacional de Produção
 813115,Operacional de Produção
 724415,Manutenção
@@ -282,20 +282,20 @@ cbo2002ocupação,macrofamilia
 810205,Operacional de Produção
 410225,Administrativo
 848305,Operacional de Produção
-334105,Administrativo
+334105,Saúde e Segurança do Trabalho
 715315,Operacional de Produção
 314110,Engenharia e Técnico
 766315,Operacional de Produção
 142320,Administrativo
 142135,Administrativo
-773110,Manutenção
+773110,Operacional de Produção
 765405,Operacional de Produção
 784110,Logística e Transporte
 514310,Operacional de Produção
 212405,Tecnologia da Informação
 761330,Operacional de Produção
 234505,Não classificado
-253215,Não classificado
+253215,Comercial e Vendas
 516210,Operacional de Produção
 231210,Não classificado
 765225,Operacional de Produção
@@ -316,7 +316,7 @@ cbo2002ocupação,macrofamilia
 517415,Comercial e Vendas
 811770,Operacional de Produção
 841456,Operacional de Produção
-721105,Manutenção
+721105,Operacional de Produção
 515105,Não classificado
 513605,Não classificado
 142325,Administrativo
@@ -329,7 +329,7 @@ cbo2002ocupação,macrofamilia
 711230,Operacional de Produção
 142305,Administrativo
 142360,Administrativo
-722220,Manutenção
+722220,Operacional de Produção
 314305,Engenharia e Técnico
 521120,Comercial e Vendas
 231310,Não classificado
@@ -351,7 +351,7 @@ cbo2002ocupação,macrofamilia
 514215,Não classificado
 313310,Engenharia e Técnico
 911205,Não classificado
-221105,Não classificado
+221105,Saúde e Segurança do Trabalho
 721405,Manutenção
 821450,Operacional de Produção
 715715,Operacional de Produção
@@ -394,7 +394,7 @@ cbo2002ocupação,macrofamilia
 761250,Operacional de Produção
 613305,Operacional de Produção
 773415,Operacional de Produção
-251215,Não classificado
+251215,Administrativo
 142510,Administrativo
 239430,Não classificado
 142130,Administrativo
@@ -402,10 +402,10 @@ cbo2002ocupação,macrofamilia
 513430,Operacional de Produção
 322405,Saúde e Segurança do Trabalho
 782130,Logística e Transporte
-422320,Comercial e Vendas
+422320,Administrativo
 377110,Não classificado
 517110,Operacional de Produção
-331105,Administrativo
+331105,Não classificado
 950305,Manutenção
 313305,Engenharia e Técnico
 782110,Logística e Transporte
@@ -414,7 +414,7 @@ cbo2002ocupação,macrofamilia
 412205,Administrativo
 516405,Operacional de Produção
 111415,Administrativo
-225140,Saúde e Segurança do Trabalho
+225140,Não classificado
 642005,Operacional de Produção
 731320,Operacional de Produção
 354605,Administrativo
@@ -446,10 +446,10 @@ cbo2002ocupação,macrofamilia
 770105,Operacional de Produção
 324115,Engenharia e Técnico
 313130,Engenharia e Técnico
-422335,Comercial e Vendas
-919110,Operacional de Produção
+422335,Administrativo
+919110,Manutenção
 784120,Logística e Transporte
-321105,Saúde e Segurança do Trabalho
+321105,Engenharia e Técnico
 731170,Operacional de Produção
 513115,Operacional de Produção
 513105,Operacional de Produção
@@ -468,7 +468,7 @@ cbo2002ocupação,macrofamilia
 823265,Operacional de Produção
 391215,Administrativo
 764115,Operacional de Produção
-251605,Administrativo
+251605,Tecnologia da Informação
 325205,Saúde e Segurança do Trabalho
 261110,Não classificado
 711210,Operacional de Produção
@@ -489,7 +489,7 @@ cbo2002ocupação,macrofamilia
 848525,Operacional de Produção
 722230,Manutenção
 519925,Operacional de Produção
-332105,Administrativo
+332105,Não classificado
 231105,Não classificado
 832135,Operacional de Produção
 731150,Operacional de Produção
@@ -507,13 +507,13 @@ cbo2002ocupação,macrofamilia
 516610,Operacional de Produção
 711115,Operacional de Produção
 241005,Administrativo
-721205,Engenharia e Técnico
+721205,Operacional de Produção
 214205,Engenharia e Técnico
 234520,Não classificado
 314410,Engenharia e Técnico
 763115,Operacional de Produção
 311105,Engenharia e Técnico
-731155,Operacional de Produção
+731155,Manutenção
 761425,Operacional de Produção
 716405,Operacional de Produção
 513440,Operacional de Produção
@@ -528,26 +528,26 @@ cbo2002ocupação,macrofamilia
 841630,Operacional de Produção
 761306,Operacional de Produção
 413105,Administrativo
-833105,Operacional de Produção
+833105,Logística e Transporte
 831115,Logística e Transporte
 410230,Administrativo
 951305,Manutenção
-731115,Operacional de Produção
+731115,Manutenção
 623110,Operacional de Produção
 141505,Administrativo
 519945,Operacional de Produção
 913115,Logística e Transporte
 775110,Operacional de Produção
-374150,Operacional de Produção
+374150,Administrativo
 761357,Operacional de Produção
-252525,Administrativo
+252525,Não classificado
 232130,Não classificado
 354815,Comercial e Vendas
 519320,Operacional de Produção
 811125,Operacional de Produção
 312305,Engenharia e Técnico
 725310,Manutenção
-833110,Operacional de Produção
+833110,Logística e Transporte
 722205,Manutenção
 342305,Comercial e Vendas
 322715,Saúde e Segurança do Trabalho
@@ -556,10 +556,10 @@ cbo2002ocupação,macrofamilia
 722115,Manutenção
 223810,Saúde e Segurança do Trabalho
 715410,Operacional de Produção
-374210,Operacional de Produção
+374210,Comercial e Vendas
 223605,Saúde e Segurança do Trabalho
 318810,Engenharia e Técnico
-511210,Operacional de Produção
+511210,Comercial e Vendas
 811750,Operacional de Produção
 261210,Não classificado
 716215,Operacional de Produção
@@ -577,27 +577,27 @@ cbo2002ocupação,macrofamilia
 763325,Operacional de Produção
 514105,Operacional de Produção
 420110,Comercial e Vendas
-351505,Administrativo
+351505,Comercial e Vendas
 262215,Não classificado
 782505,Logística e Transporte
 910205,Logística e Transporte
-731160,Operacional de Produção
+731160,Manutenção
 811105,Operacional de Produção
 722330,Manutenção
 414205,Administrativo
-351725,Administrativo
+351725,Comercial e Vendas
 766310,Operacional de Produção
 622620,Operacional de Produção
 212215,Tecnologia da Informação
 253140,Não classificado
-351730,Administrativo
+351730,Comercial e Vendas
 760105,Operacional de Produção
 254505,Não classificado
 411055,Administrativo
 771110,Operacional de Produção
 142415,Administrativo
 724305,Manutenção
-374420,Operacional de Produção
+374420,Comercial e Vendas
 262425,Não classificado
 233215,Engenharia e Técnico
 724425,Operacional de Produção
@@ -607,19 +607,19 @@ cbo2002ocupação,macrofamilia
 413210,Administrativo
 351305,Administrativo
 141515,Administrativo
-519910,Operacional de Produção
-375105,Operacional de Produção
+519910,Não classificado
+375105,Não classificado
 954105,Manutenção
 622420,Operacional de Produção
 252205,Administrativo
 514315,Operacional de Produção
 214435,Engenharia e Técnico
-517405,Operacional de Produção
+517405,Comercial e Vendas
 862115,Operacional de Produção
 919315,Logística e Transporte
 212310,Tecnologia da Informação
-375120,Operacional de Produção
-725015,Manutenção
+375120,Não classificado
+725015,Operacional de Produção
 823130,Operacional de Produção
 519905,Operacional de Produção
 919105,Logística e Transporte
@@ -629,7 +629,7 @@ cbo2002ocupação,macrofamilia
 841416,Operacional de Produção
 421120,Comercial e Vendas
 253115,Comercial e Vendas
-374125,Operacional de Produção
+374125,Não classificado
 141410,Administrativo
 813110,Operacional de Produção
 612005,Operacional de Produção
@@ -637,16 +637,16 @@ cbo2002ocupação,macrofamilia
 415115,Administrativo
 715720,Operacional de Produção
 516325,Operacional de Produção
-515225,Operacional de Produção
+515225,Saúde e Segurança do Trabalho
 142210,Administrativo
-515315,Operacional de Produção
+515315,Saúde e Segurança do Trabalho
 415125,Administrativo
 214125,Engenharia e Técnico
 341220,Comercial e Vendas
 811005,Operacional de Produção
 262830,Não classificado
 954125,Manutenção
-511205,Operacional de Produção
+511205,Administrativo
 763120,Operacional de Produção
 231315,Engenharia e Técnico
 251505,Administrativo
@@ -654,11 +654,11 @@ cbo2002ocupação,macrofamilia
 231340,Engenharia e Técnico
 620110,Operacional de Produção
 761220,Operacional de Produção
-373140,Operacional de Produção
+373140,Não classificado
 322420,Saúde e Segurança do Trabalho
 342215,Comercial e Vendas
 212410,Tecnologia da Informação
-374415,Operacional de Produção
+374415,Não classificado
 203230,Tecnologia da Informação
 833120,Operacional de Produção
 821405,Operacional de Produção
@@ -671,7 +671,7 @@ cbo2002ocupação,macrofamilia
 820125,Operacional de Produção
 123105,Administrativo
 111120,Administrativo
-515210,Operacional de Produção
+515210,Saúde e Segurança do Trabalho
 765240,Operacional de Produção
 516220,Operacional de Produção
 720145,Operacional de Produção
@@ -686,19 +686,19 @@ cbo2002ocupação,macrofamilia
 261615,Não classificado
 823325,Operacional de Produção
 715145,Operacional de Produção
-519205,Operacional de Produção
+519205,Saúde e Segurança do Trabalho
 841420,Operacional de Produção
 766235,Operacional de Produção
 768625,Operacional de Produção
 760125,Operacional de Produção
-725410,Manutenção
+725410,Operacional de Produção
 782710,Logística e Transporte
 821435,Operacional de Produção
 811705,Operacional de Produção
 141405,Administrativo
 910130,Logística e Transporte
 992210,Operacional de Produção
-511215,Operacional de Produção
+511215,Administrativo
 421205,Comercial e Vendas
 351715,Administrativo
 725705,Manutenção
@@ -721,7 +721,7 @@ cbo2002ocupação,macrofamilia
 622615,Operacional de Produção
 773330,Operacional de Produção
 910210,Logística e Transporte
-731180,Operacional de Produção
+731180,Manutenção
 141305,Administrativo
 765310,Operacional de Produção
 212305,Tecnologia da Informação
@@ -730,7 +730,7 @@ cbo2002ocupação,macrofamilia
 373130,Não classificado
 223710,Saúde e Segurança do Trabalho
 911325,Logística e Transporte
-516330,Não classificado
+516330,Operacional de Produção
 913120,Logística e Transporte
 523120,Comercial e Vendas
 823115,Operacional de Produção
@@ -743,7 +743,7 @@ cbo2002ocupação,macrofamilia
 764105,Operacional de Produção
 763315,Operacional de Produção
 372115,Não classificado
-512120,Não classificado
+512120,Operacional de Produção
 262405,Não classificado
 716520,Operacional de Produção
 142605,Administrativo
@@ -773,19 +773,19 @@ cbo2002ocupação,macrofamilia
 224105,Saúde e Segurança do Trabalho
 341305,Administrativo
 420125,Comercial e Vendas
-514330,Não classificado
-741115,Operacional de Produção
+514330,Operacional de Produção
+741115,Manutenção
 761324,Operacional de Produção
 830105,Operacional de Produção
 762005,Operacional de Produção
 766125,Operacional de Produção
 761820,Operacional de Produção
-511405,Comercial e Vendas
+511405,Operacional de Produção
 862205,Operacional de Produção
 622005,Operacional de Produção
 782210,Logística e Transporte
 239220,Não classificado
-252720,Não classificado
+252720,Administrativo
 722320,Manutenção
 768105,Operacional de Produção
 391225,Engenharia e Técnico
@@ -794,18 +794,18 @@ cbo2002ocupação,macrofamilia
 261120,Não classificado
 313205,Engenharia e Técnico
 223905,Saúde e Segurança do Trabalho
-991310,Não classificado
+991310,Operacional de Produção
 821110,Operacional de Produção
-731125,Operacional de Produção
+731125,Manutenção
 773220,Operacional de Produção
-516415,Não classificado
+516415,Operacional de Produção
 724310,Manutenção
 731130,Operacional de Produção
 764210,Operacional de Produção
 715415,Operacional de Produção
 841468,Operacional de Produção
 761805,Operacional de Produção
-919205,Operacional de Produção
+919205,Logística e Transporte
 992120,Operacional de Produção
 716615,Operacional de Produção
 391105,Administrativo
@@ -825,7 +825,7 @@ cbo2002ocupação,macrofamilia
 724420,Manutenção
 225125,Não classificado
 351315,Administrativo
-342115,Comercial e Vendas
+342115,Administrativo
 314835,Engenharia e Técnico
 214915,Engenharia e Técnico
 253130,Comercial e Vendas
@@ -837,7 +837,7 @@ cbo2002ocupação,macrofamilia
 252540,Administrativo
 318420,Engenharia e Técnico
 223415,Saúde e Segurança do Trabalho
-773105,Logística e Transporte
+773105,Operacional de Produção
 766215,Operacional de Produção
 731165,Operacional de Produção
 711215,Operacional de Produção
@@ -849,19 +849,19 @@ cbo2002ocupação,macrofamilia
 313110,Engenharia e Técnico
 341230,Comercial e Vendas
 725030,Manutenção
-732110,Operacional de Produção
+732110,Logística e Transporte
 311605,Engenharia e Técnico
 214905,Engenharia e Técnico
 142405,Administrativo
 761415,Operacional de Produção
 519930,Não classificado
-773125,Logística e Transporte
-516110,Administrativo
+773125,Operacional de Produção
+516110,Operacional de Produção
 372110,Não classificado
 241035,Administrativo
 810110,Operacional de Produção
 215215,Tecnologia da Informação
-832120,Operacional de Produção
+832120,Logística e Transporte
 791140,Operacional de Produção
 214940,Engenharia e Técnico
 341105,Comercial e Vendas
@@ -871,10 +871,10 @@ cbo2002ocupação,macrofamilia
 723310,Manutenção
 731145,Operacional de Produção
 953110,Manutenção
-354415,Comercial e Vendas
+354415,Administrativo
 622320,Operacional de Produção
 782415,Logística e Transporte
-342610,Comercial e Vendas
+342610,Administrativo
 823305,Operacional de Produção
 992205,Operacional de Produção
 239210,Não classificado
@@ -882,14 +882,14 @@ cbo2002ocupação,macrofamilia
 741110,Operacional de Produção
 142705,Administrativo
 622515,Operacional de Produção
-773420,Logística e Transporte
+773420,Operacional de Produção
 715110,Operacional de Produção
 352210,Administrativo
 642010,Operacional de Produção
 322245,Saúde e Segurança do Trabalho
 252320,Administrativo
 811110,Operacional de Produção
-517310,Comercial e Vendas
+517310,Operacional de Produção
 910905,Logística e Transporte
 131210,Administrativo
 724405,Manutenção
@@ -921,7 +921,7 @@ cbo2002ocupação,macrofamilia
 761351,Operacional de Produção
 730105,Manutenção
 131120,Administrativo
-251225,Tecnologia da Informação
+251225,Não classificado
 142530,Administrativo
 318015,Engenharia e Técnico
 821215,Operacional de Produção
@@ -931,12 +931,12 @@ cbo2002ocupação,macrofamilia
 716515,Operacional de Produção
 223520,Saúde e Segurança do Trabalho
 422330,Comercial e Vendas
-239425,Administrativo
+239425,Não classificado
 391135,Administrativo
 261730,Não classificado
 752210,Operacional de Produção
 833115,Logística e Transporte
-234624,Administrativo
+234624,Não classificado
 253120,Comercial e Vendas
 515330,Não classificado
 311305,Engenharia e Técnico
@@ -944,7 +944,7 @@ cbo2002ocupação,macrofamilia
 141115,Administrativo
 760120,Operacional de Produção
 322305,Saúde e Segurança do Trabalho
-234905,Administrativo
+234905,Não classificado
 212210,Tecnologia da Informação
 111510,Administrativo
 954205,Manutenção
@@ -952,9 +952,9 @@ cbo2002ocupação,macrofamilia
 223640,Saúde e Segurança do Trabalho
 223840,Saúde e Segurança do Trabalho
 913110,Logística e Transporte
-251540,Tecnologia da Informação
+251540,Não classificado
 214110,Engenharia e Técnico
-234120,Administrativo
+234120,Não classificado
 214520,Engenharia e Técnico
 775120,Operacional de Produção
 721420,Manutenção
@@ -963,12 +963,12 @@ cbo2002ocupação,macrofamilia
 781310,Logística e Transporte
 631315,Operacional de Produção
 113010,Administrativo
-241340,Administrativo
+241340,Não classificado
 377220,Não classificado
 373135,Não classificado
 760115,Operacional de Produção
 722305,Manutenção
-354210,Comercial e Vendas
+354210,Administrativo
 519105,Não classificado
 622305,Operacional de Produção
 351720,Administrativo
@@ -979,7 +979,7 @@ cbo2002ocupação,macrofamilia
 731315,Manutenção
 622510,Operacional de Produção
 322220,Saúde e Segurança do Trabalho
-992110,Não classificado
+992110,Operacional de Produção
 715710,Operacional de Produção
 510205,Administrativo
 415105,Administrativo
@@ -988,7 +988,7 @@ cbo2002ocupação,macrofamilia
 723320,Manutenção
 764205,Operacional de Produção
 516505,Não classificado
-252310,Comercial e Vendas
+252310,Administrativo
 761225,Operacional de Produção
 252515,Comercial e Vendas
 954115,Manutenção
@@ -997,7 +997,7 @@ cbo2002ocupação,macrofamilia
 318110,Engenharia e Técnico
 773335,Operacional de Produção
 223705,Saúde e Segurança do Trabalho
-231325,Administrativo
+231325,Não classificado
 811115,Operacional de Produção
 262125,Não classificado
 623105,Operacional de Produção
@@ -1007,14 +1007,14 @@ cbo2002ocupação,macrofamilia
 761315,Operacional de Produção
 261205,Não classificado
 203515,Tecnologia da Informação
-321110,Saúde e Segurança do Trabalho
+321110,Engenharia e Técnico
 214930,Engenharia e Técnico
 514230,Operacional de Produção
 411035,Administrativo
 523115,Comercial e Vendas
 841448,Operacional de Produção
 862405,Operacional de Produção
-223445,Saúde e Segurança do Trabalho
+223445,Engenharia e Técnico
 516125,Operacional de Produção
 784125,Logística e Transporte
 232165,Não classificado
@@ -1022,7 +1022,7 @@ cbo2002ocupação,macrofamilia
 142110,Administrativo
 721115,Manutenção
 782715,Logística e Transporte
-223540,Saúde e Segurança do Trabalho
+223540,Tecnologia da Informação
 770110,Operacional de Produção
 782125,Logística e Transporte
 142535,Administrativo
@@ -1035,11 +1035,11 @@ cbo2002ocupação,macrofamilia
 214305,Engenharia e Técnico
 313125,Engenharia e Técnico
 765005,Operacional de Produção
-223650,Saúde e Segurança do Trabalho
+223650,Engenharia e Técnico
 722415,Manutenção
 261805,Não classificado
 261140,Não classificado
-354810,Comercial e Vendas
+354810,Administrativo
 410220,Administrativo
 765105,Operacional de Produção
 239215,Não classificado
@@ -1047,7 +1047,7 @@ cbo2002ocupação,macrofamilia
 811805,Operacional de Produção
 761303,Operacional de Produção
 212320,Tecnologia da Informação
-352205,Comercial e Vendas
+352205,Administrativo
 821205,Operacional de Produção
 720205,Manutenção
 715105,Operacional de Produção
@@ -1057,24 +1057,24 @@ cbo2002ocupação,macrofamilia
 821320,Operacional de Produção
 862310,Operacional de Produção
 314405,Engenharia e Técnico
-224135,Saúde e Segurança do Trabalho
+224135,Engenharia e Técnico
 214505,Engenharia e Técnico
 954110,Manutenção
 911115,Operacional de Produção
-223435,Saúde e Segurança do Trabalho
+223435,Engenharia e Técnico
 351740,Administrativo
-252725,Não classificado
+252725,Administrativo
 782720,Logística e Transporte
 214340,Engenharia e Técnico
 234435,Não classificado
-223545,Saúde e Segurança do Trabalho
+223545,Tecnologia da Informação
 623005,Operacional de Produção
 823245,Operacional de Produção
 318105,Engenharia e Técnico
 761240,Operacional de Produção
 761345,Operacional de Produção
 212205,Tecnologia da Informação
-223525,Saúde e Segurança do Trabalho
+223525,Tecnologia da Informação
 622215,Operacional de Produção
 832115,Operacional de Produção
 620115,Operacional de Produção
@@ -1138,12 +1138,12 @@ cbo2002ocupação,macrofamilia
 811715,Operacional de Produção
 123115,Administrativo
 723220,Manutenção
-914305,Logística e Transporte
+914305,Operacional de Produção
 761210,Operacional de Produção
 251520,Não classificado
 724325,Manutenção
-513510,Administrativo
-342205,Administrativo
+513510,Não classificado
+342205,Comercial e Vendas
 214105,Engenharia e Técnico
 725420,Manutenção
 262505,Não classificado
@@ -1158,7 +1158,7 @@ cbo2002ocupação,macrofamilia
 261215,Não classificado
 413230,Administrativo
 761360,Operacional de Produção
-510115,Comercial e Vendas
+510115,Administrativo
 251545,Não classificado
 951310,Manutenção
 841110,Operacional de Produção
@@ -1170,7 +1170,7 @@ cbo2002ocupação,macrofamilia
 252315,Não classificado
 331305,Administrativo
 860105,Operacional de Produção
-513320,Administrativo
+513320,Não classificado
 519115,Não classificado
 318425,Engenharia e Técnico
 725005,Manutenção
@@ -1179,7 +1179,7 @@ cbo2002ocupação,macrofamilia
 141610,Administrativo
 318115,Engenharia e Técnico
 911130,Operacional de Produção
-317115,Engenharia e Técnico
+317115,Tecnologia da Informação
 225225,Não classificado
 725510,Manutenção
 724215,Manutenção
@@ -1189,33 +1189,33 @@ cbo2002ocupação,macrofamilia
 773405,Operacional de Produção
 131310,Administrativo
 415215,Administrativo
-342550,Administrativo
+342550,Comercial e Vendas
 123805,Administrativo
 214910,Engenharia e Técnico
 760110,Operacional de Produção
 351105,Administrativo
 224125,Não classificado
 716530,Operacional de Produção
-914205,Logística e Transporte
+914205,Operacional de Produção
 141720,Administrativo
 782105,Logística e Transporte
 761215,Operacional de Produção
 523125,Comercial e Vendas
 223530,Tecnologia da Informação
 141705,Administrativo
-251205,Administrativo
+251205,Não classificado
 519215,Operacional de Produção
 720140,Manutenção
 223565,Tecnologia da Informação
 232150,Não classificado
 723305,Manutenção
-710120,Engenharia e Técnico
+710120,Operacional de Produção
 142525,Administrativo
 223510,Tecnologia da Informação
-992220,Não classificado
+992220,Operacional de Produção
 716110,Operacional de Produção
 516335,Operacional de Produção
-215150,Engenharia e Técnico
+215150,Tecnologia da Informação
 766115,Operacional de Produção
 252550,Administrativo
 375125,Não classificado
@@ -1238,16 +1238,16 @@ cbo2002ocupação,macrofamilia
 823255,Operacional de Produção
 239205,Não classificado
 322225,Saúde e Segurança do Trabalho
-422125,Administrativo
+422125,Comercial e Vendas
 623210,Operacional de Produção
 213205,Engenharia e Técnico
 142120,Administrativo
-421315,Administrativo
-831105,Logística e Transporte
+421315,Comercial e Vendas
+831105,Operacional de Produção
 766150,Operacional de Produção
 254310,Administrativo
 775105,Operacional de Produção
-215305,Engenharia e Técnico
+215305,Tecnologia da Informação
 725305,Manutenção
 783230,Logística e Transporte
 911310,Logística e Transporte
@@ -1265,7 +1265,7 @@ cbo2002ocupação,macrofamilia
 232135,Não classificado
 211205,Engenharia e Técnico
 777105,Operacional de Produção
-215120,Engenharia e Técnico
+215120,Tecnologia da Informação
 773345,Operacional de Produção
 322120,Saúde e Segurança do Trabalho
 711110,Operacional de Produção
@@ -1275,7 +1275,7 @@ cbo2002ocupação,macrofamilia
 311110,Engenharia e Técnico
 761105,Operacional de Produção
 511110,Comercial e Vendas
-341215,Comercial e Vendas
+341215,Administrativo
 391120,Administrativo
 752325,Operacional de Produção
 322210,Saúde e Segurança do Trabalho
@@ -1314,7 +1314,7 @@ cbo2002ocupação,macrofamilia
 424110,Comercial e Vendas
 515310,Saúde e Segurança do Trabalho
 511220,Operacional de Produção
-731105,Manutenção
+731105,Operacional de Produção
 251230,Administrativo
 914110,Logística e Transporte
 751010,Operacional de Produção
@@ -1324,7 +1324,7 @@ cbo2002ocupação,macrofamilia
 773510,Operacional de Produção
 141110,Administrativo
 234668,Não classificado
-342410,Administrativo
+342410,Comercial e Vendas
 773305,Operacional de Produção
 791125,Operacional de Produção
 225170,Não classificado
@@ -1339,7 +1339,7 @@ cbo2002ocupação,macrofamilia
 841432,Operacional de Produção
 351710,Administrativo
 862140,Operacional de Produção
-723325,Manutenção
+723325,Operacional de Produção
 412120,Administrativo
 351510,Administrativo
 322410,Saúde e Segurança do Trabalho
@@ -1366,7 +1366,7 @@ cbo2002ocupação,macrofamilia
 715515,Operacional de Produção
 910115,Logística e Transporte
 131115,Administrativo
-732115,Manutenção
+732115,Operacional de Produção
 842110,Operacional de Produção
 225124,Não classificado
 811420,Operacional de Produção
@@ -1377,16 +1377,16 @@ cbo2002ocupação,macrofamilia
 311520,Engenharia e Técnico
 861105,Operacional de Produção
 423110,Comercial e Vendas
-375130,Comercial e Vendas
+375130,Administrativo
 914105,Logística e Transporte
-519325,Operacional de Produção
+519325,Saúde e Segurança do Trabalho
 991115,Operacional de Produção
 314105,Engenharia e Técnico
 131205,Administrativo
 516320,Operacional de Produção
 141715,Administrativo
 321210,Saúde e Segurança do Trabalho
-373230,Comercial e Vendas
+373230,Administrativo
 766130,Operacional de Produção
 763020,Operacional de Produção
 214950,Engenharia e Técnico
@@ -1394,7 +1394,7 @@ cbo2002ocupação,macrofamilia
 251220,Administrativo
 142350,Administrativo
 516915,Operacional de Produção
-723125,Manutenção
+723125,Operacional de Produção
 812110,Operacional de Produção
 783110,Logística e Transporte
 225130,Não classificado
@@ -1420,18 +1420,18 @@ cbo2002ocupação,macrofamilia
 860115,Operacional de Produção
 622405,Operacional de Produção
 374305,Não classificado
-516120,Não classificado
+516120,Operacional de Produção
 911105,Logística e Transporte
 322605,Saúde e Segurança do Trabalho
 721320,Manutenção
 261610,Não classificado
 915205,Logística e Transporte
 122705,Administrativo
-823220,Manutenção
+823220,Operacional de Produção
 612305,Operacional de Produção
 514115,Operacional de Produção
 511115,Operacional de Produção
-773205,Operacional de Produção
+773205,Manutenção
 123605,Administrativo
 234664,Não classificado
 841440,Operacional de Produção
@@ -1440,7 +1440,7 @@ cbo2002ocupação,macrofamilia
 782630,Logística e Transporte
 376330,Não classificado
 721310,Manutenção
-271110,Não classificado
+271110,Comercial e Vendas
 332205,Comercial e Vendas
 214260,Engenharia e Técnico
 214935,Engenharia e Técnico
@@ -1471,11 +1471,11 @@ cbo2002ocupação,macrofamilia
 322235,Saúde e Segurança do Trabalho
 766105,Operacional de Produção
 122610,Administrativo
-821105,Manutenção
+821105,Operacional de Produção
 632105,Operacional de Produção
 234310,Não classificado
 375110,Não classificado
-773215,Operacional de Produção
+773215,Manutenção
 811630,Operacional de Produção
 848605,Operacional de Produção
 234648,Não classificado
@@ -1498,7 +1498,7 @@ cbo2002ocupação,macrofamilia
 232120,Não classificado
 314830,Engenharia e Técnico
 203110,Tecnologia da Informação
-823215,Manutenção
+823215,Operacional de Produção
 716310,Operacional de Produção
 762210,Operacional de Produção
 261125,Não classificado
@@ -1508,23 +1508,23 @@ cbo2002ocupação,macrofamilia
 203205,Tecnologia da Informação
 371310,Não classificado
 524210,Comercial e Vendas
-253205,Comercial e Vendas
+253205,Não classificado
 768115,Operacional de Produção
 776415,Operacional de Produção
 241015,Administrativo
 781705,Logística e Transporte
-510120,Operacional de Produção
+510120,Administrativo
 717015,Operacional de Produção
-421305,Administrativo
+421305,Comercial e Vendas
 141810,Administrativo
 202120,Tecnologia da Informação
 511505,Operacional de Produção
 415310,Administrativo
 311405,Engenharia e Técnico
-612120,Não classificado
+612120,Operacional de Produção
 214255,Engenharia e Técnico
 862105,Operacional de Produção
-353230,Comercial e Vendas
+353230,Administrativo
 812105,Operacional de Produção
 214925,Engenharia e Técnico
 841815,Operacional de Produção
@@ -1547,8 +1547,8 @@ cbo2002ocupação,macrofamilia
 214010,Engenharia e Técnico
 354505,Comercial e Vendas
 848425,Operacional de Produção
-643025,Não classificado
-613010,Não classificado
+643025,Operacional de Produção
+613010,Operacional de Produção
 524205,Comercial e Vendas
 752410,Operacional de Produção
 752225,Operacional de Produção
@@ -1558,20 +1558,20 @@ cbo2002ocupação,macrofamilia
 232125,Não classificado
 322430,Saúde e Segurança do Trabalho
 301115,Engenharia e Técnico
-631420,Não classificado
+631420,Operacional de Produção
 915115,Operacional de Produção
 711305,Operacional de Produção
-622810,Não classificado
-791135,Logística e Transporte
+622810,Operacional de Produção
+791135,Operacional de Produção
 516105,Operacional de Produção
 262105,Não classificado
 811410,Operacional de Produção
-341205,Administrativo
-352315,Comercial e Vendas
+341205,Comercial e Vendas
+352315,Administrativo
 223293,Saúde e Segurança do Trabalho
 262905,Não classificado
 725315,Manutenção
-222120,Não classificado
+222120,Saúde e Segurança do Trabalho
 214005,Engenharia e Técnico
 810305,Operacional de Produção
 214230,Engenharia e Técnico
@@ -1585,17 +1585,17 @@ cbo2002ocupação,macrofamilia
 318215,Engenharia e Técnico
 711205,Operacional de Produção
 724225,Manutenção
-510305,Operacional de Produção
+510305,Administrativo
 374130,Não classificado
 262220,Não classificado
 123310,Administrativo
 711225,Operacional de Produção
 910110,Operacional de Produção
 301205,Engenharia e Técnico
-213440,Engenharia e Técnico
+213440,Tecnologia da Informação
 861110,Operacional de Produção
 214310,Engenharia e Técnico
-833125,Logística e Transporte
+833125,Operacional de Produção
 768305,Operacional de Produção
 234915,Não classificado
 841720,Operacional de Produção
@@ -1618,12 +1618,12 @@ cbo2002ocupação,macrofamilia
 314315,Engenharia e Técnico
 225320,Saúde e Segurança do Trabalho
 354825,Administrativo
-374205,Administrativo
+374205,Não classificado
 716605,Operacional de Produção
 954210,Manutenção
 781305,Logística e Transporte
-211220,Tecnologia da Informação
-723225,Manutenção
+211220,Engenharia e Técnico
+723225,Operacional de Produção
 234632,Não classificado
 777115,Operacional de Produção
 612505,Operacional de Produção
@@ -1634,10 +1634,10 @@ cbo2002ocupação,macrofamilia
 712135,Operacional de Produção
 354150,Administrativo
 765215,Operacional de Produção
-374145,Administrativo
-372105,Administrativo
+374145,Não classificado
+372105,Não classificado
 324215,Saúde e Segurança do Trabalho
-821425,Manutenção
+821425,Operacional de Produção
 761235,Operacional de Produção
 214705,Engenharia e Técnico
 214430,Engenharia e Técnico
@@ -1649,8 +1649,8 @@ cbo2002ocupação,macrofamilia
 311615,Engenharia e Técnico
 122510,Administrativo
 141520,Administrativo
-823105,Manutenção
-821315,Manutenção
+823105,Operacional de Produção
+821315,Operacional de Produção
 316325,Engenharia e Técnico
 324125,Saúde e Segurança do Trabalho
 261130,Não classificado
@@ -1659,17 +1659,17 @@ cbo2002ocupação,macrofamilia
 632115,Operacional de Produção
 766240,Operacional de Produção
 211105,Tecnologia da Informação
-725210,Manutenção
+725210,Operacional de Produção
 223280,Saúde e Segurança do Trabalho
 203220,Tecnologia da Informação
 768325,Operacional de Produção
-731330,Manutenção
+731330,Operacional de Produção
 811615,Operacional de Produção
 632610,Operacional de Produção
 791130,Operacional de Produção
 261410,Não classificado
 782620,Logística e Transporte
-731310,Manutenção
+731310,Operacional de Produção
 716540,Operacional de Produção
 751130,Operacional de Produção
 773210,Operacional de Produção
@@ -1678,30 +1678,30 @@ cbo2002ocupação,macrofamilia
 841705,Operacional de Produção
 320105,Saúde e Segurança do Trabalho
 622730,Operacional de Produção
-820210,Manutenção
+820210,Operacional de Produção
 262110,Não classificado
 791120,Operacional de Produção
 751015,Operacional de Produção
-225112,Saúde e Segurança do Trabalho
+225112,Não classificado
 234725,Não classificado
 841730,Operacional de Produção
-823250,Manutenção
+823250,Operacional de Produção
 214425,Engenharia e Técnico
 232145,Não classificado
 768210,Operacional de Produção
 752110,Operacional de Produção
-222205,Saúde e Segurança do Trabalho
-377140,Administrativo
+222205,Não classificado
+377140,Não classificado
 223204,Saúde e Segurança do Trabalho
-225255,Saúde e Segurança do Trabalho
+225255,Não classificado
 324105,Saúde e Segurança do Trabalho
-723230,Manutenção
+723230,Operacional de Produção
 717005,Operacional de Produção
 762205,Operacional de Produção
 203305,Tecnologia da Informação
 314840,Engenharia e Técnico
 214615,Engenharia e Técnico
-203115,Não classificado
+203115,Tecnologia da Informação
 711105,Operacional de Produção
 821430,Operacional de Produção
 821330,Operacional de Produção
@@ -1710,11 +1710,11 @@ cbo2002ocupação,macrofamilia
 223555,Tecnologia da Informação
 324130,Engenharia e Técnico
 822125,Operacional de Produção
-203225,Não classificado
+203225,Tecnologia da Informação
 752425,Operacional de Produção
 811315,Operacional de Produção
-517105,Não classificado
-517325,Não classificado
+517105,Operacional de Produção
+517325,Operacional de Produção
 723120,Manutenção
 322425,Saúde e Segurança do Trabalho
 225135,Saúde e Segurança do Trabalho
@@ -1731,10 +1731,10 @@ cbo2002ocupação,macrofamilia
 252215,Administrativo
 723105,Manutenção
 252535,Administrativo
-374115,Não classificado
-239440,Não classificado
+374115,Administrativo
+239440,Administrativo
 318410,Engenharia e Técnico
-513110,Não classificado
+513110,Operacional de Produção
 716210,Operacional de Produção
 715540,Operacional de Produção
 225250,Saúde e Segurança do Trabalho
@@ -1751,57 +1751,57 @@ cbo2002ocupação,macrofamilia
 353205,Comercial e Vendas
 762315,Operacional de Produção
 214345,Engenharia e Técnico
-376320,Não classificado
+376320,Administrativo
 131215,Administrativo
 141735,Administrativo
 811810,Operacional de Produção
-261520,Não classificado
-376110,Não classificado
+261520,Administrativo
+376110,Administrativo
 324140,Engenharia e Técnico
 313405,Engenharia e Técnico
 710110,Operacional de Produção
 740105,Operacional de Produção
-233125,Não classificado
+233125,Administrativo
 612125,Operacional de Produção
 224110,Saúde e Segurança do Trabalho
-517305,Não classificado
+517305,Operacional de Produção
 781105,Logística e Transporte
 323105,Saúde e Segurança do Trabalho
 10105,Não classificado
-341120,Administrativo
+341120,Comercial e Vendas
 761255,Operacional de Produção
 710220,Operacional de Produção
 750205,Operacional de Produção
-239420,Não classificado
-374310,Não classificado
+239420,Administrativo
+374310,Administrativo
 811205,Operacional de Produção
 214540,Engenharia e Técnico
 773350,Operacional de Produção
-341110,Administrativo
+341110,Comercial e Vendas
 782135,Logística e Transporte
 122620,Administrativo
-517320,Não classificado
+517320,Operacional de Produção
 777210,Operacional de Produção
 643005,Operacional de Produção
 782420,Logística e Transporte
 342210,Administrativo
-424115,Administrativo
+424115,Comercial e Vendas
 223310,Saúde e Segurança do Trabalho
-371405,Não classificado
+371405,Comercial e Vendas
 782820,Logística e Transporte
 311620,Engenharia e Técnico
 840110,Operacional de Produção
 214375,Engenharia e Técnico
 225165,Saúde e Segurança do Trabalho
 201105,Engenharia e Técnico
-374215,Não classificado
+374215,Administrativo
 223288,Saúde e Segurança do Trabalho
 766210,Operacional de Produção
 783235,Logística e Transporte
 622110,Operacional de Produção
 821325,Operacional de Produção
 723210,Manutenção
-215210,Engenharia e Técnico
+215210,Tecnologia da Informação
 325305,Saúde e Segurança do Trabalho
 813105,Operacional de Produção
 351410,Administrativo
@@ -1821,11 +1821,11 @@ cbo2002ocupação,macrofamilia
 612105,Operacional de Produção
 820105,Operacional de Produção
 377105,Não classificado
-752315,Manutenção
+752315,Operacional de Produção
 762310,Operacional de Produção
 841105,Operacional de Produção
-342405,Comercial e Vendas
-831125,Logística e Transporte
+342405,Administrativo
+831125,Operacional de Produção
 613115,Operacional de Produção
 712105,Operacional de Produção
 351310,Administrativo
@@ -1840,7 +1840,7 @@ cbo2002ocupação,macrofamilia
 351910,Administrativo
 377120,Não classificado
 225270,Saúde e Segurança do Trabalho
-203510,Não classificado
+203510,Tecnologia da Informação
 777110,Operacional de Produção
 262710,Não classificado
 141105,Administrativo
@@ -1860,7 +1860,7 @@ cbo2002ocupação,macrofamilia
 341250,Comercial e Vendas
 203020,Tecnologia da Informação
 841428,Operacional de Produção
-10315,Administrativo
+10315,Não classificado
 623030,Operacional de Produção
 791115,Operacional de Produção
 322505,Saúde e Segurança do Trabalho
@@ -1873,17 +1873,17 @@ cbo2002ocupação,macrofamilia
 612320,Operacional de Produção
 632505,Operacional de Produção
 742115,Operacional de Produção
-516410,Não classificado
+516410,Operacional de Produção
 782610,Logística e Transporte
 762105,Operacional de Produção
 234760,Não classificado
-752320,Manutenção
-201110,Tecnologia da Informação
+752320,Operacional de Produção
+201110,Engenharia e Técnico
 311115,Engenharia e Técnico
 233135,Não classificado
 513305,Não classificado
 791145,Operacional de Produção
-516605,Não classificado
+516605,Operacional de Produção
 622605,Operacional de Produção
 765315,Operacional de Produção
 223580,Tecnologia da Informação
@@ -1893,9 +1893,9 @@ cbo2002ocupação,macrofamilia
 234210,Não classificado
 848415,Operacional de Produção
 910910,Logística e Transporte
-202105,Tecnologia da Informação
-201115,Tecnologia da Informação
-251110,Administrativo
+202105,Engenharia e Técnico
+201115,Engenharia e Técnico
+251110,Não classificado
 314825,Engenharia e Técnico
 710225,Operacional de Produção
 226105,Saúde e Segurança do Trabalho
@@ -1915,16 +1915,16 @@ cbo2002ocupação,macrofamilia
 391230,Administrativo
 242910,Administrativo
 251105,Administrativo
-374155,Comercial e Vendas
-376205,Comercial e Vendas
+374155,Operacional de Produção
+376205,Operacional de Produção
 311610,Engenharia e Técnico
 233220,Administrativo
-376305,Comercial e Vendas
+376305,Operacional de Produção
 242405,Administrativo
-342560,Comercial e Vendas
+342560,Administrativo
 841460,Operacional de Produção
 351425,Administrativo
-372210,Comercial e Vendas
+372210,Operacional de Produção
 322240,Saúde e Segurança do Trabalho
 214250,Engenharia e Técnico
 111505,Administrativo
@@ -1932,17 +1932,17 @@ cbo2002ocupação,macrofamilia
 613005,Operacional de Produção
 314810,Engenharia e Técnico
 252510,Administrativo
-342555,Comercial e Vendas
+342555,Administrativo
 251235,Administrativo
 223268,Saúde e Segurança do Trabalho
-823120,Manutenção
+823120,Operacional de Produção
 203525,Tecnologia da Informação
 741125,Operacional de Produção
 211210,Engenharia e Técnico
-373225,Comercial e Vendas
+373225,Operacional de Produção
 321315,Saúde e Segurança do Trabalho
 314310,Engenharia e Técnico
-823135,Manutenção
+823135,Operacional de Produção
 203415,Tecnologia da Informação
 223820,Saúde e Segurança do Trabalho
 752120,Operacional de Produção
@@ -1952,8 +1952,8 @@ cbo2002ocupação,macrofamilia
 214510,Engenharia e Técnico
 223240,Saúde e Segurança do Trabalho
 203005,Tecnologia da Informação
-377135,Comercial e Vendas
-822105,Manutenção
+377135,Operacional de Produção
+822105,Operacional de Produção
 242905,Administrativo
 715520,Operacional de Produção
 314610,Engenharia e Técnico
@@ -1961,7 +1961,7 @@ cbo2002ocupação,macrofamilia
 223420,Saúde e Segurança do Trabalho
 222105,Saúde e Segurança do Trabalho
 214735,Engenharia e Técnico
-342515,Comercial e Vendas
+342515,Administrativo
 516150,Operacional de Produção
 710210,Operacional de Produção
 234604,Administrativo
@@ -1974,8 +1974,8 @@ cbo2002ocupação,macrofamilia
 768120,Operacional de Produção
 234720,Administrativo
 234305,Administrativo
-720160,Manutenção
-376410,Comercial e Vendas
+720160,Operacional de Produção
+376410,Operacional de Produção
 841715,Operacional de Produção
 251515,Administrativo
 225180,Saúde e Segurança do Trabalho
@@ -1984,7 +1984,7 @@ cbo2002ocupação,macrofamilia
 234805,Administrativo
 225105,Saúde e Segurança do Trabalho
 122505,Administrativo
-821420,Manutenção
+821420,Operacional de Produção
 861115,Operacional de Produção
 214380,Engenharia e Técnico
 234425,Administrativo
@@ -1994,7 +1994,7 @@ cbo2002ocupação,macrofamilia
 261605,Administrativo
 632005,Operacional de Produção
 320110,Saúde e Segurança do Trabalho
-342540,Comercial e Vendas
+342540,Administrativo
 122515,Administrativo
 241210,Administrativo
 214280,Engenharia e Técnico
@@ -2026,7 +2026,7 @@ cbo2002ocupação,macrofamilia
 612420,Operacional de Produção
 234705,Engenharia e Técnico
 751005,Operacional de Produção
-352320,Administrativo
+352320,Comercial e Vendas
 631305,Operacional de Produção
 841464,Operacional de Produção
 376310,Não classificado
@@ -2034,13 +2034,13 @@ cbo2002ocupação,macrofamilia
 234644,Engenharia e Técnico
 223630,Saúde e Segurança do Trabalho
 722210,Manutenção
-213215,Tecnologia da Informação
+213215,Engenharia e Técnico
 122105,Administrativo
 241225,Administrativo
 716535,Operacional de Produção
-762330,Manutenção
+762330,Operacional de Produção
 915215,Logística e Transporte
-225285,Não classificado
+225285,Saúde e Segurança do Trabalho
 712230,Operacional de Produção
 262610,Não classificado
 773310,Operacional de Produção
@@ -2054,7 +2054,7 @@ cbo2002ocupação,macrofamilia
 226310,Saúde e Segurança do Trabalho
 214530,Engenharia e Técnico
 213315,Tecnologia da Informação
-763005,Manutenção
+763005,Operacional de Produção
 311725,Engenharia e Técnico
 840115,Operacional de Produção
 261810,Não classificado
@@ -2083,8 +2083,8 @@ cbo2002ocupação,macrofamilia
 791150,Operacional de Produção
 723115,Manutenção
 420115,Comercial e Vendas
-760205,Manutenção
-511515,Comercial e Vendas
+760205,Operacional de Produção
+511515,Operacional de Produção
 823235,Operacional de Produção
 322740,Saúde e Segurança do Trabalho
 371210,Não classificado
@@ -2098,7 +2098,7 @@ cbo2002ocupação,macrofamilia
 821225,Operacional de Produção
 716205,Operacional de Produção
 141725,Administrativo
-225155,Não classificado
+225155,Saúde e Segurança do Trabalho
 768130,Operacional de Produção
 643010,Operacional de Produção
 202115,Tecnologia da Informação
@@ -2106,7 +2106,7 @@ cbo2002ocupação,macrofamilia
 342530,Comercial e Vendas
 768610,Operacional de Produção
 623410,Operacional de Produção
-517120,Não classificado
+517120,Comercial e Vendas
 316110,Engenharia e Técnico
 214715,Engenharia e Técnico
 740110,Operacional de Produção
@@ -2123,12 +2123,12 @@ cbo2002ocupação,macrofamilia
 848420,Operacional de Produção
 632415,Operacional de Produção
 251210,Não classificado
-225195,Não classificado
-352405,Administrativo
+225195,Saúde e Segurança do Trabalho
+352405,Comercial e Vendas
 203025,Tecnologia da Informação
-224130,Engenharia e Técnico
+224130,Não classificado
 752310,Operacional de Produção
-223430,Não classificado
+223430,Saúde e Segurança do Trabalho
 632110,Operacional de Produção
 376215,Não classificado
 711330,Operacional de Produção
@@ -2140,8 +2140,8 @@ cbo2002ocupação,macrofamilia
 241030,Administrativo
 791105,Operacional de Produção
 622210,Operacional de Produção
-353210,Administrativo
-223236,Não classificado
+353210,Comercial e Vendas
+223236,Saúde e Segurança do Trabalho
 776425,Operacional de Produção
 214115,Engenharia e Técnico
 725320,Manutenção
@@ -2152,20 +2152,20 @@ cbo2002ocupação,macrofamilia
 782810,Logística e Transporte
 201225,Tecnologia da Informação
 316310,Engenharia e Técnico
-223260,Não classificado
+223260,Saúde e Segurança do Trabalho
 415120,Administrativo
 723110,Manutenção
 741120,Operacional de Produção
-223835,Não classificado
+223835,Saúde e Segurança do Trabalho
 232160,Não classificado
 254205,Não classificado
 261710,Não classificado
 377115,Não classificado
 234110,Não classificado
-513325,Não classificado
-222125,Não classificado
+513325,Administrativo
+222125,Saúde e Segurança do Trabalho
 762120,Operacional de Produção
-222115,Não classificado
+222115,Saúde e Segurança do Trabalho
 732135,Operacional de Produção
 141805,Administrativo
 213150,Engenharia e Técnico
@@ -2175,30 +2175,30 @@ cbo2002ocupação,macrofamilia
 262825,Não classificado
 214515,Engenharia e Técnico
 762215,Operacional de Produção
-223256,Não classificado
+223256,Saúde e Segurança do Trabalho
 234445,Não classificado
 201220,Tecnologia da Informação
-225151,Não classificado
-225150,Não classificado
+225151,Saúde e Segurança do Trabalho
+225150,Saúde e Segurança do Trabalho
 612615,Operacional de Produção
 612315,Operacional de Produção
-516155,Não classificado
+516155,Comercial e Vendas
 241025,Administrativo
 424205,Comercial e Vendas
 712130,Operacional de Produção
-322705,Não classificado
+322705,Saúde e Segurança do Trabalho
 215130,Engenharia e Técnico
 711315,Operacional de Produção
 377215,Não classificado
-225325,Não classificado
+225325,Saúde e Segurança do Trabalho
 911125,Operacional de Produção
 242210,Administrativo
 239445,Não classificado
-223212,Não classificado
+223212,Saúde e Segurança do Trabalho
 262310,Não classificado
 820115,Manutenção
 201210,Tecnologia da Informação
-322125,Não classificado
+322125,Saúde e Segurança do Trabalho
 225310,Saúde e Segurança do Trabalho
 765010,Operacional de Produção
 516905,Operacional de Produção

@@ -25,9 +25,11 @@ import pytest
 
 from src.limpeza import (
     COLUNAS_INDICADORES_MUNICIPIOS,
-    COLUNA_TAM_ESTAB_JAN,
     limpar_indicadores_municipios,
 )
+
+# Coluna de faixa de tamanho do estabelecimento no CAGED (domínio de R2.5).
+COLUNA_TAM_ESTAB_JAN = "tamestabjan"
 
 RAIZ = Path(__file__).resolve().parent.parent
 CAMINHO_CAGED = RAIZ / "Dados" / "Novo_Caged_MOV_Limpo.csv"
@@ -67,9 +69,9 @@ def test_caged_usa_virgula_decimal_no_salario():
 def test_caged_tem_tamestabjan_como_codigo_de_faixa():
     """`tamestabjan` é código de faixa (1–10, 98, 99), não contagem de vínculos.
 
-    É a premissa que sustenta `derivar_estoque_base`: se um dia a coluna passar
-    a trazer o estoque real, o ponto médio da faixa vira uma distorção e este
-    teste avisa.
+    É a premissa que sustenta a decodificação de domínio de R2.5 — e o motivo
+    de a coluna não servir como denominador do Turnover: código de faixa não é
+    contagem de vínculos.
     """
     amostra = _amostra_caged(500)
     codigos = pd.to_numeric(amostra[COLUNA_TAM_ESTAB_JAN], errors="coerce").dropna()

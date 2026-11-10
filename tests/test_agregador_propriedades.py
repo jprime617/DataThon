@@ -53,7 +53,6 @@ from src.metricas import (
     COLUNA_SALDO_MOVIMENTACAO,
     COLUNA_SALDO_POR_10K,
     COLUNA_SECAO,
-    COLUNA_ESTOQUE_BASE,
     COLUNA_TURNOVER,
 )
 
@@ -71,7 +70,6 @@ _meses = st.sampled_from([202509, 202510, 202511, 202512])
 # Movimentação: majoritariamente +1/-1 (admissão/desligamento).
 _movimentacoes = st.sampled_from([1, -1])
 
-# Estoque base (tamestabjan): positivo para que o turnover seja calculável.
 _estoques = st.integers(min_value=1, max_value=500)
 
 # Métricas das colunas numéricas do agregado (R6.5).
@@ -97,7 +95,7 @@ def _base_enriquecida(draw: st.DrawFn) -> pd.DataFrame:
 
     Produz um DataFrame com as colunas de recorte (`chave_municipal`, `seção`,
     `macrofamilia`, `competênciamov`) e as colunas necessárias às métricas
-    (`saldomovimentação`, `tamestabjan`). Pode ser vazia, para exercitar o
+    (`saldomovimentação`). Pode ser vazia, para exercitar o
     caso do DataFrame vazio (R6.2).
     """
     n = draw(st.integers(min_value=0, max_value=40))
@@ -114,7 +112,6 @@ def _base_enriquecida(draw: st.DrawFn) -> pd.DataFrame:
             COLUNA_MACROFAMILIA: macros,
             COLUNA_COMPETENCIA: meses,
             COLUNA_SALDO_MOVIMENTACAO: movs,
-            COLUNA_ESTOQUE_BASE: estoques,
         }
     )
 

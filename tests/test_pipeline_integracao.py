@@ -138,11 +138,8 @@ _COL_PIB = "PIB per capita - R$ [2023]"
 # Mapas de domínio mínimos cobrindo exatamente os códigos do fixture (R2.5).
 # A chave da seção CNAE é textual; os demais domínios usam código inteiro.
 #
-# `tamestabjan` está incluída de propósito, como no pipeline real: ela é um
-# domínio categórico que R2.5 manda decodificar para rótulo de faixa. O estoque
-# numérico do Turnover vem da coluna derivada `estoque_base`, produzida pelo
-# Limpador a partir do código cru antes da decodificação — é essa separação que
-# o teste precisa exercitar.
+# `tamestabjan` está incluída de propósito, como no pipeline real: é um domínio
+# categórico que R2.5 manda decodificar para o rótulo de faixa.
 _MAPAS = {
     "seção": {"C": "Indústria de transformação", "F": "Construção"},
     "graudeinstrução": {7: "Ensino médio completo", 9: "Superior completo"},
@@ -313,8 +310,8 @@ def test_pipeline_ponta_a_ponta_sobre_fixture_pequeno(tmp_path: Path) -> None:
     )
 
     # O CAGED é lido como texto na ingestão; o orquestrador coage para número o
-    # saldo antes de agregar. O estoque base do Turnover NÃO precisa de coerção:
-    # `limpar` já derivou `estoque_base` numérico a partir do código de faixa.
+    # saldo antes de agregar. O Turnover não precisa de mais nada: o denominador
+    # é `max(admissões, desligamentos)`, contado do próprio saldo.
     base_metricas = classificacao.df_enriquecido.copy()
     base_metricas["saldomovimentação"] = pd.to_numeric(
         base_metricas["saldomovimentação"], errors="coerce"
@@ -363,8 +360,7 @@ def test_pipeline_ponta_a_ponta_sobre_fixture_pequeno(tmp_path: Path) -> None:
     pib = relido[COLUNA_PIB_PER_CAPITA_2023].dropna()
     assert set(pib.round(2)) == {35000.00}
 
-    # O Turnover é calculável: `estoque_base` veio da faixa de `tamestabjan`,
-    # não do código cru nem do rótulo decodificado (R4.4).
+    # O Turnover é calculável a partir das contagens de movimentação (R4.4).
     assert relido[COLUNA_TURNOVER].notna().any(), (
         "turnover ausente em todos os recortes — o estoque base não chegou "
         "numérico à métrica"

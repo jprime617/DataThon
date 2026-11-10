@@ -232,10 +232,17 @@ regredir.
   partir de `__file__` antes de importar `src.*`.
 - [x] **C2 — `main()` era um stub.** Passa a montar a barra lateral de filtros e a
   chamar os cinco `render_*` na ordem da narrativa, com guard `__main__`.
-- [x] **C3 — Turnover ausente em 100% dos recortes.** `tamestabjan` é *código de
-  faixa*, não contagem de vínculos. O Limpador passa a derivar `estoque_base`
-  (ponto médio da faixa) **antes** da decodificação de domínios; `metricas.turnover`
-  usa essa coluna. Glossary e R4.4 corrigidos em `requirements.md`.
+- [x] **C3 — Turnover ausente em 100% dos recortes, depois saturado em 41,5%.**
+  Duas camadas. Primeiro: `tamestabjan` é *código de faixa*, não contagem de
+  vínculos — decodificado para rótulo e coagido, virava NaN. Traduzir a faixa
+  para o seu ponto médio fez a métrica existir, mas saturou 62,7% dos recortes
+  no teto, porque o numerador conta o fluxo de **todos** os estabelecimentos e o
+  denominador era o tamanho de **um**. Segundo e definitivo: o estoque de um
+  recorte não é recuperável do CAGED movimentado (sem identificador de
+  estabelecimento), então o denominador passou a ser `max(admissões,
+  desligamentos)` — identificável, em [0,1] por construção, e equivalente à
+  fórmula com estoque sob o modelo de proporcionalidade. Glossary, R4.4, R4.5 e
+  a Property 15 atualizados.
 - [x] **C4 — IDHM e PIB corrompidos por 10²–10³.** `Municipios_SC_limpo.csv` usa
   ponto decimal, não formato brasileiro: `limpar_indicadores_municipios` passa a
   usar `pandas.to_numeric`. R2.3 corrigido em `requirements.md`.
