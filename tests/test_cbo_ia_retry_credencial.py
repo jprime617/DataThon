@@ -75,8 +75,13 @@ class ClienteFake:
 
 
 def _resposta_json(mapa: dict[str, str]) -> str:
-    """Resposta textual do modelo: objeto JSON `{cbo: macrofamilia}`."""
-    return json.dumps(mapa)
+    """Resposta textual do modelo: `{cbo: {macrofamilia, justificativa}}`."""
+    return json.dumps({k: {"macrofamilia": v, "justificativa": "teste"} for k, v in mapa.items()})
+
+
+def _familias(resultado: dict[str, dict]) -> dict[str, str]:
+    """Só a macrofamília de cada código do resultado de `classificar_lote`."""
+    return {k: v["macrofamilia"] for k, v in resultado.items()}
 
 
 # ---------------------------------------------------------------------------
@@ -100,7 +105,7 @@ def test_retry_sucesso_na_terceira_tentativa_retorna_mapeamento():
 
     # Tentou 3 vezes (2 falhas + 1 sucesso) e devolveu o mapeamento validado.
     assert client.chamadas == 3
-    assert resultado == {"111": _FAMILIA_VALIDA, "222": _FAMILIA_VALIDA}
+    assert _familias(resultado) == {"111": _FAMILIA_VALIDA, "222": _FAMILIA_VALIDA}
     # O timeout por requisição é o configurado (60 s).
     assert client.timeouts == [TIMEOUT_SEGUNDOS] * 3
 
@@ -114,7 +119,7 @@ def test_retry_sucesso_na_segunda_tentativa_nao_chama_terceira():
     resultado = classificar_lote(lote, client)
 
     assert client.chamadas == 2
-    assert resultado == {"333": _FAMILIA_VALIDA}
+    assert _familias(resultado) == {"333": _FAMILIA_VALIDA}
 
 
 def test_retry_esgotado_atribui_nao_classificado_a_todo_o_lote():
@@ -133,13 +138,13 @@ def test_retry_esgotado_atribui_nao_classificado_a_todo_o_lote():
     # Tentou exatamente MAX_TENTATIVAS vezes e não excedeu.
     assert client.chamadas == MAX_TENTATIVAS == 3
     # Todo código do lote recebeu `Não classificado`.
-    assert resultado == {codigo: NAO_CLASSIFICADO for codigo in lote}
+    assert _familias(resultado) == {codigo: NAO_CLASSIFICADO for codigo in lote}
 
 
 def test_lote_vazio_nao_chama_cliente():
     client = ClienteFake([])
     resultado = classificar_lote([], client)
-    assert resultado == {}
+    assert _familias(resultado) == {}
     assert client.chamadas == 0
 
 
@@ -155,7 +160,7 @@ def test_macrofamilia_fora_do_conjunto_vira_nao_classificado():
     resultado = classificar_lote(lote, client)
 
     assert client.chamadas == 1
-    assert resultado == {"777": NAO_CLASSIFICADO}
+    assert _familias(resultado) == {"777": NAO_CLASSIFICADO}
 
 
 def test_codigo_ausente_na_resposta_vira_nao_classificado():
@@ -166,7 +171,7 @@ def test_codigo_ausente_na_resposta_vira_nao_classificado():
     resultado = classificar_lote(lote, client)
 
     assert client.chamadas == 1
-    assert resultado == {"888": _FAMILIA_VALIDA, "999": NAO_CLASSIFICADO}
+    assert _familias(resultado) == {"888": _FAMILIA_VALIDA, "999": NAO_CLASSIFICADO}
 
 
 def test_resposta_sem_json_valido_vira_nao_classificado():
@@ -177,7 +182,7 @@ def test_resposta_sem_json_valido_vira_nao_classificado():
     resultado = classificar_lote(lote, client)
 
     assert client.chamadas == 1
-    assert resultado == {"101": NAO_CLASSIFICADO}
+    assert _familias(resultado) == {"101": NAO_CLASSIFICADO}
 
 
 # ---------------------------------------------------------------------------
@@ -254,7 +259,7 @@ def test_classificar_cbos_prossegue_quando_credencial_presente(tmp_path):
     df = _df_caged_minimo()
     # Sucesso na 1ª chamada classificando os dois códigos distintos.
     resposta = _resposta_json({"223505": _FAMILIA_VALIDA, "317210": _FAMILIA_VALIDA})
-    client = ClienteFake([resposta])
+    client = ClienteFake([resposta, resposta])  # rodadas 1 e 2
     destino = tmp_path / "cbo_macrofamilias.csv"
 
     resultado = classificar_cbos(
@@ -264,8 +269,9 @@ def test_classificar_cbos_prossegue_quando_credencial_presente(tmp_path):
         env={VAR_CREDENCIAL_LLM: "chave-valida"},
     )
 
-    # Credencial presente: a guarda não interrompe e a API é chamada uma vez.
-    assert client.chamadas == 1
+    # Credencial presente: a guarda não interrompe e a API é chamada uma vez
+    # por rodada.
+    assert client.chamadas == 2
     assert resultado.mapeamento == {
         "223505": _FAMILIA_VALIDA,
         "317210": _FAMILIA_VALIDA,
@@ -335,7 +341,7 @@ def test_falha_transitoria_continua_com_retry_e_fallback():
     resultado = classificar_lote(["715505", "223505"], cliente)
 
     assert cliente.chamadas == MAX_TENTATIVAS
-    assert resultado == {
+    assert _familias(resultado) == {
         "715505": NAO_CLASSIFICADO,
         "223505": NAO_CLASSIFICADO,
     }
@@ -356,7 +362,7 @@ def test_falha_sem_status_code_continua_com_retry_e_fallback():
     resultado = classificar_lote(["715505"], cliente)
 
     assert cliente.chamadas == MAX_TENTATIVAS
-    assert resultado == {"715505": NAO_CLASSIFICADO}
+    assert _familias(resultado) == {"715505": NAO_CLASSIFICADO}
 
 
 # ---------------------------------------------------------------------------

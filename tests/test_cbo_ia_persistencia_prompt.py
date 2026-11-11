@@ -45,7 +45,7 @@ class ClienteFake:
     """
 
     def __init__(self, mapa: dict[str, str]):
-        self._resposta = json.dumps(mapa)
+        self._resposta = json.dumps({k: {"macrofamilia": v, "justificativa": "teste"} for k, v in mapa.items()})
         self.chamadas = 0
         self.prompts: list[str] = []
 

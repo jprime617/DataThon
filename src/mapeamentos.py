@@ -42,17 +42,70 @@ NAO_CLASSIFICADO = "Não classificado"
 
 # Conjunto fechado de macrofamílias de CBO (R5.2): entre 5 e 12 famílias,
 # incluindo obrigatoriamente `Não classificado` como categoria de fallback.
+# A macrofamília é o OFÍCIO da ocupação, nunca o setor do empregador: faxineira
+# em fábrica têxtil é "Serviços de apoio"; costureira é "Têxtil" em qualquer setor.
+FAMILIA_OPERACAO = "Operação de linha e processo"
+FAMILIA_METALMECANICA = "Metalmecânica e eletroeletrônica"
+FAMILIA_CONSTRUCAO = "Construção civil e extração"
+FAMILIA_TEXTIL = "Têxtil, confecção, couro e calçados"
+FAMILIA_ALIMENTOS = "Alimentos e bebidas"
+FAMILIA_MADEIRA = "Madeira, móveis, cerâmica e vidro"
+FAMILIA_MANUTENCAO = "Manutenção e reparação"
+FAMILIA_LOGISTICA = "Logística e transporte"
+FAMILIA_ENGENHARIA = "Engenharia, técnicos industriais e TI"
+FAMILIA_ADMINISTRATIVO = "Administrativo e comercial"
+FAMILIA_APOIO = "Serviços de apoio e outros"
+
 MACROFAMILIAS: list[str] = [
-    "Engenharia e Técnico",
-    "Operacional de Produção",
-    "Administrativo",
-    "Logística e Transporte",
-    "Tecnologia da Informação",
-    "Comercial e Vendas",
-    "Manutenção",
-    "Saúde e Segurança do Trabalho",
+    FAMILIA_OPERACAO,
+    FAMILIA_METALMECANICA,
+    FAMILIA_CONSTRUCAO,
+    FAMILIA_TEXTIL,
+    FAMILIA_ALIMENTOS,
+    FAMILIA_MADEIRA,
+    FAMILIA_MANUTENCAO,
+    FAMILIA_LOGISTICA,
+    FAMILIA_ENGENHARIA,
+    FAMILIA_ADMINISTRATIVO,
+    FAMILIA_APOIO,
     NAO_CLASSIFICADO,
 ]
+
+# Regra de desempate: família sugerida pelo prefixo da CBO. O prefixo mais longo
+# vence (784 → Operação, mesmo com 78 ausente; 414 → Logística dentro do grande
+# grupo 4). Prefixos fora da tabela — inclusive o grande grupo 1 (dirigentes,
+# que vão para a família da área dirigida) — não têm sugestão: a IA decide pela
+# descrição.
+FAMILIA_POR_PREFIXO_CBO: dict[str, str] = {
+    **dict.fromkeys(["781", "784", "74", "81", "82", "83", "86"], FAMILIA_OPERACAO),
+    **dict.fromkeys(["72", "73"], FAMILIA_METALMECANICA),
+    "71": FAMILIA_CONSTRUCAO,
+    "76": FAMILIA_TEXTIL,
+    "84": FAMILIA_ALIMENTOS,
+    **dict.fromkeys(["75", "77"], FAMILIA_MADEIRA),
+    **dict.fromkeys(["91", "95", "99"], FAMILIA_MANUTENCAO),
+    **dict.fromkeys(["782", "783", "414", "342"], FAMILIA_LOGISTICA),
+    # Grande grupo 2 de exatas/engenharia/TI (20 pesquisadores, 21 exatas e
+    # engenharia) e os técnicos industriais do grande grupo 3.
+    **dict.fromkeys(["20", "21", "30", "31", "39", "317"], FAMILIA_ENGENHARIA),
+    **dict.fromkeys(["4", "25", "35", "52"], FAMILIA_ADMINISTRATIVO),
+    # Saúde (22, 322), educação (23, 33), agro (6) e grande grupo 0.
+    **dict.fromkeys(["51", "22", "23", "322", "33", "6", "0"], FAMILIA_APOIO),
+}
+
+# Nível de qualificação: só 4 valores ordinais, do menor para o maior.
+NIVEIS_QUALIFICACAO: list[str] = ["Básico", "Qualificado", "Técnico", "Superior"]
+
+# Nível derivado do 1º dígito da CBO (grande grupo); a IA confirma ou ajusta.
+NIVEL_POR_GRANDE_GRUPO: dict[str, str] = {
+    "1": "Superior",
+    "2": "Superior",
+    "3": "Técnico",
+    **dict.fromkeys("4567890", "Qualificado"),
+}
+
+# Início de descrição que marca liderança (além do grande grupo 1).
+PREFIXOS_LIDERANCA = ("Supervisor", "Mestre", "Encarregado", "Chefe", "Gerente", "Diretor")
 
 # Mesorregião do IBGE por Chave_Municipal de 6 dígitos (R6.1).
 #
@@ -377,6 +430,8 @@ _ABAS_DOMINIO: dict[str, str] = {
     "TAM_ESTAB_JAN": "tamestabjan",
     "UNIDADE_SALARIO": "unidadesaláriocódigo",
     "SECAO_CNAE": "seção",
+    # Descrição de cada ocupação (código inteiro), usada no prompt da IA (R5).
+    "CBO_OCUPACAO": "cbo2002ocupação",
 }
 
 
@@ -506,4 +561,9 @@ __all__ = [
     "TAM_ESTAB_JAN",
     "UNIDADE_SALARIO",
     "SECAO_CNAE",
+    "CBO_OCUPACAO",
+    "FAMILIA_POR_PREFIXO_CBO",
+    "NIVEIS_QUALIFICACAO",
+    "NIVEL_POR_GRANDE_GRUPO",
+    "PREFIXOS_LIDERANCA",
 ]

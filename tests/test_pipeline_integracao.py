@@ -24,6 +24,8 @@ exatamente os códigos do fixture (não dependemos do dicionário real).
 
 from __future__ import annotations
 
+import json
+
 from pathlib import Path
 
 import pandas as pd
@@ -88,12 +90,21 @@ class ClienteLLMFake:
         marcador = "Códigos CBO a classificar:\n"
         inicio = prompt.index(marcador) + len(marcador)
         fim = prompt.index("\n\nResponda", inicio)
-        codigos = [c for c in prompt[inicio:fim].splitlines() if c.strip()]
-        pares = []
-        for i, codigo in enumerate(codigos):
-            familia = self._familias[i % len(self._familias)]
-            pares.append(f'"{codigo}": "{familia}"')
-        return "{" + ", ".join(pares) + "}"
+        # Cada linha é "código | descrição | nivel_cbo | família sugerida".
+        codigos = [
+            linha.split(" | ")[0]
+            for linha in prompt[inicio:fim].splitlines()
+            if linha.strip()
+        ]
+        return json.dumps(
+            {
+                codigo: {
+                    "macrofamilia": self._familias[i % len(self._familias)],
+                    "justificativa": "teste",
+                }
+                for i, codigo in enumerate(codigos)
+            }
+        )
 
 
 class ContainerFake:
@@ -272,7 +283,7 @@ def test_pipeline_ponta_a_ponta_sobre_fixture_pequeno(tmp_path: Path) -> None:
     # --- Etapa 4: CBO/LLM mockado (R5) --------------------------------------
     destino_cbo = processados / "cbo_macrofamilias.csv"
     cliente_llm = ClienteLLMFake(
-        ["Operacional de Produção", "Engenharia e Técnico"]
+        ["Operação de linha e processo", "Engenharia, técnicos industriais e TI"]
     )
     classificacao = classificar_cbos(
         juncao.df,
@@ -288,11 +299,14 @@ def test_pipeline_ponta_a_ponta_sobre_fixture_pequeno(tmp_path: Path) -> None:
 
     # O mapeamento persistido tem 1 linha por CBO, todas com macrofamília válida.
     mapa_csv = pd.read_csv(destino_cbo, dtype=str)
-    assert list(mapa_csv.columns) == ["cbo2002ocupação", "macrofamilia"]
+    assert list(mapa_csv.columns) == [
+        "cbo2002ocupação", "descricao", "macrofamilia",
+        "nivel_qualificacao", "lideranca", "justificativa",
+    ]
     assert mapa_csv["cbo2002ocupação"].is_unique
     familias_validas = {
-        "Operacional de Produção",
-        "Engenharia e Técnico",
+        "Operação de linha e processo",
+        "Engenharia, técnicos industriais e TI",
         NAO_CLASSIFICADO,
     }
     assert set(mapa_csv["macrofamilia"]) <= familias_validas

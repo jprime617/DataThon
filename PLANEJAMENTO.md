@@ -231,29 +231,32 @@ Para cada célula crítica, um **diagnóstico de causa:**
 5. **Checagem de coerência** com a hierarquia oficial (por exemplo, grande grupo 2 = profissionais das ciências, que deve cair em nível superior).
 6. Versionar `prompts/classificacao_cbo.md` e `data/processed/cbo_macrofamilia.csv`. O notebook documenta o processo e reporta a concordância.
 
-### 8.2 Taxonomia — RASCUNHO para discussão
-**Macrofamílias**
-1. Operação de produção industrial (operadores de máquinas e linhas, alimentadores)
-2. Metalmecânica e manutenção industrial (soldagem, usinagem, mecânica, eletricidade de manutenção)
-3. Têxtil, confecção e calçados
-4. Processamento de alimentos e agroindústria
-5. Construção civil e obras
-6. Logística, transporte e armazenagem
-7. Técnicos industriais, qualidade e processos
-8. Engenharia, P&D e tecnologia da informação
-9. Gestão e liderança
-10. Administrativo e escritório
-11. Comercial, vendas e atendimento
-12. Serviços gerais, limpeza, segurança e alimentação
-13. Saúde, educação e serviços sociais
-14. Agropecuária
+### 8.2 Taxonomia e regras (implementadas em `src/cbo_ia.py` e `src/mapeamentos.py`)
+O prompt envia, por código: código, descrição (aba `cbo2002ocupação` do dicionário), `nivel_cbo` e família sugerida pelo prefixo. Saída: `data_processed/cbo_macrofamilias.csv` (`cbo2002ocupação, descricao, macrofamilia, nivel_qualificacao, lideranca, justificativa`). A rodada 2 repete a classificação com a ordem embaralhada (seed fixa), loga a concordância de família e nível e grava `data_processed/cbo_divergencias.csv`.
 
-**Nível de qualificação**
-1. Operacional básico (sem formação específica)
-2. Operacional qualificado / ofício (curso de qualificação, experiência)
-3. Técnico (nível técnico)
-4. Superior / especialista
-5. Gestão
+**A. Ofício, não setor.** A macrofamília é o ofício da ocupação, nunca o setor do empregador: faxineira em fábrica têxtil → Serviços de apoio; costureira → Têxtil em qualquer setor.
+
+**B. Conjunto fechado (11 + `Não classificado`, R5.2).** Desempate pelo prefixo da CBO (o mais longo vence); a IA só foge da família sugerida com justificativa — sem ela, a família volta para a sugerida.
+
+| # | Macrofamília | Prefixos CBO | Exemplos |
+|---|---|---|---|
+| 1 | Operação de linha e processo | 781, 784, 74, 81, 82, 83, 86 | 784205 Alimentador de linha, 784105 Embalador a mão |
+| 2 | Metalmecânica e eletroeletrônica | 72, 73 | 724315 Soldador, 721215 Operador de máquinas-ferramenta |
+| 3 | Construção civil e extração | 71 | 717020 Servente de obras, 715210 Pedreiro |
+| 4 | Têxtil, confecção, couro e calçados | 76 | 763215 Costureiro, 763125 Ajudante de confecção |
+| 5 | Alimentos e bebidas | 84 | 848520 Magarefe, 841505 Laticínios |
+| 6 | Madeira, móveis, cerâmica e vidro | 75, 77 | 771105 Marceneiro, 752305 Ceramista |
+| 7 | Manutenção e reparação | 91, 95, 99 | 911305 Mecânico de manutenção, 951105 Eletricista de manutenção |
+| 8 | Logística e transporte | 782, 783, 414, 342 | 414105 Almoxarife, 782510 Motorista de caminhão |
+| 9 | Engenharia, técnicos industriais e TI | 20, 21, 30, 31, 39, 317 | 391205 Inspetor de qualidade, 317110 Programador |
+| 10 | Administrativo e comercial | 4 (exceto 414), 25, 35, 52 | 411010 Assistente administrativo, 521110 Vendedor |
+| 11 | Serviços de apoio e outros | 51, saúde (22, 322), educação (23, 33), 6, 0 | 514320 Faxineiro, 517330 Vigilante |
+
+Grande grupo 1 (dirigentes) não tem sugestão: vai para a família da área dirigida (142105 Gerente administrativo → Administrativo e comercial).
+
+**C. Nível de qualificação** — 4 valores ordinais: Básico < Qualificado < Técnico < Superior. O `nivel_cbo` vem do 1º dígito (1 e 2 → Superior; 3 → Técnico; 4–9 e 0 → Qualificado); a IA confirma ou ajusta, com justificativa obrigatória ao divergir (sem ela, vale o `nivel_cbo`). Caso típico: rebaixar ocupações elementares para Básico.
+
+**D. Liderança é flag, não nível.** `lideranca = True` se o 1º dígito for 1 ou a descrição começar com Supervisor, Mestre, Encarregado, Chefe, Gerente ou Diretor (calculada no código, não pela IA). O líder fica com a família e o nível do ofício que lidera (410105 Supervisor administrativo → Administrativo, Qualificado; 710205 Mestre de construção civil → Construção).
 
 ---
 

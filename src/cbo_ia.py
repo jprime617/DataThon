@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 import os
+import random
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -39,7 +40,15 @@ import pandas as pd
 
 from src.erros import ErroDeValidacao
 from src.logging_pipeline import log_etapa, obter_logger
-from src.mapeamentos import MACROFAMILIAS, NAO_CLASSIFICADO
+from src import mapeamentos
+from src.mapeamentos import (
+    FAMILIA_POR_PREFIXO_CBO,
+    MACROFAMILIAS,
+    NAO_CLASSIFICADO,
+    NIVEIS_QUALIFICACAO,
+    NIVEL_POR_GRANDE_GRUPO,
+    PREFIXOS_LIDERANCA,
+)
 
 # Nome da coluna de código de ocupação no CAGED.
 COLUNA_CBO = "cbo2002ocupação"
@@ -69,6 +78,17 @@ CAMINHO_CSV_PADRAO = "data_processed/cbo_macrofamilias.csv"
 
 # Nome da coluna de macrofamília no mapeamento persistido e na base enriquecida.
 COLUNA_MACROFAMILIA = "macrofamilia"
+
+# Colunas acrescentadas ao mapeamento persistido (a de macrofamília mantém o
+# nome, para não quebrar o merge nem o agregador).
+COLUNA_DESCRICAO = "descricao"
+COLUNA_NIVEL = "nivel_qualificacao"
+COLUNA_LIDERANCA = "lideranca"
+COLUNA_JUSTIFICATIVA = "justificativa"
+
+# Rodada 2 de concordância: mesma classificação com a ordem embaralhada.
+SEED_RODADA_2 = 2026
+NOME_CSV_DIVERGENCIAS = "cbo_divergencias.csv"
 
 # Sufixo do arquivo irmão que guarda o prompt usado no agrupamento (R5.8).
 _SUFIXO_PROMPT = ".prompt.txt"
@@ -388,6 +408,58 @@ def lotear(itens: list[str], tamanho: int = TAMANHO_LOTE) -> list[list[str]]:
     return [itens[i : i + tamanho] for i in range(0, len(itens), tamanho)]
 
 
+def _cbo6(codigo: str) -> str:
+    """Código com 6 dígitos: o grande grupo 0 chega sem o zero à esquerda."""
+    return codigo.zfill(6)
+
+
+def descricao_cbo(codigo: str) -> str:
+    """Descrição oficial da ocupação (aba `cbo2002ocupação`), ou ``""``."""
+    try:
+        return mapeamentos.CBO_OCUPACAO.get(int(codigo), "")
+    except ValueError:
+        return ""
+
+
+def nivel_cbo(codigo: str) -> str:
+    """Nível derivado do grande grupo (1º dígito): 1/2 → Superior, 3 → Técnico,
+    demais → Qualificado (regra C)."""
+    return NIVEL_POR_GRANDE_GRUPO.get(_cbo6(codigo)[0], "Qualificado")
+
+
+def familia_sugerida(codigo: str) -> str | None:
+    """Família sugerida pelo prefixo mais longo da tabela de desempate (regra B)."""
+    c = _cbo6(codigo)
+    for n in (3, 2, 1):
+        if c[:n] in FAMILIA_POR_PREFIXO_CBO:
+            return FAMILIA_POR_PREFIXO_CBO[c[:n]]
+    return None
+
+
+def lideranca(codigo: str, descricao: str = "") -> bool:
+    """Flag de liderança (regra D): grande grupo 1 ou título de chefia."""
+    return _cbo6(codigo)[0] == "1" or descricao.strip().startswith(PREFIXOS_LIDERANCA)
+
+
+_REGRAS_PROMPT = """REGRAS
+A. A macrofamília é o OFÍCIO da ocupação, NUNCA o setor do empregador. Faxineiro em fábrica têxtil → Serviços de apoio e outros; costureiro → Têxtil em qualquer setor.
+B. Use só o conjunto fechado abaixo. Desempate: a família sugerida pelo prefixo da CBO (já informada por código). Só fuja dela com justificativa.
+   1. Operação de linha e processo: 781, 784, 74, 81, 82, 83, 86 (784205 Alimentador de linha, 784105 Embalador a mão, 862150 Operador de máquinas fixas)
+   2. Metalmecânica e eletroeletrônica: 72, 73 (724315 Soldador, 724205 Montador de estruturas metálicas, 721215 Operador de máquinas-ferramenta)
+   3. Construção civil e extração: 71 (717020 Servente de obras, 715210 Pedreiro, 715505 Carpinteiro)
+   4. Têxtil, confecção, couro e calçados: 76 (763210 e 763215 Costureiro, 763125 Ajudante de confecção)
+   5. Alimentos e bebidas: 84 (848520 Magarefe, 841484 Preparação de pescados, 841505 Laticínios)
+   6. Madeira, móveis, cerâmica e vidro: 75, 77 (771105 Marceneiro, 774105 Montador de móveis, 752305 Ceramista)
+   7. Manutenção e reparação: 91, 95, 99 (911305 Mecânico de manutenção, 951105 Eletricista de manutenção, 954125 Operador eletromecânico)
+   8. Logística e transporte: 782, 783, 414, 342 (414105 Almoxarife, 782510 Motorista de caminhão, 414135 Expedidor)
+   9. Engenharia, técnicos industriais e TI: grande grupo 2 de exatas, engenharia e TI; 30, 31, 39, 317 (391205 Inspetor de qualidade, 391125 Técnico de planejamento de produção, 317110 Programador)
+   10. Administrativo e comercial: grande grupo 4 (exceto 414), 25, 35, 52 (411005 Auxiliar de escritório, 411010 Assistente administrativo, 521110 Vendedor)
+   11. Serviços de apoio e outros: 51, saúde, educação, grande grupo 6 (agro), grande grupo 0 (514320 Faxineiro, 513505 Auxiliar de alimentação, 517330 Vigilante)
+   Grande grupo 1 (dirigentes): a família da área que a pessoa dirige (142105 Gerente administrativo → Administrativo e comercial).
+C. Nível de qualificação, só 4 valores ordinais: Básico < Qualificado < Técnico < Superior. O nivel_cbo informado vem do 1º dígito (1 e 2 → Superior; 3 → Técnico; demais → Qualificado). Confirme-o ou ajuste-o; ao divergir, a justificativa é obrigatória. Caso típico: rebaixar para Básico ocupações elementares (alimentador de linha, servente, embalador, faxineiro).
+D. Liderança não é nível nem família: supervisor, mestre, encarregado, chefe, gerente e diretor ficam com a família e o nível do ofício que lideram (410105 Supervisor administrativo → Administrativo e comercial, Qualificado; 710205 Mestre de construção civil → Construção civil e extração)."""
+
+
 def montar_prompt(lote: list[str]) -> str:
     """Monta o prompt de classificação dos CBOs de um lote (R5.2, R5.8).
 
@@ -407,27 +479,36 @@ def montar_prompt(lote: list[str]) -> str:
         O prompt completo como texto.
     """
     familias = "\n".join(f"- {familia}" for familia in MACROFAMILIAS)
-    codigos = "\n".join(lote)
+    niveis = ", ".join(NIVEIS_QUALIFICACAO)
+    codigos = "\n".join(
+        f"{c} | {descricao_cbo(c) or 'sem descrição'} | {nivel_cbo(c)} | "
+        f"{familia_sugerida(c) or 'sem sugestão'}"
+        for c in lote
+    )
     return (
         "Você é um classificador ocupacional especializado na Classificação "
         "Brasileira de Ocupações (CBO 2002).\n\n"
         "Classifique cada código CBO abaixo em EXATAMENTE UMA macrofamília "
-        "pertencente ao conjunto fechado a seguir. Não invente macrofamílias "
-        "fora deste conjunto; quando estiver incerto sobre um código, atribua "
-        f"{NAO_CLASSIFICADO!r}.\n\n"
+        "pertencente ao conjunto fechado a seguir e em um nível de qualificação. "
+        "Não invente macrofamílias nem níveis fora destes conjuntos; quando "
+        f"estiver incerto sobre a família, atribua {NAO_CLASSIFICADO!r}.\n\n"
+        f"{_REGRAS_PROMPT}\n\n"
         "Conjunto fechado de macrofamílias:\n"
         f"{familias}\n\n"
+        f"Níveis válidos: {niveis}.\n\n"
+        "Cada linha traz: código | descrição | nivel_cbo | família sugerida pelo prefixo.\n"
         "Códigos CBO a classificar:\n"
         f"{codigos}\n\n"
         "Responda SOMENTE com um objeto JSON válido, sem texto antes ou depois, "
-        "mapeando cada código CBO (como string) para a sua macrofamília (como "
-        'string), no formato {"<cbo>": "<macrofamilia>"}. Inclua exatamente uma '
-        "entrada por código informado."
+        'no formato {"<cbo>": {"macrofamilia": "...", "nivel": "...", '
+        '"justificativa": "..."}}. A justificativa é uma frase curta, obrigatória '
+        "quando a família diverge da sugerida ou o nível diverge do nivel_cbo. "
+        "Inclua exatamente uma entrada por código informado."
     )
 
 
-def _extrair_mapeamento(resposta: str) -> dict[str, str]:
-    """Extrai o objeto JSON `{cbo: macrofamilia}` da resposta do modelo.
+def _extrair_mapeamento(resposta: str) -> dict[str, dict]:
+    """Extrai o objeto JSON `{cbo: {macrofamilia, nivel, justificativa}}`.
 
     Tolera texto antes/depois do objeto, recortando do primeiro ``{`` ao último
     ``}``. Retorna um dicionário vazio quando a resposta não contém um objeto
@@ -445,12 +526,33 @@ def _extrair_mapeamento(resposta: str) -> dict[str, str]:
         return {}
     if not isinstance(dados, dict):
         return {}
-    # Normaliza chaves e valores para texto; descarta valores não textuais.
-    mapa: dict[str, str] = {}
-    for chave, valor in dados.items():
-        if isinstance(valor, str):
-            mapa[str(chave)] = valor
-    return mapa
+    # Normaliza as chaves para texto; descarta entradas que não são objetos.
+    return {str(k): v for k, v in dados.items() if isinstance(v, dict)}
+
+
+def _validar(codigo: str, bruto: dict | None) -> dict[str, str]:
+    """Valida uma entrada da IA contra os conjuntos fechados (R5.6).
+
+    Família inválida/ausente → `Não classificado`; nível inválido/ausente →
+    `nivel_cbo`. Sem justificativa, a IA não pode fugir da regra: família
+    divergente da sugerida volta para a sugerida, nível divergente volta para o
+    `nivel_cbo` (regras B e C).
+    """
+    bruto = bruto or {}
+    sugerida, nivel_base = familia_sugerida(codigo), nivel_cbo(codigo)
+    familia = bruto.get("macrofamilia")
+    if familia not in _MACROFAMILIAS_VALIDAS:
+        familia = NAO_CLASSIFICADO
+    nivel = bruto.get("nivel")
+    if nivel not in NIVEIS_QUALIFICACAO:
+        nivel = nivel_base
+    justificativa = bruto.get("justificativa")
+    justificativa = justificativa.strip() if isinstance(justificativa, str) else ""
+    if not justificativa:
+        if sugerida and familia not in (sugerida, NAO_CLASSIFICADO):
+            familia = sugerida
+        nivel = nivel_base
+    return {"macrofamilia": familia, "nivel": nivel, "justificativa": justificativa}
 
 
 def _falha_permanente(exc: Exception) -> bool:
@@ -472,7 +574,7 @@ def _falha_permanente(exc: Exception) -> bool:
     return isinstance(status, int) and status in _STATUS_PERMANENTES
 
 
-def classificar_lote(lote: list[str], client: ClienteLLM) -> dict[str, str]:
+def classificar_lote(lote: list[str], client: ClienteLLM) -> dict[str, dict[str, str]]:
     """Classifica um lote de CBOs chamando o LLM_Externo (R5.6, R5.7).
 
     Monta o prompt (`montar_prompt`), chama ``client.classificar`` com timeout de
@@ -501,8 +603,9 @@ def classificar_lote(lote: list[str], client: ClienteLLM) -> dict[str, str]:
             testes.
 
     Returns:
-        Dicionário `código → macrofamília`, com exatamente uma entrada por código
-        do lote e todos os valores pertencentes a `MACROFAMILIAS`.
+        Dicionário `código → {macrofamilia, nivel, justificativa}`, com
+        exatamente uma entrada por código do lote, família em `MACROFAMILIAS` e
+        nível em `NIVEIS_QUALIFICACAO` (ver `_validar`).
 
     Raises:
         ErroDeValidacao: em falha permanente do LLM_Externo (configuração).
@@ -545,16 +648,8 @@ def classificar_lote(lote: list[str], client: ClienteLLM) -> dict[str, str]:
             continue
 
         mapeamento_bruto = _extrair_mapeamento(resposta)
-        # Valida cada código contra o conjunto fechado; inválido/ausente →
-        # `Não classificado` (R5.6).
-        return {
-            codigo: (
-                mapeamento_bruto[codigo]
-                if mapeamento_bruto.get(codigo) in _MACROFAMILIAS_VALIDAS
-                else NAO_CLASSIFICADO
-            )
-            for codigo in lote
-        }
+        # Valida cada código contra os conjuntos fechados (R5.6).
+        return {codigo: _validar(codigo, mapeamento_bruto.get(codigo)) for codigo in lote}
 
     # Todas as tentativas falharam/estouraram: lote inteiro → `Não classificado`
     # e registro da falha (R5.7).
@@ -566,7 +661,15 @@ def classificar_lote(lote: list[str], client: ClienteLLM) -> dict[str, str]:
         NAO_CLASSIFICADO,
         ultima_falha,
     )
-    return {codigo: NAO_CLASSIFICADO for codigo in lote}
+    return {codigo: _validar(codigo, None) for codigo in lote}
+
+
+def _classificar_todos(cbos: list[str], client: ClienteLLM) -> dict[str, dict[str, str]]:
+    """Classifica todos os códigos em lotes de ≤100 (R5.3)."""
+    resultado: dict[str, dict[str, str]] = {}
+    for lote in lotear(cbos):
+        resultado.update(classificar_lote(lote, client))
+    return resultado
 
 
 @dataclass(frozen=True)
@@ -600,7 +703,7 @@ class ClassificacaoResult:
 
 
 def _persistir_mapeamento(
-    mapeamento: dict[str, str],
+    detalhes: dict[str, dict[str, str]],
     prompt: str,
     destino_csv: str,
 ) -> tuple[str, str]:
@@ -619,10 +722,19 @@ def _persistir_mapeamento(
     caminho_csv.parent.mkdir(parents=True, exist_ok=True)
 
     mapa_df = pd.DataFrame(
-        {
-            COLUNA_CBO: list(mapeamento.keys()),
-            COLUNA_MACROFAMILIA: list(mapeamento.values()),
-        }
+        [
+            {
+                COLUNA_CBO: c,
+                COLUNA_DESCRICAO: descricao_cbo(c),
+                COLUNA_MACROFAMILIA: d["macrofamilia"],
+                COLUNA_NIVEL: d["nivel"],
+                COLUNA_LIDERANCA: lideranca(c, descricao_cbo(c)),
+                COLUNA_JUSTIFICATIVA: d["justificativa"],
+            }
+            for c, d in detalhes.items()
+        ],
+        columns=[COLUNA_CBO, COLUNA_DESCRICAO, COLUNA_MACROFAMILIA, COLUNA_NIVEL,
+                 COLUNA_LIDERANCA, COLUNA_JUSTIFICATIVA],
     )
     mapa_df.to_csv(caminho_csv, index=False, encoding="utf-8")
 
@@ -630,6 +742,43 @@ def _persistir_mapeamento(
     caminho_prompt.write_text(prompt, encoding="utf-8")
 
     return str(caminho_csv), str(caminho_prompt)
+
+
+def _registrar_concordancia(
+    r1: dict[str, dict[str, str]],
+    r2: dict[str, dict[str, str]],
+    volume: pd.Series,
+    destino: Path,
+    logger,
+) -> None:
+    """Loga a % de concordância (família e nível) e grava as divergências."""
+    linhas = [
+        {
+            COLUNA_CBO: c,
+            COLUNA_DESCRICAO: descricao_cbo(c),
+            "movimentacoes": int(volume.get(c, 0)),
+            "macrofamilia_r1": r1[c]["macrofamilia"],
+            "macrofamilia_r2": r2[c]["macrofamilia"],
+            "nivel_r1": r1[c]["nivel"],
+            "nivel_r2": r2[c]["nivel"],
+        }
+        for c in r1
+    ]
+    df = pd.DataFrame(linhas, columns=[COLUNA_CBO, COLUNA_DESCRICAO, "movimentacoes",
+                                       "macrofamilia_r1", "macrofamilia_r2",
+                                       "nivel_r1", "nivel_r2"])
+    igual_fam = df["macrofamilia_r1"] == df["macrofamilia_r2"]
+    igual_niv = df["nivel_r1"] == df["nivel_r2"]
+    df[~(igual_fam & igual_niv)].sort_values("movimentacoes", ascending=False).to_csv(
+        destino, index=False, encoding="utf-8"
+    )
+    if len(df):
+        log_etapa(
+            _ETAPA,
+            f"Concordância rodada 1 × 2: família {igual_fam.mean():.1%}, "
+            f"nível {igual_niv.mean():.1%}; divergências em {str(destino)!r}.",
+            logger=logger,
+        )
 
 
 def classificar_cbos(
@@ -692,9 +841,8 @@ def classificar_cbos(
     lotes = lotear(cbos)
 
     # 3. Classifica cada lote e consolida em 1 entrada por CBO (R5.4, R5.6/R5.7).
-    mapeamento: dict[str, str] = {}
-    for lote in lotes:
-        mapeamento.update(classificar_lote(lote, client))
+    detalhes = _classificar_todos(cbos, client)
+    mapeamento = {c: d["macrofamilia"] for c, d in detalhes.items()}
 
     # 3b. Um fallback pontual é esperado (R5.6/R5.7); um fallback *generalizado*
     # significa que as chamadas não estão funcionando — modelo inexistente,
@@ -722,7 +870,7 @@ def classificar_cbos(
     # completo do conjunto distinto para auditoria.
     prompt_usado = montar_prompt(cbos)
     caminho_csv, caminho_prompt = _persistir_mapeamento(
-        mapeamento, prompt_usado, destino_csv
+        detalhes, prompt_usado, destino_csv
     )
 
     # 5. Merge da macrofamília na base pelo código `cbo2002ocupação` (R5.5).
@@ -736,6 +884,17 @@ def classificar_cbos(
     # ausente após o merge (inclui códigos nulos/vazios, que não entram no
     # mapeamento por construção).
     sem_correspondencia = int(df_enriquecido[COLUNA_MACROFAMILIA].isna().sum())
+
+    # 6. Rodada 2: a mesma classificação com a ordem embaralhada (lotes com
+    # vizinhança diferente). Só mede a estabilidade; o mapeamento final é o da
+    # rodada 1.
+    embaralhados = list(cbos)
+    random.Random(SEED_RODADA_2).shuffle(embaralhados)
+    rodada2 = _classificar_todos(embaralhados, client)
+    _registrar_concordancia(
+        detalhes, rodada2, chave_normalizada.value_counts(),
+        Path(caminho_csv).with_name(NOME_CSV_DIVERGENCIAS), logger,
+    )
 
     log_etapa(
         _ETAPA,
@@ -775,6 +934,10 @@ __all__ = [
     "montar_prompt",
     "classificar_lote",
     "classificar_cbos",
+    "descricao_cbo",
+    "nivel_cbo",
+    "familia_sugerida",
+    "lideranca",
     "verificar_credencial_llm",
     "LIMIAR_ALERTA_NAO_CLASSIFICADO",
 ]

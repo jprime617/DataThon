@@ -268,6 +268,34 @@ O indicador **IDHM utilizado é referente a 2010** e está desatualizado em rela
 
 O agrupamento de códigos CBO em macrofamílias é feito por um **LLM externo (API de terceiros), executado localmente durante o pipeline — fora do Azure**. O **Azure OpenAI não é utilizado**, pois não está garantido na assinatura Azure for Students (conta de estudante). A credencial do LLM é lida da variável de ambiente `LLM_API_KEY`. *(R9.4, R9.5)*
 
+### (d) Metodologia da classificação de CBO
+
+Cada CBO vai ao LLM com sua descrição oficial, o nível derivado do grande grupo e a família sugerida pelo prefixo. A resposta é validada contra os conjuntos fechados (inválido → `Não classificado`) e gravada em `data_processed/cbo_macrofamilias.csv`. Uma segunda rodada, com a ordem dos códigos embaralhada, mede a concordância (log) e lista as divergências em `data_processed/cbo_divergencias.csv`.
+
+**A. Ofício, não setor.** A macrofamília é o ofício da ocupação, nunca o setor do empregador: faxineira em fábrica têxtil → Serviços de apoio; costureira → Têxtil em qualquer setor.
+
+**B. Conjunto fechado (11 + `Não classificado`, R5.2).** Desempate pelo prefixo da CBO (o mais longo vence); a IA só foge da família sugerida com justificativa — sem ela, a família volta para a sugerida.
+
+| # | Macrofamília | Prefixos CBO | Exemplos |
+|---|---|---|---|
+| 1 | Operação de linha e processo | 781, 784, 74, 81, 82, 83, 86 | 784205 Alimentador de linha, 784105 Embalador a mão |
+| 2 | Metalmecânica e eletroeletrônica | 72, 73 | 724315 Soldador, 721215 Operador de máquinas-ferramenta |
+| 3 | Construção civil e extração | 71 | 717020 Servente de obras, 715210 Pedreiro |
+| 4 | Têxtil, confecção, couro e calçados | 76 | 763215 Costureiro, 763125 Ajudante de confecção |
+| 5 | Alimentos e bebidas | 84 | 848520 Magarefe, 841505 Laticínios |
+| 6 | Madeira, móveis, cerâmica e vidro | 75, 77 | 771105 Marceneiro, 752305 Ceramista |
+| 7 | Manutenção e reparação | 91, 95, 99 | 911305 Mecânico de manutenção, 951105 Eletricista de manutenção |
+| 8 | Logística e transporte | 782, 783, 414, 342 | 414105 Almoxarife, 782510 Motorista de caminhão |
+| 9 | Engenharia, técnicos industriais e TI | 20, 21, 30, 31, 39, 317 | 391205 Inspetor de qualidade, 317110 Programador |
+| 10 | Administrativo e comercial | 4 (exceto 414), 25, 35, 52 | 411010 Assistente administrativo, 521110 Vendedor |
+| 11 | Serviços de apoio e outros | 51, saúde (22, 322), educação (23, 33), 6, 0 | 514320 Faxineiro, 517330 Vigilante |
+
+Grande grupo 1 (dirigentes) não tem sugestão: vai para a família da área dirigida (142105 Gerente administrativo → Administrativo e comercial).
+
+**C. Nível de qualificação** — 4 valores ordinais: Básico < Qualificado < Técnico < Superior. O `nivel_cbo` vem do 1º dígito (1 e 2 → Superior; 3 → Técnico; 4–9 e 0 → Qualificado); a IA confirma ou ajusta, com justificativa obrigatória ao divergir (sem ela, vale o `nivel_cbo`). Caso típico: rebaixar ocupações elementares para Básico.
+
+**D. Liderança é flag, não nível.** `lideranca = True` se o 1º dígito for 1 ou a descrição começar com Supervisor, Mestre, Encarregado, Chefe, Gerente ou Diretor (calculada no código, não pela IA). O líder fica com a família e o nível do ofício que lidera (410105 Supervisor administrativo → Administrativo, Qualificado; 710205 Mestre de construção civil → Construção).
+
 ### Limites da conta de estudante (Azure for Students)
 
 A implantação opera dentro do crédito e dos limites da conta de estudante, usando apenas **SKUs elegíveis para estudante**: Azure Blob Storage padrão para as tabelas agregadas e Azure App Service em tier Free/Basic para o dashboard. Serviços que exigem Azure OpenAI são evitados. *(R9.4)*

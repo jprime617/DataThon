@@ -76,7 +76,7 @@ class ClienteLLMSimulado:
         # Responde apenas os códigos presentes neste lote (os que aparecem no
         # prompt), para simular omissões realistas.
         corpo = {
-            cbo: rotulo
+            cbo: {"macrofamilia": rotulo, "justificativa": "teste"}
             for cbo, rotulo in self._resposta_por_cbo.items()
             if cbo in prompt
         }
