@@ -93,6 +93,9 @@ NOME_CSV_DIVERGENCIAS = "cbo_divergencias.csv"
 # Sufixo do arquivo irmão que guarda o prompt usado no agrupamento (R5.8).
 _SUFIXO_PROMPT = ".prompt.txt"
 
+# Sufixo do arquivo irmão com provedor, modelo e concordância da classificação.
+_SUFIXO_META = ".meta.json"
+
 # Nome da etapa usado nas mensagens de log do pipeline.
 _ETAPA = "CBO/LLM"
 
@@ -750,7 +753,7 @@ def _registrar_concordancia(
     volume: pd.Series,
     destino: Path,
     logger,
-) -> None:
+) -> dict[str, float]:
     """Loga a % de concordância (família e nível) e grava as divergências."""
     linhas = [
         {
@@ -779,6 +782,27 @@ def _registrar_concordancia(
             f"nível {igual_niv.mean():.1%}; divergências em {str(destino)!r}.",
             logger=logger,
         )
+    return {
+        "concordancia_familia": float(igual_fam.mean()) if len(df) else 1.0,
+        "concordancia_nivel": float(igual_niv.mean()) if len(df) else 1.0,
+    }
+
+
+def aplicar_mapeamento(
+    df: pd.DataFrame, caminho_csv: str = CAMINHO_CSV_PADRAO
+) -> pd.DataFrame:
+    """Anexa macrofamília e nível a partir de um `cbo_macrofamilias.csv` já gerado.
+
+    Reaproveita a classificação persistida sem chamar o LLM_Externo de novo:
+    mesma normalização de código e mesmo merge à esquerda de `classificar_cbos`.
+    """
+    mapa = pd.read_csv(caminho_csv, dtype={COLUNA_CBO: str})
+    mapa[COLUNA_CBO] = mapa[COLUNA_CBO].map(_normalizar_cbo)
+    chave = df[COLUNA_CBO].map(_normalizar_cbo)
+    resultado = df.copy()
+    for coluna in (COLUNA_MACROFAMILIA, COLUNA_NIVEL):
+        resultado[coluna] = chave.map(dict(zip(mapa[COLUNA_CBO], mapa[coluna])))
+    return resultado
 
 
 def classificar_cbos(
@@ -879,6 +903,9 @@ def classificar_cbos(
     df_enriquecido = df.copy()
     chave_normalizada = df_enriquecido[COLUNA_CBO].map(_normalizar_cbo)
     df_enriquecido[COLUNA_MACROFAMILIA] = chave_normalizada.map(mapeamento)
+    df_enriquecido[COLUNA_NIVEL] = chave_normalizada.map(
+        {c: d["nivel"] for c, d in detalhes.items()}
+    )
 
     # CBOs sem correspondência no mapeamento: linhas cuja macrofamília ficou
     # ausente após o merge (inclui códigos nulos/vazios, que não entram no
@@ -891,9 +918,23 @@ def classificar_cbos(
     embaralhados = list(cbos)
     random.Random(SEED_RODADA_2).shuffle(embaralhados)
     rodada2 = _classificar_todos(embaralhados, client)
-    _registrar_concordancia(
+    concordancia = _registrar_concordancia(
         detalhes, rodada2, chave_normalizada.value_counts(),
         Path(caminho_csv).with_name(NOME_CSV_DIVERGENCIAS), logger,
+    )
+    # Procedência da classificação, lida depois pelo `metadados.json`.
+    Path(caminho_csv + _SUFIXO_META).write_text(
+        json.dumps(
+            {
+                "provedor": type(client).__name__,
+                "modelo": getattr(client, "_modelo", None),
+                "gerado_em": pd.Timestamp.now().isoformat(timespec="seconds"),
+                **concordancia,
+            },
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
     )
 
     log_etapa(
@@ -934,6 +975,7 @@ __all__ = [
     "montar_prompt",
     "classificar_lote",
     "classificar_cbos",
+    "aplicar_mapeamento",
     "descricao_cbo",
     "nivel_cbo",
     "familia_sugerida",

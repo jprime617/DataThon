@@ -31,6 +31,7 @@ from pathlib import Path
 import pandas as pd
 
 from src.agregador import (
+    COLUNAS_ADITIVAS,
     COLUNA_IDHM_2010,
     COLUNA_MACROFAMILIA_CBO,
     COLUNA_MES,
@@ -357,7 +358,13 @@ def test_pipeline_ponta_a_ponta_sobre_fixture_pequeno(tmp_path: Path) -> None:
         COLUNA_IDHM_2010,
         COLUNA_PIB_PER_CAPITA_2023,
     ]
-    assert list(relido.columns) == schema_esperado
+    # Compatibilidade com o app antigo: as colunas R6 vêm primeiro, na mesma
+    # ordem; as do dashboard v2 só se acrescentam depois delas.
+    assert list(relido.columns)[: len(schema_esperado)] == schema_esperado
+    assert set(COLUNAS_ADITIVAS) <= set(relido.columns)
+    assert {"microrregiao", "setor", "nivel_qualificacao", "escopo_industrial"} <= set(
+        relido.columns
+    )
     assert len(relido) == len(agregado)
     # Indicadores municipais anexados: população do município A presente (R6.6).
     assert relido[COLUNA_POPULACAO_2026].notna().any()

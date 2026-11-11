@@ -1,0 +1,28 @@
+{
+  "gerado_em": "2026-11-11T19:30:57-03:00",
+  "periodo": {
+    "inicio": "202509",
+    "fim": "202608",
+    "meses": 12
+  },
+  "commit": "4bc75f8",
+  "linhas": {
+    "brutas": 3397416,
+    "excluidas_competencia": 6128,
+    "apos_limpeza": 3391288,
+    "movimentacoes_agregadas": 3391288,
+    "movimentacoes_industria": 1139633,
+    "agregado": 262127,
+    "perfil": 17406
+  },
+  "ia": {
+    "provedor": "ClienteGemini",
+    "modelo": "gemini-3.1-flash-lite",
+    "gerado_em": "2026-11-11T19:03:50-03:00",
+    "concordancia_familia": 0.9415231187669991,
+    "concordancia_nivel": 0.958295557570263,
+    "nota": "Reconstituído do log da execução de 11/11/2026 (LLM_PROVIDER=gemini, modelo padrão).",
+    "nao_classificado_ponderado": 0.00025801406427292524
+  },
+  "testes": 167
+}

@@ -160,7 +160,16 @@ jupyter nbconvert --to notebook --execute --inplace notebooks/01_pipeline.ipynb
 jupyter notebook notebooks/01_pipeline.ipynb
 ```
 
-O pipeline executa em sequência: ingestão → limpeza → junção relacional → métricas → agrupamento de CBOs via LLM → agregação → upload para o Azure Blob Storage. Cada etapa registra uma mensagem de progresso única e produz os artefatos consumidos pelo dashboard em `data_processed/` (`caged_bruto.parquet`, `cbo_macrofamilias.csv`, `caged_agregado.parquet`).
+O pipeline executa em sequência: ingestão → limpeza → junção relacional → métricas → agrupamento de CBOs via LLM → agregação → upload para o Azure Blob Storage. Cada etapa registra uma mensagem de progresso única e produz os artefatos consumidos pelo dashboard em `data_processed/`:
+
+| Artefato | Conteúdo | Vai para o Blob |
+|---|---|---|
+| `caged_agregado.parquet` | município × seção × setor × macrofamília × nível × mês, com as colunas R6 e as contagens/somas aditivas (`admissoes`, `desligamentos`, `desligamentos_a_pedido`, `soma_salario_*`, `n_salario_*`, `soma_escolaridade_*`, `n_escolaridade_*`) | sim |
+| `caged_perfil.parquet` | mesorregião × setor × macrofamília × nível × faixa de escolaridade, período inteiro, com as **medianas** salariais | sim |
+| `metadados.json` | procedência: data de geração, período, commit, volumes, IA (provedor, modelo, concordância) | sim |
+| `cbo_macrofamilias.csv` (+ `.prompt.txt`, `.meta.json`) e `cbo_divergencias.csv` | classificação da IA, prompt exato e auditoria das duas rodadas | não — vão no pacote de deploy |
+
+A classificação de CBO é reaproveitada do `cbo_macrofamilias.csv` quando ele existe; defina `RECLASSIFICAR_CBO=1` para chamar o LLM de novo.
 
 Observações sobre credenciais durante a execução:
 
@@ -225,14 +234,25 @@ az webapp config appsettings set \
 ```bash
 zip -r deploy.zip . \
   -x '.venv/*' -x '.git/*' -x 'Dados/*' -x '*__pycache__/*' \
-  -x '.pytest_cache/*' -x '.hypothesis/*' -x 'data_processed/caged_bruto.parquet'
+  -x '.pytest_cache/*' -x '.hypothesis/*' -x 'data_processed/caged_bruto.parquet' \
+  -x '.env' -x '*.env' -x 'notebooks/*'
+unzip -l deploy.zip | grep -E '\.env$' && echo 'ERRO: .env no pacote' || echo 'ok: sem .env'
 
 az webapp deploy \
   --name "$APP" --resource-group "$RG" \
   --src-path deploy.zip --type zip
 ```
 
-O pacote inclui `data_processed/caged_agregado.parquet` de propósito: é o *fallback* local que mantém o painel de pé se o Blob ficar indisponível durante a apresentação (R9.6).
+O pacote inclui `.streamlit/` (tema), `data_processed/caged_agregado.parquet`, `caged_perfil.parquet`, `metadados.json` e os arquivos da IA de propósito: são o *fallback* local que mantém o painel de pé se o Blob ficar indisponível durante a apresentação (R9.6). O `.env` fica de fora — as credenciais vão nas *app settings*.
+
+Para atualizar só os dados (sem novo deploy), envie os três artefatos ao Blob:
+
+```bash
+set -a; source .env; set +a
+.venv/bin/python -c "from src.azure_upload import upload_tabelas; print(upload_tabelas(['data_processed/caged_agregado.parquet', 'data_processed/caged_perfil.parquet', 'data_processed/metadados.json'], '$AZURE_BLOB_CONTAINER'))"
+```
+
+O painel valida o schema do que leu no Blob: se a cópia estiver desatualizada (sem as colunas v2), ele usa a cópia local e diz isso na tela.
 
 ### 4. Verificar
 

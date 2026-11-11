@@ -43,8 +43,17 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.cbo_ia import COLUNA_MACROFAMILIA
-from src.mapeamentos import MESORREGIAO_POR_MUNICIPIO, REGIAO_DESCONHECIDA
+from src import mapeamentos
+from src.cbo_ia import COLUNA_MACROFAMILIA, COLUNA_NIVEL
+from src.mapeamentos import (
+    FAIXA_ESCOLARIDADE_AUSENTE,
+    MESORREGIAO_POR_MUNICIPIO,
+    MICRORREGIAO_POR_MUNICIPIO,
+    REGIAO_DESCONHECIDA,
+    SECOES_INDUSTRIAIS,
+    SETOR_POR_DIVISAO_TRANSFORMACAO,
+    faixa_escolaridade,
+)
 from src.erros import ErroDeValidacao
 from src.logging_pipeline import log_etapa, obter_logger
 from src.metricas import (
@@ -56,6 +65,7 @@ from src.metricas import (
     COLUNA_SALARIO_MEDIO,
     COLUNA_SALDO_LIQUIDO,
     COLUNA_SALDO_POR_10K,
+    COLUNA_SALDO_MOVIMENTACAO,
     COLUNA_SALARIO,
     COLUNA_ESCOLARIDADE_ORDINAL,
     COLUNA_SECAO,
@@ -89,6 +99,47 @@ COLUNA_POPULACAO_2026 = "populacao_2026"
 COLUNA_IDHM_2010 = "idhm_2010"
 COLUNA_PIB_PER_CAPITA_2023 = "pib_per_capita_2023"
 
+# --- Colunas acrescentadas no dashboard v2 (todas aditivas ao schema R6) ----
+COLUNA_MICRORREGIAO = "microrregiao"
+COLUNA_NOME_MUNICIPIO = "municipio_nome"
+COLUNA_SETOR = "setor"
+COLUNA_NIVEL_QUALIFICACAO = COLUNA_NIVEL
+COLUNA_ESCOPO_INDUSTRIAL = "escopo_industrial"
+COLUNA_FAIXA_ESCOLARIDADE = "faixa_escolaridade"
+
+# Contagens e somas por célula: somáveis entre células, de modo que qualquer
+# filtro possa ser reagregado e as razões derivadas depois (soma ÷ soma), em
+# vez de promediar razões de células de tamanhos muito diferentes.
+COLUNA_ADMISSOES = "admissoes"
+COLUNA_DESLIGAMENTOS = "desligamentos"
+COLUNA_DESLIGAMENTOS_A_PEDIDO = "desligamentos_a_pedido"
+COLUNAS_ADITIVAS = [
+    COLUNA_ADMISSOES,
+    COLUNA_DESLIGAMENTOS,
+    COLUNA_DESLIGAMENTOS_A_PEDIDO,
+    "soma_salario_admissao",
+    "n_salario_admissao",
+    "soma_salario_desligamento",
+    "n_salario_desligamento",
+    "soma_escolaridade_admissao",
+    "n_escolaridade_admissao",
+    "soma_escolaridade_desligamento",
+    "n_escolaridade_desligamento",
+]
+
+# Coluna de tipo de movimentação do CAGED e o código do desligamento a pedido
+# (40), aceito cru ou já decodificado pelo Limpador.
+COLUNA_TIPO_MOVIMENTACAO = "tipomovimentação"
+CODIGO_DESLIGAMENTO_A_PEDIDO = 40
+COLUNA_SUBCLASSE = "subclasse"
+
+# Rótulo de nível quando a base não traz o nível de qualificação da CBO.
+NIVEL_NAO_INFORMADO = "Não informado"
+
+# Medianas salariais do perfil (não aditivas: calculadas no pipeline).
+COLUNA_MEDIANA_SALARIO_ADMISSAO = "mediana_salario_admissao"
+COLUNA_MEDIANA_SALARIO_DESLIGAMENTO = "mediana_salario_desligamento"
+
 # --- Colunas de origem dos indicadores municipais (cabeçalho da base) --------
 # Os nomes seguem exatamente `limpeza.COLUNAS_INDICADORES_MUNICIPIOS`, que por
 # sua vez reproduzem o cabeçalho de `Municipios_SC_limpo.csv` (R6.6).
@@ -110,7 +161,9 @@ _INDICADORES = {
 _COLUNAS_RECORTE = [
     COLUNA_CHAVE_MUNICIPAL,
     COLUNA_SECAO,
+    COLUNA_SETOR,
     COLUNA_MACROFAMILIA,
+    COLUNA_NIVEL,
     COLUNA_COMPETENCIA,
 ]
 
@@ -131,6 +184,14 @@ _COLUNAS_SAIDA = [
     COLUNA_POPULACAO_2026,
     COLUNA_IDHM_2010,
     COLUNA_PIB_PER_CAPITA_2023,
+    # v2: dimensões e contagens aditivas, sempre DEPOIS das colunas R6 para que
+    # o app antigo continue lendo o mesmo schema.
+    COLUNA_NOME_MUNICIPIO,
+    COLUNA_MICRORREGIAO,
+    COLUNA_SETOR,
+    COLUNA_NIVEL_QUALIFICACAO,
+    COLUNA_ESCOPO_INDUSTRIAL,
+    *COLUNAS_ADITIVAS,
 ]
 
 # Métricas numéricas arredondadas a 2 casas na saída (R6.5).
@@ -143,6 +204,79 @@ _COLUNAS_METRICAS = [
     COLUNA_SALARIO_MEDIO_DESLIGAMENTO,
     COLUNA_ESCOLARIDADE_MEDIA_ADMISSAO,
 ]
+
+
+def _rotulos_secoes_industriais() -> set[str]:
+    """Letras B–F e os rótulos decodificados correspondentes do dicionário."""
+    rotulos = set(SECOES_INDUSTRIAIS)
+    try:
+        rotulos |= {mapeamentos.SECAO_CNAE[letra] for letra in SECOES_INDUSTRIAIS}
+    except Exception:  # noqa: BLE001 — sem dicionário, valem só as letras
+        pass
+    return rotulos
+
+
+def _eh_transformacao(secao: pd.Series) -> pd.Series:
+    """Linhas da seção C, pela letra ou pelo rótulo decodificado."""
+    try:
+        rotulo_c = mapeamentos.SECAO_CNAE["C"]
+    except Exception:  # noqa: BLE001
+        rotulo_c = "C"
+    return secao.isin({"C", rotulo_c})
+
+
+def preparar_base(df: pd.DataFrame) -> pd.DataFrame:
+    """Acrescenta à base as dimensões v2 e os indicadores somáveis por linha.
+
+    - ``setor``: a divisão CNAE agrupada (PLANEJAMENTO §4.2) dentro da seção C;
+      nas demais seções, o próprio rótulo da seção.
+    - ``nivel_qualificacao``: o nível da CBO (já mesclado pela etapa de IA);
+      ausente → `NIVEL_NAO_INFORMADO`.
+    - indicadores 0/1 de admissão, desligamento e desligamento a pedido (40) e
+      os salários/escolaridades válidos (não nulos — a mesma regra das médias
+      R4.6/R4.7) com os seus contadores.
+    """
+    base = df.copy()
+    secao = base[COLUNA_SECAO]
+    if COLUNA_SUBCLASSE in base.columns:
+        divisao = pd.to_numeric(base[COLUNA_SUBCLASSE], errors="coerce") // 100_000
+        setor_c = divisao.map(SETOR_POR_DIVISAO_TRANSFORMACAO)
+        base[COLUNA_SETOR] = secao.where(
+            ~_eh_transformacao(secao) | setor_c.isna(), setor_c
+        )
+    else:
+        base[COLUNA_SETOR] = secao
+    if COLUNA_NIVEL not in base.columns:
+        base[COLUNA_NIVEL] = NIVEL_NAO_INFORMADO
+    base[COLUNA_NIVEL] = base[COLUNA_NIVEL].fillna(NIVEL_NAO_INFORMADO)
+
+    mov = pd.to_numeric(base[COLUNA_SALDO_MOVIMENTACAO], errors="coerce")
+    adm, desl = mov == 1, mov == -1
+    if COLUNA_TIPO_MOVIMENTACAO in base.columns:
+        tipo = base[COLUNA_TIPO_MOVIMENTACAO]
+        rotulo = "Desligamento a pedido"
+        try:
+            rotulo = mapeamentos.TIPO_MOVIMENTACAO[CODIGO_DESLIGAMENTO_A_PEDIDO]
+        except Exception:  # noqa: BLE001
+            pass
+        a_pedido = tipo.isin({CODIGO_DESLIGAMENTO_A_PEDIDO, "40", rotulo})
+    else:
+        a_pedido = pd.Series(False, index=base.index)
+    base[COLUNA_ADMISSOES] = adm.astype("int64")
+    base[COLUNA_DESLIGAMENTOS] = desl.astype("int64")
+    base[COLUNA_DESLIGAMENTOS_A_PEDIDO] = (desl & a_pedido).astype("int64")
+
+    for origem, nome in ((COLUNA_SALARIO, "salario"), (COLUNA_ESCOLARIDADE_ORDINAL, "escolaridade")):
+        valor = (
+            pd.to_numeric(base[origem], errors="coerce")
+            if origem in base.columns
+            else pd.Series(float("nan"), index=base.index)
+        )
+        for mascara, sufixo in ((adm, "admissao"), (desl, "desligamento")):
+            valido = mascara & valor.notna()
+            base[f"soma_{nome}_{sufixo}"] = valor.where(valido, 0.0)
+            base[f"n_{nome}_{sufixo}"] = valido.astype("int64")
+    return base
 
 
 def agregar(df_metricas: pd.DataFrame, municipios: pd.DataFrame) -> pd.DataFrame:
@@ -195,7 +329,9 @@ def agregar(df_metricas: pd.DataFrame, municipios: pd.DataFrame) -> pd.DataFrame
             estiver ausente em ``df_metricas``, ou se ``chave_municipal`` faltar
             em ``municipios``.
     """
-    faltando = [c for c in _COLUNAS_RECORTE if c not in df_metricas.columns]
+    # `setor` e `nivel_qualificacao` são derivados por `preparar_base`.
+    obrigatorias = [c for c in _COLUNAS_RECORTE if c not in (COLUNA_SETOR, COLUNA_NIVEL)]
+    faltando = [c for c in obrigatorias if c not in df_metricas.columns]
     if faltando:
         raise KeyError(
             "Colunas de recorte ausentes em 'df_metricas' para a agregação: "
@@ -213,6 +349,8 @@ def agregar(df_metricas: pd.DataFrame, municipios: pd.DataFrame) -> pd.DataFrame
         log_etapa(_ETAPA, "0 recortes agregados (base de métricas vazia).")
         return vazio
 
+    df_metricas = preparar_base(df_metricas)
+
     # --- Métricas por recorte, reaproveitando metricas.py (R6.5) -------------
     # Saldo_Liquido no recorte completo (município × seção × macrofamília × mês).
     saldo = saldo_liquido(df_metricas, _COLUNAS_RECORTE)
@@ -228,7 +366,7 @@ def agregar(df_metricas: pd.DataFrame, municipios: pd.DataFrame) -> pd.DataFrame
 
     # Turnover por (município × seção × macrofamília); replicado a cada mês do
     # recorte via merge, pois o estoque base não varia por mês (R4.4/4.5).
-    por_turnover = [COLUNA_CHAVE_MUNICIPAL, COLUNA_SECAO, COLUNA_MACROFAMILIA]
+    por_turnover = [c for c in _COLUNAS_RECORTE if c != COLUNA_COMPETENCIA]
     turn = turnover(df_metricas, por_turnover)
 
     agregado = saldo.merge(turn, how="left", on=por_turnover)
@@ -237,6 +375,14 @@ def agregar(df_metricas: pd.DataFrame, municipios: pd.DataFrame) -> pd.DataFrame
     # renda × escolaridade do dashboard (R7.4) tenha fonte e responda aos mesmos
     # filtros das demais visualizações (R4.6, R4.7).
     agregado = _anexar_renda_escolaridade(agregado, df_metricas)
+
+    # Contagens e somas aditivas por célula (dashboard v2).
+    aditivas = (
+        df_metricas.groupby(_COLUNAS_RECORTE, dropna=False)[COLUNAS_ADITIVAS]
+        .sum()
+        .reset_index()
+    )
+    agregado = agregado.merge(aditivas, how="left", on=_COLUNAS_RECORTE)
 
     # --- Mapeia para o schema de saída (design, Schema R6) -------------------
     resultado = pd.DataFrame(
@@ -263,8 +409,26 @@ def agregar(df_metricas: pd.DataFrame, municipios: pd.DataFrame) -> pd.DataFrame
             COLUNA_ESCOLARIDADE_MEDIA_ADMISSAO: agregado[
                 COLUNA_ESCOLARIDADE_MEDIA_ADMISSAO
             ],
+            COLUNA_MICRORREGIAO: agregado[COLUNA_CHAVE_MUNICIPAL].map(
+                lambda chave: MICRORREGIAO_POR_MUNICIPIO.get(
+                    str(chave), REGIAO_DESCONHECIDA
+                )
+            ),
+            COLUNA_SETOR: agregado[COLUNA_SETOR],
+            COLUNA_NIVEL_QUALIFICACAO: agregado[COLUNA_NIVEL],
+            COLUNA_ESCOPO_INDUSTRIAL: agregado[COLUNA_SECAO].isin(
+                _rotulos_secoes_industriais()
+            ),
+            **{coluna: agregado[coluna] for coluna in COLUNAS_ADITIVAS},
         }
     )
+    for coluna in COLUNAS_ADITIVAS:
+        if coluna.startswith("soma_"):
+            resultado[coluna] = resultado[coluna].astype("float64").round(
+                CASAS_DECIMAIS_METRICAS
+            )
+        else:
+            resultado[coluna] = resultado[coluna].astype("int64")
 
     # Arredonda as métricas a 2 casas decimais, preservando NaN (R6.5).
     for coluna in _COLUNAS_METRICAS:
@@ -372,6 +536,22 @@ def _anexar_indicadores(
         O ``resultado`` acrescido das três colunas de indicadores.
     """
     chaves = agregado[COLUNA_CHAVE_MUNICIPAL]
+    # Nome do município (cabeçalho "Município" ou "Município [-]"); o painel
+    # não pode depender de `Dados/`, que não vai no pacote de deploy.
+    from src.enriquecimento import _nome_base
+
+    coluna_nome = next(
+        (c for c in municipios.columns if _nome_base(c) == "Município"), None
+    )
+    if coluna_nome is not None:
+        nomes = (
+            municipios[[COLUNA_CHAVE_MUNICIPAL, coluna_nome]]
+            .drop_duplicates(subset=COLUNA_CHAVE_MUNICIPAL)
+            .set_index(COLUNA_CHAVE_MUNICIPAL)[coluna_nome]
+        )
+        resultado[COLUNA_NOME_MUNICIPIO] = chaves.map(nomes).fillna(chaves).astype(str).values
+    else:
+        resultado[COLUNA_NOME_MUNICIPIO] = chaves.astype(str).values
     for coluna_saida, coluna_origem in _INDICADORES.items():
         if coluna_origem in municipios.columns:
             mapa = (
@@ -387,6 +567,147 @@ def _anexar_indicadores(
             valores, errors="coerce"
         ).astype("float64").values
     return resultado
+
+
+# Dimensões do perfil (causa raiz): período inteiro, sem município nem mês.
+COLUNAS_PERFIL = [
+    COLUNA_REGIAO,
+    COLUNA_SECAO_INDUSTRIAL,
+    COLUNA_SETOR,
+    COLUNA_ESCOPO_INDUSTRIAL,
+    COLUNA_MACROFAMILIA_CBO,
+    COLUNA_NIVEL_QUALIFICACAO,
+    COLUNA_FAIXA_ESCOLARIDADE,
+]
+
+
+def agregar_perfil(df_metricas: pd.DataFrame) -> pd.DataFrame:
+    """Tabela de perfil para a causa raiz (PLANEJAMENTO §4.4, §6).
+
+    Uma linha por mesorregião × seção × setor × macrofamília × nível ×
+    faixa de escolaridade (do próprio trabalhador movimentado), no período
+    inteiro, com as mesmas colunas aditivas do agregado e as **medianas**
+    salariais de admissão e desligamento — que não são somáveis e por isso só
+    podem ser calculadas aqui, sobre os microdados.
+    """
+    base = preparar_base(df_metricas)
+    base[COLUNA_REGIAO] = base[COLUNA_CHAVE_MUNICIPAL].map(
+        lambda chave: MESORREGIAO_POR_MUNICIPIO.get(str(chave), REGIAO_DESCONHECIDA)
+    )
+    base[COLUNA_ESCOPO_INDUSTRIAL] = base[COLUNA_SECAO].isin(
+        _rotulos_secoes_industriais()
+    )
+    ordinal = (
+        pd.to_numeric(base[COLUNA_ESCOLARIDADE_ORDINAL], errors="coerce")
+        if COLUNA_ESCOLARIDADE_ORDINAL in base.columns
+        else pd.Series(float("nan"), index=base.index)
+    )
+    base[COLUNA_FAIXA_ESCOLARIDADE] = ordinal.map(faixa_escolaridade)
+    base = base.rename(
+        columns={
+            COLUNA_SECAO: COLUNA_SECAO_INDUSTRIAL,
+            COLUNA_MACROFAMILIA: COLUNA_MACROFAMILIA_CBO,
+        }
+    )
+    grupos = base.groupby(COLUNAS_PERFIL, dropna=False)
+    perfil = grupos[COLUNAS_ADITIVAS].sum()
+
+    salario = (
+        pd.to_numeric(base[COLUNA_SALARIO], errors="coerce")
+        if COLUNA_SALARIO in base.columns
+        else pd.Series(float("nan"), index=base.index)
+    )
+    for indicador, coluna in (
+        (COLUNA_ADMISSOES, COLUNA_MEDIANA_SALARIO_ADMISSAO),
+        (COLUNA_DESLIGAMENTOS, COLUNA_MEDIANA_SALARIO_DESLIGAMENTO),
+    ):
+        perfil[coluna] = (
+            salario.where(base[indicador] == 1)
+            .groupby([base[c] for c in COLUNAS_PERFIL], dropna=False)
+            .median()
+        )
+    perfil = perfil.reset_index()
+    for coluna in perfil.columns:
+        if coluna.startswith(("soma_", "mediana_")):
+            perfil[coluna] = perfil[coluna].astype("float64").round(CASAS_DECIMAIS_METRICAS)
+    log_etapa(_ETAPA, f"perfil de causa raiz com {len(perfil)} linhas.")
+    return perfil
+
+
+def montar_metadados(
+    *,
+    linhas_brutas: int,
+    linhas_limpas: int,
+    excluidas_competencia: int,
+    df_agregado: pd.DataFrame,
+    df_perfil: pd.DataFrame,
+    meta_ia: dict | None = None,
+    raiz: str | os.PathLike[str] = ".",
+) -> dict:
+    """Reúne a procedência dos artefatos para o `metadados.json`.
+
+    Os volumes de movimentação saem do próprio agregado (soma das contagens),
+    de modo que o funil exibido no painel seja coerente com o que ele agrega.
+    """
+    import subprocess
+
+    def _comando(*args: str) -> str | None:
+        try:
+            saida = subprocess.run(
+                args, cwd=raiz, capture_output=True, text=True, timeout=120, check=True
+            )
+            return saida.stdout.strip()
+        except Exception:  # noqa: BLE001 — procedência é melhor-esforço
+            return None
+
+    movimentos = df_agregado[COLUNA_ADMISSOES] + df_agregado[COLUNA_DESLIGAMENTOS]
+    industria = df_agregado[COLUNA_ESCOPO_INDUSTRIAL].astype(bool)
+    nao_classificado = df_agregado[COLUNA_MACROFAMILIA_CBO] == mapeamentos.NAO_CLASSIFICADO
+    meses = sorted(df_agregado[COLUNA_MES].astype(str).unique())
+    coleta = _comando("python", "-m", "pytest", "--collect-only", "-q")
+    n_testes = None
+    if coleta:
+        for linha in reversed(coleta.splitlines()):
+            if "collected" in linha or "test" in linha:
+                numeros = [int(t) for t in linha.split() if t.isdigit()]
+                if numeros:
+                    n_testes = numeros[0]
+                    break
+    return {
+        "gerado_em": pd.Timestamp.now(tz="America/Sao_Paulo").isoformat(timespec="seconds"),
+        "periodo": {"inicio": meses[0] if meses else None, "fim": meses[-1] if meses else None, "meses": len(meses)},
+        "commit": _comando("git", "rev-parse", "--short", "HEAD"),
+        "linhas": {
+            "brutas": int(linhas_brutas),
+            "excluidas_competencia": int(excluidas_competencia),
+            "apos_limpeza": int(linhas_limpas),
+            "movimentacoes_agregadas": int(movimentos.sum()),
+            "movimentacoes_industria": int(movimentos[industria].sum()),
+            "agregado": int(len(df_agregado)),
+            "perfil": int(len(df_perfil)),
+        },
+        "ia": {
+            **(meta_ia or {}),
+            "nao_classificado_ponderado": float(movimentos[nao_classificado].sum() / movimentos.sum())
+            if movimentos.sum()
+            else None,
+        },
+        "testes": n_testes,
+    }
+
+
+def escrever_metadados(destino: str | os.PathLike[str], metadados: dict) -> None:
+    """Grava o `metadados.json` (procedência dos artefatos) de forma atômica."""
+    import json
+
+    caminho = Path(destino)
+    temporario = caminho.with_name(f"{caminho.name}.tmp")
+    temporario.write_text(
+        json.dumps(metadados, ensure_ascii=False, indent=2, default=str),
+        encoding="utf-8",
+    )
+    os.replace(temporario, caminho)
+    log_etapa(_ETAPA, f"metadados gravados em '{caminho}'.")
 
 
 # Extensões de arquivo suportadas na exportação do agregado (R6.3).
@@ -485,6 +806,23 @@ __all__ = [
     "ORIGEM_PIB_PER_CAPITA_2023",
     "EXTENSAO_PARQUET",
     "EXTENSAO_CSV",
+    "COLUNA_MICRORREGIAO",
+    "COLUNA_NOME_MUNICIPIO",
+    "COLUNA_SETOR",
+    "COLUNA_NIVEL_QUALIFICACAO",
+    "COLUNA_ESCOPO_INDUSTRIAL",
+    "COLUNA_FAIXA_ESCOLARIDADE",
+    "COLUNA_ADMISSOES",
+    "COLUNA_DESLIGAMENTOS",
+    "COLUNA_DESLIGAMENTOS_A_PEDIDO",
+    "COLUNA_MEDIANA_SALARIO_ADMISSAO",
+    "COLUNA_MEDIANA_SALARIO_DESLIGAMENTO",
+    "COLUNAS_ADITIVAS",
+    "COLUNAS_PERFIL",
+    "preparar_base",
     "agregar",
+    "agregar_perfil",
+    "escrever_metadados",
+    "montar_metadados",
     "exportar",
 ]

@@ -149,7 +149,7 @@ def _fabrica_blob_padrao(connection_string: str, container: str) -> ClienteConta
     return servico.get_container_client(container)
 
 
-def _coletar_tabelas(caminho_local: str) -> list[Path]:
+def _coletar_tabelas(caminho_local: "str | list[str]") -> list[Path]:
     """Lista as tabelas agregadas a enviar a partir de `caminho_local`.
 
     Aceita tanto um arquivo único (ex.: ``caged_agregado.parquet``) quanto um
@@ -162,6 +162,18 @@ def _coletar_tabelas(caminho_local: str) -> list[Path]:
         ErroDeValidacao: se o caminho não existir ou se um diretório não contiver
             nenhuma tabela agregada elegível.
     """
+    if isinstance(caminho_local, (list, tuple)):
+        # Lista explícita de artefatos (agregado, perfil, metadados): todos
+        # precisam existir antes do primeiro upload, para não enviar meio
+        # conjunto (R9.3).
+        faltando = [c for c in caminho_local if not Path(c).is_file()]
+        if faltando or not caminho_local:
+            raise ErroDeValidacao(
+                f"Artefatos ausentes para upload: {faltando or '(lista vazia)'}. "
+                "Nenhum dado foi enviado ao Blob_Storage."
+            )
+        return [Path(c) for c in caminho_local]
+
     origem = Path(caminho_local)
     if not origem.exists():
         raise ErroDeValidacao(
@@ -188,7 +200,7 @@ def _coletar_tabelas(caminho_local: str) -> list[Path]:
 
 
 def upload_tabelas(
-    caminho_local: str,
+    caminho_local: "str | list[str]",
     container: str,
     *,
     env: "os._Environ[str] | dict[str, str] | None" = None,
@@ -212,8 +224,8 @@ def upload_tabelas(
     `BlobServiceClient` a partir da connection string (SDK ``azure-storage-blob``).
 
     Args:
-        caminho_local: caminho de um arquivo de tabela agregada ou de um
-            diretório contendo-as (ex.: ``data_processed/caged_agregado.parquet``
+        caminho_local: caminho de um arquivo de tabela agregada, de um
+            diretório contendo-as, ou lista explícita de arquivos (ex.: ``data_processed/caged_agregado.parquet``
             ou ``data_processed``).
         container: nome do container de destino no Blob_Storage.
         env: mapeamento de variáveis de ambiente para a guarda de credencial;
