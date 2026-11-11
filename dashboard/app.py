@@ -53,7 +53,9 @@ def main() -> None:
 
     paginas = {
         chave: st.Page(c.pagina_segura(titulo, modulo.render), title=titulo, icon=icone, url_path=url,
-                       default=chave == "panorama")
+                       default=chave == "panorama",
+                       # Fora do menu: só quem tem a URL (e a chave, se configurada).
+                       visibility="hidden" if chave == "apresentacao" else "visible")
         for chave, modulo, titulo, icone, url in PAGINAS
     }
     st.session_state["_paginas"] = paginas
@@ -71,8 +73,7 @@ def main() -> None:
 
     navegacao = st.navigation({
         "Narrativa": [paginas[k] for k in ("panorama", "diagnostico", "causa_raiz", "ocupacoes", "recomendacoes")],
-        "Aprofundar": [paginas[k] for k in ("ficha", "metodologia")],
-        "Pitch": [paginas["apresentacao"]],
+        "Aprofundar": [paginas[k] for k in ("ficha", "metodologia", "apresentacao")],
     })
     navegacao.run()
 

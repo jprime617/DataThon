@@ -38,7 +38,11 @@ def render(ctx: c.Contexto) -> None:
         st.info("Nenhuma movimentação com estes filtros. Use **Limpar filtros** na barra lateral.")
         return
 
-    st.markdown(f"#### {nar.resposta_principal(ctx.df, ctx.filtros.escopo)}")
+    manchete, _, topicos = nar.resposta_principal(ctx.df, ctx.filtros.escopo).partition("\n\n")
+    with st.container(border=True):
+        st.markdown(f"#### {manchete}")
+        if topicos:
+            st.markdown(topicos)
     c.cartoes_kpi(ctx)
 
     st.subheader("Mapa")

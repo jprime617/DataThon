@@ -7,6 +7,8 @@ deixado na barra lateral. Cada passo: uma frase calculada e um gráfico.
 
 from __future__ import annotations
 
+import os
+
 import pandas as pd
 import streamlit as st
 
@@ -109,7 +111,25 @@ def _o_que_fazer(ctx: c.Contexto) -> None:
 CONTEUDO = [_gancho, _onde, _quem, _por_que, _o_que_fazer]
 
 
+VAR_CHAVE = "PAINEL_CHAVE_APRESENTACAO"
+
+
+def acesso_liberado(chave_configurada: str, chave_informada: str | None) -> bool:
+    """Sem chave configurada, basta conhecer a URL; com chave, ela precisa bater."""
+    return not chave_configurada or chave_informada == chave_configurada
+
+
 def render(ctx_global: c.Contexto) -> None:
+    # A página fica fora do menu; com `PAINEL_CHAVE_APRESENTACAO` definida, só
+    # abre por /apresentacao?chave=<valor>. A liberação vale para a sessão,
+    # porque os botões Anterior/Próximo reexecutam a página.
+    chave = os.environ.get(VAR_CHAVE, "").strip()
+    if not st.session_state.get("apresentacao_ok"):
+        if not acesso_liberado(chave, st.query_params.get("chave")):
+            st.title("Página não encontrada")
+            st.caption("Use o menu lateral para navegar pelo painel.")
+            return
+        st.session_state["apresentacao_ok"] = True
     st.markdown(CSS, unsafe_allow_html=True)
     ctx = c.contexto_padrao(ctx_global.art)
     passo = int(st.session_state.get("passo", 0)) % len(PASSOS)

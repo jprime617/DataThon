@@ -48,31 +48,37 @@ def unidades(df: pd.DataFrame, *, relevantes: bool = False) -> pd.DataFrame:
 
 
 def resposta_principal(df: pd.DataFrame, escopo: str = c.ESCOPO_INDUSTRIA) -> str:
-    """A pergunta de negócio respondida em uma frase, com os números do recorte."""
+    """A pergunta de negócio respondida em Markdown: uma manchete e 4 tópicos.
+
+    A manchete interpretativa ("o apagão é de retenção") só aparece quando os
+    números a sustentam: quase toda contratação repõe saídas (giro ≥ 90%) e ao
+    menos 40% dos desligamentos são a pedido.
+    """
     if df is None or df.empty:
         return "Nenhuma movimentação na seleção atual — ajuste ou limpe os filtros."
     t = c.total(df)
-    nome = "Na indústria catarinense" if escopo == c.ESCOPO_INDUSTRIA else "Na economia catarinense"
-    frase = (
-        f"{nome} ({periodo(df)}), {c.fmt_int(t[c.M_MOV])} movimentações deixaram saldo de "
-        f"{c.fmt_int(t[c.M_SALDO])} vagas ({c.fmt_pct(t[c.M_SALDO_REL])} das movimentações): "
-        f"{c.fmt_pct(t[c.M_GIRO])} das contratações só repõem saídas e "
-        f"{c.fmt_pct(t[c.M_SAIDA_VOL])} dos desligamentos são a pedido do trabalhador."
-    )
+    nome = "A indústria catarinense" if escopo == c.ESCOPO_INDUSTRIA else "A economia catarinense"
+    if t[c.M_GIRO] >= 0.9 and t[c.M_SAIDA_VOL] >= 0.4:
+        manchete = (f"{nome} ({periodo(df)}) gira muito e cresce pouco: "
+                    "o apagão é de retenção, não de falta de contratação.")
+    else:
+        manchete = f"{nome} ({periodo(df)}) em quatro números."
+    topicos = [
+        f"**{c.fmt_int(t[c.M_MOV])} movimentações** deixaram saldo de {c.fmt_int(t[c.M_SALDO])} vagas "
+        f"({c.fmt_pct(t[c.M_SALDO_REL])} do total).",
+        f"**{c.fmt_pct(t[c.M_GIRO])}** das contratações só repõem saídas, e **{c.fmt_pct(t[c.M_SAIDA_VOL])}** "
+        "dos desligamentos são a pedido do trabalhador.",
+    ]
     m = unidades(df, relevantes=True)
     if not m.empty:
         tensa = m.iloc[0]
+        topicos.append(f"Maior tensão: **{tensa[c.COLUNA_SETOR]} – {tensa[c.COLUNA_REGIAO]}** ({tensa['motor']}).")
         expansao = m[m[c.M_SALDO] > 0].sort_values("dinamismo", ascending=False)
-        frase += (
-            f" O apagão aparece como retenção: a maior tensão está em "
-            f"**{tensa[c.COLUNA_SETOR]} – {tensa[c.COLUNA_REGIAO]}** ({tensa['motor']})"
-        )
         if not expansao.empty:
             e = expansao.iloc[0]
-            frase += (f", e a expansão mais acelerada em **{e[c.COLUNA_SETOR]} – "
-                      f"{e[c.COLUNA_REGIAO]}** (saldo {c.fmt_int(e[c.M_SALDO])})")
-        frase += "."
-    return frase
+            topicos.append(f"Expansão mais acelerada: **{e[c.COLUNA_SETOR]} – {e[c.COLUNA_REGIAO]}** "
+                           f"(saldo {c.fmt_int(e[c.M_SALDO])}).")
+    return f"{manchete}\n\n" + "\n".join(f"- {t_}" for t_ in topicos)
 
 
 def _filtro_unidade(regiao: str, setor: str | None = None, macro: str | None = None) -> dict:

@@ -55,3 +55,12 @@ def test_app_completo_abre_no_panorama_sem_erro() -> None:
     assert not at.exception, [e.message for e in at.exception]
     assert not at.error, [e.value for e in at.error]
     assert at.title[0].value == "Onde está o problema?"
+
+
+def test_modo_apresentacao_exige_a_chave_quando_configurada() -> None:
+    from dashboard.paginas.apresentacao import acesso_liberado
+
+    assert acesso_liberado("", None)
+    assert not acesso_liberado("segredo", None)
+    assert not acesso_liberado("segredo", "errada")
+    assert acesso_liberado("segredo", "segredo")
