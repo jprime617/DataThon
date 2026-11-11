@@ -199,7 +199,7 @@ O dashboard roda no Azure App Service lendo as tabelas agregadas do Blob Storage
 ```bash
 RG=rg-datathon                 # mesmo resource group da storage account
 PLANO=plano-datathon
-APP=datathon-caged-sc          # precisa ser único no azurewebsites.net
+APP=datathon-caged-sc-br       # precisa ser único no azurewebsites.net
 
 az appservice plan create \
   --name "$PLANO" --resource-group "$RG" \
@@ -226,9 +226,16 @@ az webapp config appsettings set \
   --settings \
     AZURE_STORAGE_CONNECTION_STRING="$AZURE_STORAGE_CONNECTION_STRING" \
     AZURE_BLOB_CONTAINER="$AZURE_BLOB_CONTAINER" \
+    PAINEL_CHAVE_APRESENTACAO="$(python3 -c 'import secrets; print(secrets.token_urlsafe(9))')" \
     SCM_DO_BUILD_DURING_DEPLOYMENT=true
+
+az webapp config set --name "$APP" --resource-group "$RG" --web-sockets-enabled true
 ```
 
+> O **modo apresentação** fica fora do menu e só abre em `https://<APP>.azurewebsites.net/apresentacao?chave=<PAINEL_CHAVE_APRESENTACAO>`; sem a variável, basta a URL.
+>
+> Use uma região próxima do público (`brazilsouth`): numa região distante, cada requisição custa ~1,5 s e o pacote do Plotly (4,7 MB, servido sem compressão pelo Streamlit) leva dezenas de segundos na primeira visita.
+>
 > `SCM_DO_BUILD_DURING_DEPLOYMENT=true` faz o App Service instalar o `requirements.txt` durante o deploy. As credenciais ficam nas *app settings* — variáveis de ambiente do serviço —, nunca no repositório (R8.5).
 >
 > `LLM_API_KEY` e `LLM_PROVIDER` **não** são configuradas aqui: o agrupamento de CBOs roda localmente durante o pipeline, fora do Azure (R5.9, R9.5). O App Service só lê tabelas agregadas.
