@@ -225,7 +225,22 @@ def _eh_transformacao(secao: pd.Series) -> pd.Series:
     return secao.isin({"C", rotulo_c})
 
 
-def preparar_base(df: pd.DataFrame) -> pd.DataFrame:
+# Salário válido para as somas e medianas v2: > 0 e até este múltiplo da mediana
+# estadual dos salários positivos. A base traz desligamentos com "salário" de
+# R$ 1,1 milhão (rescisão ou digitação) e ~34 mil zeros, que distorcem médias.
+MULTIPLO_TETO_SALARIO = 20
+
+
+def teto_salario(df: pd.DataFrame) -> float:
+    """Teto de salário válido: `MULTIPLO_TETO_SALARIO` × mediana dos positivos."""
+    if COLUNA_SALARIO not in df.columns:
+        return float("inf")
+    salario = pd.to_numeric(df[COLUNA_SALARIO], errors="coerce")
+    positivos = salario[salario > 0]
+    return float(positivos.median() * MULTIPLO_TETO_SALARIO) if len(positivos) else float("inf")
+
+
+def preparar_base(df: pd.DataFrame, teto: float | None = None) -> pd.DataFrame:
     """Acrescenta à base as dimensões v2 e os indicadores somáveis por linha.
 
     - ``setor``: a divisão CNAE agrupada (PLANEJAMENTO §4.2) dentro da seção C;
@@ -233,10 +248,18 @@ def preparar_base(df: pd.DataFrame) -> pd.DataFrame:
     - ``nivel_qualificacao``: o nível da CBO (já mesclado pela etapa de IA);
       ausente → `NIVEL_NAO_INFORMADO`.
     - indicadores 0/1 de admissão, desligamento e desligamento a pedido (40) e
-      os salários/escolaridades válidos (não nulos — a mesma regra das médias
-      R4.6/R4.7) com os seus contadores.
+      os salários válidos (> 0 e ≤ `teto_salario`) e as escolaridades não
+      nulas, com os seus contadores.
     """
-    base = df.copy()
+    teto = teto_salario(df) if teto is None else teto
+    # Só as colunas usadas: copiar a base inteira (3,4 mi linhas de texto)
+    # dobrava o pico de memória do pipeline.
+    usadas = [
+        COLUNA_CHAVE_MUNICIPAL, COLUNA_SECAO, COLUNA_SUBCLASSE, COLUNA_MACROFAMILIA,
+        COLUNA_NIVEL, COLUNA_COMPETENCIA, COLUNA_SALDO_MOVIMENTACAO,
+        COLUNA_TIPO_MOVIMENTACAO, COLUNA_SALARIO, COLUNA_ESCOLARIDADE_ORDINAL,
+    ]
+    base = df[[c for c in usadas if c in df.columns]].copy()
     secao = base[COLUNA_SECAO]
     if COLUNA_SUBCLASSE in base.columns:
         divisao = pd.to_numeric(base[COLUNA_SUBCLASSE], errors="coerce") // 100_000
@@ -272,6 +295,8 @@ def preparar_base(df: pd.DataFrame) -> pd.DataFrame:
             if origem in base.columns
             else pd.Series(float("nan"), index=base.index)
         )
+        if nome == "salario":
+            valor = valor.where((valor > 0) & (valor <= teto))
         for mascara, sufixo in ((adm, "admissao"), (desl, "desligamento")):
             valido = mascara & valor.notna()
             base[f"soma_{nome}_{sufixo}"] = valor.where(valido, 0.0)
@@ -612,11 +637,13 @@ def agregar_perfil(df_metricas: pd.DataFrame) -> pd.DataFrame:
     grupos = base.groupby(COLUNAS_PERFIL, dropna=False)
     perfil = grupos[COLUNAS_ADITIVAS].sum()
 
+    teto = teto_salario(df_metricas)
     salario = (
         pd.to_numeric(base[COLUNA_SALARIO], errors="coerce")
         if COLUNA_SALARIO in base.columns
         else pd.Series(float("nan"), index=base.index)
     )
+    salario = salario.where((salario > 0) & (salario <= teto))
     for indicador, coluna in (
         (COLUNA_ADMISSOES, COLUNA_MEDIANA_SALARIO_ADMISSAO),
         (COLUNA_DESLIGAMENTOS, COLUNA_MEDIANA_SALARIO_DESLIGAMENTO),
@@ -643,6 +670,7 @@ def montar_metadados(
     df_perfil: pd.DataFrame,
     meta_ia: dict | None = None,
     raiz: str | os.PathLike[str] = ".",
+    teto_salario_valido: float | None = None,
 ) -> dict:
     """Reúne a procedência dos artefatos para o `metadados.json`.
 
@@ -691,6 +719,10 @@ def montar_metadados(
             "nao_classificado_ponderado": float(movimentos[nao_classificado].sum() / movimentos.sum())
             if movimentos.sum()
             else None,
+        },
+        "salario_valido": {
+            "regra": f"> 0 e ≤ {MULTIPLO_TETO_SALARIO} × mediana estadual dos salários positivos",
+            "teto": teto_salario_valido,
         },
         "testes": n_testes,
     }
@@ -820,6 +852,8 @@ __all__ = [
     "COLUNAS_ADITIVAS",
     "COLUNAS_PERFIL",
     "preparar_base",
+    "teto_salario",
+    "MULTIPLO_TETO_SALARIO",
     "agregar",
     "agregar_perfil",
     "escrever_metadados",

@@ -1,0 +1,329 @@
+"""Construtores puros de figuras Plotly do dashboard (sem Streamlit, sem I/O).
+
+Cada ``construir_*`` recebe DataFrames já reagregados por `comum.agregar_metricas`
+e devolve uma ``go.Figure``; em falta de dados devolve uma figura de
+*empty-state* em vez de levantar. Títulos são a pergunta que o gráfico
+responde; números no hover vêm formatados em pt-BR, sempre com o ``n``.
+"""
+
+from __future__ import annotations
+
+import pandas as pd
+import plotly.graph_objects as go
+
+from dashboard import comum as c
+
+ALTURA_PADRAO = 440
+
+
+def _folga_x(valores, folga: float = 0.28) -> list[float]:
+    """Faixa do eixo x com folga para os rótulos de texto fora das barras."""
+    serie = pd.Series(valores, dtype="float64").dropna()
+    if serie.empty:
+        return [0, 1]
+    minimo, maximo = min(0.0, float(serie.min())), max(0.0, float(serie.max()))
+    largura = (maximo - minimo) or 1.0
+    return [minimo - (folga * largura if minimo < 0 else 0), maximo + (folga * largura if maximo > 0 else 0)]
+
+
+def _layout(figura: go.Figure, titulo: str, altura: int = ALTURA_PADRAO, **extras) -> go.Figure:
+    c.registrar_template()
+    figura.update_layout(title={"text": titulo}, height=altura, font={"size": 15}, **extras)
+    return figura
+
+
+# --- Mapa ---------------------------------------------------------------------
+
+# Métrica do mapa → (escala, centro). Métricas com sinal usam a escala
+# divergente centrada no neutro; taxas de tensão usam a escala sequencial.
+ESCALAS_MAPA = {
+    c.M_SALDO_10K: ("divergente", 0.0),
+    c.M_SALDO_REL: ("divergente", 0.0),
+    c.M_ACEL: ("divergente", 0.0),
+    c.M_GAP_SAL: ("divergente", 1.0),
+    c.M_GAP_ESC: ("divergente", 0.0),
+    c.M_SAIDA_VOL: ("tensao", None),
+    c.M_GIRO: ("tensao", None),
+}
+PERCENTIL_LIMITE_ESCALA = 98
+
+
+def construir_mapa(
+    metricas: pd.DataFrame,
+    geojson: dict | None,
+    metrica: str,
+    *,
+    rotulo_territorio: str = c.COLUNA_NOME_MUNICIPIO,
+) -> go.Figure:
+    """Coroplético por município, colorido pela `metrica` da unidade territorial.
+
+    ``metricas`` traz uma linha por **município** com ``municipio`` (chave de 6
+    dígitos), o rótulo da unidade (o próprio município, a micro ou a
+    mesorregião — cada município é pintado com o valor da sua unidade), a
+    métrica e ``movimentacoes``. Unidades sem amostra suficiente ficam em cinza.
+    """
+    if geojson is None:
+        return c.figura_vazia("Mapa indisponível: malha de municípios não encontrada.")
+    if metricas is None or metricas.empty or metrica not in metricas.columns:
+        return c.figura_vazia("Sem dados para o mapa nesta seleção.")
+
+    escala, centro = ESCALAS_MAPA.get(metrica, ("divergente", 0.0))
+    definicao = c.DEFINICOES[metrica]
+    validas = metricas[metricas[c.M_AMOSTRA_OK] & metricas[metrica].notna()]
+    insuficientes = metricas[~metricas.index.isin(validas.index)]
+
+    def _hover(dados: pd.DataFrame) -> list[str]:
+        return [
+            f"<b>{rot}</b><br>{definicao.rotulo}: {c.fmt_metrica(metrica, v)}"
+            f"<br>n = {c.fmt_int(n)} movimentações"
+            + ("" if ok else "<br><i>amostra insuficiente</i>")
+            for rot, v, n, ok in zip(dados[rotulo_territorio], dados[metrica],
+                                     dados[c.M_MOV], dados[c.M_AMOSTRA_OK])
+        ]
+
+    figura = go.Figure()
+    if not insuficientes.empty:
+        figura.add_trace(go.Choropleth(
+            geojson=geojson, featureidkey="properties.chave_municipal",
+            locations=insuficientes[c.COLUNA_MUNICIPIO].astype(str),
+            z=[0] * len(insuficientes), colorscale=[[0, "#D9D9D9"], [1, "#D9D9D9"]],
+            showscale=False, marker_line_width=0.3, marker_line_color="white",
+            text=_hover(insuficientes), hoverinfo="text",
+            customdata=insuficientes[rotulo_territorio].astype(str), name="amostra insuficiente",
+        ))
+    if not validas.empty:
+        valores = validas[metrica].astype(float)
+        if escala == "divergente":
+            desvio = (valores - centro).abs()
+            limite = float(desvio.quantile(PERCENTIL_LIMITE_ESCALA / 100)) or float(desvio.max()) or 1.0
+            zmin, zmax, cores = centro - limite, centro + limite, c.ESCALA_DIVERGENTE
+            if metrica == c.M_GAP_SAL:
+                cores = c.ESCALA_DIVERGENTE  # < 1 = compressão (vermelhão); > 1 = azul
+        else:
+            zmin, zmax = float(valores.quantile(0.02)), float(valores.quantile(0.98))
+            if zmin == zmax:
+                zmax = zmin + 1e-9
+            cores = c.ESCALA_TENSAO
+        formato = c.DEFINICOES[metrica].formato
+        ticks = [zmin, (zmin + zmax) / 2, zmax]
+        figura.add_trace(go.Choropleth(
+            geojson=geojson, featureidkey="properties.chave_municipal",
+            locations=validas[c.COLUNA_MUNICIPIO].astype(str), z=valores,
+            zmin=zmin, zmax=zmax, colorscale=cores,
+            marker_line_width=0.3, marker_line_color="white",
+            text=_hover(validas), hoverinfo="text",
+            customdata=validas[rotulo_territorio].astype(str),
+            colorbar={"title": {"text": definicao.rotulo}, "tickvals": ticks,
+                      "ticktext": [c.fmt_metrica(metrica, t) for t in ticks],
+                      "len": 0.8, "thickness": 14},
+        ))
+        _ = formato
+    figura.update_geos(fitbounds="locations", visible=False, bgcolor="rgba(0,0,0,0)")
+    return _layout(figura, f"Onde: {definicao.rotulo.lower()} por território", 520,
+                   margin={"l": 0, "r": 0, "t": 50, "b": 0}, dragmode=False)
+
+
+# --- Série mensal ---------------------------------------------------------------
+
+
+def construir_serie_mensal(mensal: pd.DataFrame, titulo: str = "Como evoluiu: admissões, desligamentos e saldo") -> go.Figure:
+    """Barras de admissões/desligamentos e linha do saldo por mês."""
+    if mensal is None or mensal.empty:
+        return c.figura_vazia("Sem dados mensais nesta seleção.")
+    dados = mensal.assign(_ordem=mensal[c.COLUNA_MES].astype(str)).sort_values("_ordem")
+    x = [c.rotulo_mes(m) for m in dados[c.COLUNA_MES]]
+    figura = go.Figure()
+    figura.add_bar(x=x, y=dados[c.COLUNA_ADMISSOES], name="Admissões", marker_color=c.COR_EXPANSAO,
+                   hovertemplate="%{x}: %{y:,.0f} admissões<extra></extra>")
+    figura.add_bar(x=x, y=-dados[c.COLUNA_DESLIGAMENTOS], name="Desligamentos", marker_color=c.COR_TENSAO,
+                   marker_pattern_shape="/", customdata=dados[c.COLUNA_DESLIGAMENTOS],
+                   hovertemplate="%{x}: %{customdata:,.0f} desligamentos<extra></extra>")
+    figura.add_scatter(x=x, y=dados[c.M_SALDO], name="Saldo", mode="lines+markers",
+                       line={"color": "#E69F00", "width": 3}, marker={"symbol": "diamond", "size": 10, "line": {"width": 1, "color": "white"}},
+                       hovertemplate="%{x}: saldo %{y:,.0f}<extra></extra>")
+    figura.add_hline(y=0, line_color=c.COR_NEUTRA, line_width=1)
+    return _layout(figura, titulo, 400, barmode="relative",
+                   legend={"orientation": "h", "y": -0.15}, yaxis_title="Movimentações (desligamentos abaixo de zero)")
+
+
+# --- Matriz Dinamismo × Tensão --------------------------------------------------
+
+
+def construir_matriz(matriz: pd.DataFrame, rotulo: pd.Series) -> go.Figure:
+    """Bolhas Dinamismo × Tensão, um símbolo e uma cor por quadrante."""
+    if matriz is None or matriz.empty:
+        return c.figura_vazia("Nenhuma unidade com amostra suficiente (≥ 100 movimentações).")
+    figura = go.Figure()
+    tamanho_ref = float(matriz[c.M_MOV].max()) or 1.0
+    for nome_q in (c.Q_APAGAO, c.Q_PRESSAO, c.Q_SAUDAVEL, c.Q_ESTAGNACAO):
+        parte = matriz[matriz["quadrante"] == nome_q]
+        if parte.empty:
+            continue
+        rot = rotulo.loc[parte.index]
+        figura.add_scatter(
+            x=parte["dinamismo"], y=parte["tensao"], mode="markers", name=nome_q,
+            marker={"size": 12 + 48 * (parte[c.M_MOV] / tamanho_ref) ** 0.5,
+                    "color": c.CORES_QUADRANTE[nome_q], "symbol": c.SIMBOLOS_QUADRANTE[nome_q],
+                    "opacity": 0.75, "line": {"width": 1, "color": "white"}},
+            customdata=list(zip(rot, [c.fmt_int(v) for v in parte[c.M_MOV]],
+                                [c.fmt_pct(v) for v in parte[c.M_SAIDA_VOL]],
+                                [c.fmt_razao(v) for v in parte[c.M_GAP_SAL]],
+                                parte["motor"])),
+            hovertemplate=("<b>%{customdata[0]}</b><br>n = %{customdata[1]} movimentações"
+                           "<br>saída voluntária %{customdata[2]} · gap salarial %{customdata[3]}"
+                           "<br>principal motor: %{customdata[4]}<extra>%{fullData.name}</extra>"),
+        )
+    figura.add_hline(y=0, line_color=c.COR_NEUTRA, line_dash="dot")
+    figura.add_vline(x=0, line_color=c.COR_NEUTRA, line_dash="dot")
+    for x, y, texto in ((1, 1, c.Q_PRESSAO), (0, 1, c.Q_APAGAO), (1, 0, c.Q_SAUDAVEL), (0, 0, c.Q_ESTAGNACAO)):
+        figura.add_annotation(xref="paper", yref="paper", x=x, y=y, text=f"<b>{texto}</b>",
+                              showarrow=False, xanchor="right" if x else "left",
+                              yanchor="top" if y else "bottom", font={"size": 14, "color": c.CORES_QUADRANTE[texto]})
+    return _layout(figura, "Quem precisa de atenção: dinamismo × tensão", 560,
+                   xaxis_title="Dinamismo (z: saldo relativo e aceleração) →",
+                   yaxis_title="Tensão (z: giro, saída voluntária, compressão) →",
+                   legend={"orientation": "h", "y": -0.18})
+
+
+# --- Causa raiz -------------------------------------------------------------------
+
+
+def construir_salario_por_categoria(medianas: pd.DataFrame, categoria: str, titulo: str) -> go.Figure:
+    """Barras pareadas: mediana de admissão × de desligamento por categoria."""
+    if medianas is None or medianas.empty:
+        return c.figura_vazia("Sem salários suficientes nesta seleção.")
+    dados = medianas[(medianas["n_admissao"] >= c.MIN_SALARIOS) & (medianas["n_desligamento"] >= c.MIN_SALARIOS)]
+    if dados.empty:
+        return c.figura_vazia(f"Nenhuma categoria com ≥ {c.MIN_SALARIOS} salários de cada lado.")
+    figura = go.Figure()
+    for coluna, n, nome, cor, padrao in (
+        ("mediana_admissao", "n_admissao", "Admitidos", c.COR_EXPANSAO, ""),
+        ("mediana_desligamento", "n_desligamento", "Desligados", c.COR_TENSAO, "/"),
+    ):
+        figura.add_bar(
+            y=dados[categoria].astype(str), x=dados[coluna], name=nome, orientation="h",
+            marker_color=cor, marker_pattern_shape=padrao,
+            text=[c.fmt_brl(v) for v in dados[coluna]], textposition="outside",
+            customdata=[c.fmt_int(v) for v in dados[n]],
+            hovertemplate="%{y}<br>" + nome + ": %{text} (n = %{customdata})<extra></extra>",
+        )
+    figura.update_traces(cliponaxis=False)
+    return _layout(figura, titulo, 140 + 60 * len(dados), barmode="group",
+                   xaxis={"title": "Mediana do salário (R$)", "tickformat": ",.0f",
+                          "range": _folga_x(pd.concat([dados["mediana_admissao"], dados["mediana_desligamento"]]))},
+                   legend={"orientation": "h", "y": -0.12}, yaxis={"autorange": "reversed"})
+
+
+def construir_gap_escolaridade(metricas: pd.DataFrame, categoria: str) -> go.Figure:
+    """Gap de escolaridade (admitidos − desligados) por categoria, com amostra."""
+    dados = metricas[metricas[c.M_AMOSTRA_OK] & metricas[c.M_GAP_ESC].notna()] if metricas is not None else None
+    if dados is None or dados.empty:
+        return c.figura_vazia("Sem amostra suficiente para o gap de escolaridade.")
+    dados = dados.sort_values(c.M_GAP_ESC)
+    cores = [c.COR_TENSAO if v < 0 else c.COR_EXPANSAO for v in dados[c.M_GAP_ESC]]
+    figura = go.Figure(go.Bar(
+        y=dados[categoria].astype(str), x=dados[c.M_GAP_ESC], orientation="h", marker_color=cores,
+        text=[c.fmt_metrica(c.M_GAP_ESC, v) for v in dados[c.M_GAP_ESC]], textposition="outside",
+        customdata=[c.fmt_int(v) for v in dados[c.M_MOV]],
+        hovertemplate="%{y}<br>gap %{text} níveis (n = %{customdata})<extra></extra>",
+    ))
+    figura.add_vline(x=0, line_color=c.COR_NEUTRA)
+    figura.update_traces(cliponaxis=False)
+    return _layout(figura, "Quem entra tem mais ou menos estudo do que quem sai?", 140 + 42 * len(dados),
+                   xaxis={"title": "Admitidos − desligados (níveis)",
+                          "range": _folga_x(dados[c.M_GAP_ESC], 0.45)})
+
+
+def construir_dispersao(
+    metricas: pd.DataFrame, rotulo: pd.Series, x: str, y: str, titulo: str, *, tamanho: bool = True
+) -> go.Figure:
+    """Dispersão genérica entre duas métricas, com n no hover e tamanho = volume."""
+    if metricas is None or metricas.empty:
+        return c.figura_vazia("Sem unidades com amostra suficiente.")
+    dados = metricas.dropna(subset=[x, y])
+    if dados.empty:
+        return c.figura_vazia("Sem unidades com as duas métricas disponíveis.")
+    ref = float(dados[c.M_MOV].max()) or 1.0
+    rot_x = c.DEFINICOES[x].rotulo if x in c.DEFINICOES else x
+    rot_y = c.DEFINICOES[y].rotulo if y in c.DEFINICOES else y
+    figura = go.Figure(go.Scatter(
+        x=dados[x], y=dados[y], mode="markers",
+        marker={"size": (10 + 40 * (dados[c.M_MOV] / ref) ** 0.5) if tamanho else 10,
+                "color": c.COR_DESTAQUE, "opacity": 0.6, "line": {"width": 1, "color": "white"}},
+        customdata=list(zip(rotulo.loc[dados.index], [c.fmt_metrica(x, v) if x in c.DEFINICOES else c.fmt_num(v, 3) for v in dados[x]],
+                            [c.fmt_metrica(y, v) for v in dados[y]], [c.fmt_int(v) for v in dados[c.M_MOV]])),
+        hovertemplate=f"<b>%{{customdata[0]}}</b><br>{rot_x}: %{{customdata[1]}}<br>{rot_y}: %{{customdata[2]}}"
+                      "<br>n = %{customdata[3]}<extra></extra>",
+    ))
+    return _layout(figura, titulo, 460, xaxis_title=rot_x, yaxis_title=rot_y)
+
+
+# --- Ocupações (IA) ---------------------------------------------------------------
+
+
+def construir_treemap(metricas: pd.DataFrame) -> go.Figure:
+    """Treemap macrofamília → nível; área = movimentações, cor = saída voluntária."""
+    if metricas is None or metricas.empty:
+        return c.figura_vazia("Sem movimentações nesta seleção.")
+    dados = metricas[metricas[c.M_MOV] > 0]
+    ids, rotulos, pais, valores, cores, textos = [], [], [], [], [], []
+    for macro, g in dados.groupby(c.COLUNA_MACROFAMILIA_CBO, observed=True):
+        mov = g[c.M_MOV].sum()
+        desl = g[c.COLUNA_DESLIGAMENTOS].sum()
+        saida = g[c.COLUNA_DESLIGAMENTOS_A_PEDIDO].sum() / desl if desl else float("nan")
+        ids.append(str(macro)); rotulos.append(str(macro)); pais.append(""); valores.append(mov); cores.append(saida)
+        textos.append(f"{c.fmt_int(mov)} movimentações · saída voluntária {c.fmt_pct(saida)}")
+        for _, linha in g.iterrows():
+            ids.append(f"{macro}/{linha[c.COLUNA_NIVEL_QUALIFICACAO]}")
+            rotulos.append(str(linha[c.COLUNA_NIVEL_QUALIFICACAO])); pais.append(str(macro))
+            valores.append(linha[c.M_MOV]); cores.append(linha[c.M_SAIDA_VOL])
+            textos.append(f"{c.fmt_int(linha[c.M_MOV])} movimentações · saída voluntária "
+                          f"{c.fmt_pct(linha[c.M_SAIDA_VOL])}" + ("" if linha[c.M_AMOSTRA_OK] else " · amostra insuficiente"))
+    figura = go.Figure(go.Treemap(
+        ids=ids, labels=rotulos, parents=pais, values=valores, branchvalues="total",
+        marker={"colors": cores, "colorscale": c.ESCALA_TENSAO, "showscale": True,
+                "colorbar": {"title": {"text": "Saída voluntária"}, "tickformat": ".0%"}},
+        text=textos, hovertemplate="<b>%{label}</b><br>%{text}<extra></extra>",
+        texttemplate="<b>%{label}</b><br>%{value:,.0f}", textfont={"size": 15, "color": "#1B2430"},
+        root={"color": "rgba(0,0,0,0)"}, pathbar={"visible": False},
+    ))
+    return _layout(figura, "Que profissional gira: macrofamília (IA) → nível de qualificação", 560,
+                   margin={"l": 0, "r": 0, "t": 50, "b": 0})
+
+
+# --- Barras simples ---------------------------------------------------------------
+
+
+def construir_barras(metricas: pd.DataFrame, categoria: str, metrica: str, titulo: str, *, limite: int = 15) -> go.Figure:
+    """Barras horizontais de uma métrica por categoria (cinza = amostra insuficiente)."""
+    if metricas is None or metricas.empty:
+        return c.figura_vazia("Sem dados nesta seleção.")
+    dados = metricas.dropna(subset=[metrica]).sort_values(metrica, ascending=False).head(limite)
+    if dados.empty:
+        return c.figura_vazia("Sem dados nesta seleção.")
+    sinal = c.DEFINICOES[metrica].formato in ("int", "num1", "num2", "pp")
+    cores = [
+        c.COR_NEUTRA if not ok else (c.COR_TENSAO if (sinal and v < 0) or (not sinal) else c.COR_EXPANSAO)
+        for v, ok in zip(dados[metrica], dados[c.M_AMOSTRA_OK])
+    ] if sinal else [c.COR_TENSAO if ok else c.COR_NEUTRA for ok in dados[c.M_AMOSTRA_OK]]
+    figura = go.Figure(go.Bar(
+        y=dados[categoria].astype(str), x=dados[metrica], orientation="h", marker_color=cores,
+        text=[c.fmt_metrica(metrica, v) for v in dados[metrica]], textposition="outside",
+        customdata=[c.fmt_int(v) for v in dados[c.M_MOV]],
+        hovertemplate="%{y}<br>%{text} (n = %{customdata})<extra></extra>",
+    ))
+    figura.update_traces(cliponaxis=False)
+    return _layout(figura, titulo, 140 + 38 * len(dados), yaxis={"autorange": "reversed"},
+                   xaxis={"title": c.DEFINICOES[metrica].rotulo, "range": _folga_x(dados[metrica])})
+
+
+def construir_funil(etapas: list[tuple[str, int]]) -> go.Figure:
+    """Funil de volumes do pipeline (bruto → limpo → agregado → indústria)."""
+    if not etapas:
+        return c.figura_vazia("Metadados indisponíveis.")
+    figura = go.Figure(go.Funnel(
+        y=[e[0] for e in etapas], x=[e[1] for e in etapas],
+        text=[c.fmt_int(e[1]) for e in etapas], textinfo="text+percent initial",
+        marker={"color": [c.COR_DESTAQUE, c.COR_DESTAQUE, "#5B8DB8", c.COR_EXPANSAO][: len(etapas)]},
+    ))
+    return _layout(figura, "Do arquivo bruto à indústria: volume em cada etapa", 340)

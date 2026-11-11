@@ -1,6 +1,6 @@
 """Testes de exemplo do carregamento de dados do Dashboard (tarefa 12.2).
 
-Validam `carregar_dados` de `dashboard/app.py`, a fronteira de dados do painel,
+Validam `carregar_dados` de `dashboard/comum.py`, a fronteira de dados do painel,
 que resolve a origem das tabelas agregadas com a estratégia de resiliência da
 demonstração (R9), sem qualquer chamada de rede e usando `tmp_path` para a cópia
 local em Parquet:
@@ -28,7 +28,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from dashboard.app import (
+from dashboard.comum import (
     VAR_CREDENCIAL_AZURE,
     ResultadoCarregamento,
     carregar_dados,

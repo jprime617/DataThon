@@ -186,6 +186,10 @@ streamlit run dashboard/app.py
 
 Para habilitar a leitura a partir do Blob Storage, defina `AZURE_STORAGE_CONNECTION_STRING` antes de iniciar o app. Sem essa variável, o dashboard usa automaticamente a cópia local das tabelas agregadas.
 
+O painel tem sete páginas na ordem da narrativa — **Panorama** (onde está o problema), **Diagnóstico** (matriz dinamismo × tensão), **Causa raiz** (salário, qualificação, retenção), **Ocupações (IA)** (macrofamílias, explorador de CBO e auditoria da IA), **Recomendações** (regras → alavancas, ficha da mesorregião em Markdown, custo da saída voluntária), **Ficha do território** e **Metodologia** — além do **Modo apresentação**, com os 5 passos do pitch. Os filtros da barra lateral (escopo, período, território, setor, macrofamília e nível) valem para todas as páginas. Todo número exibido é recalculado a partir das contagens aditivas do agregado (soma antes de dividir), com guarda de amostra: taxas exigem ≥ 100 movimentações; gaps salariais, ≥ 30 salários de cada lado.
+
+Código: `dashboard/app.py` (navegação), `dashboard/comum.py` (dados, métricas, filtros, formatação, tema), `dashboard/figuras.py` (figuras puras), `dashboard/narrativa.py` (frases calculadas) e `dashboard/paginas/`.
+
 ## Implantação no Azure (App Service)
 
 O dashboard roda no Azure App Service lendo as tabelas agregadas do Blob Storage, com *fallback* para a cópia local (R9.2, R9.6). Ambos os SKUs abaixo são elegíveis para a conta **Azure for Students** (R9.4).

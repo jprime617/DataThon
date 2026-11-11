@@ -1,0 +1,27 @@
+# Tema do painel: uma cor de acento, base clara por padrão e variante escura
+# legível (o Streamlit segue a preferência do sistema; o menu ⋮ → Settings
+# permite trocar). Sem `base` aqui de propósito: ele travaria um dos modos.
+
+[theme]
+primaryColor = "#0F4C81"
+font = "sans-serif"
+baseRadius = "medium"
+showSidebarBorder = true
+
+[theme.light]
+primaryColor = "#0F4C81"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F3F6FA"
+textColor = "#1B2430"
+
+[theme.dark]
+primaryColor = "#6CA6E0"
+backgroundColor = "#0F1720"
+secondaryBackgroundColor = "#1A2430"
+textColor = "#E6EDF3"
+
+[client]
+toolbarMode = "minimal"
+
+[browser]
+gatherUsageStats = false

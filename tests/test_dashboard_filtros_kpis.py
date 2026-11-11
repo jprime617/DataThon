@@ -1,42 +1,22 @@
-"""Testes do filtro e dos KPIs do Dashboard (tarefa 12.4).
-
-Valida as duas funções puras de `dashboard/app.py` que alimentam a narrativa do
-painel ("localizar → entender → decidir"):
-
-- `aplicar_filtros(df, periodo, regiao, secao, macrofamilia)` — recorta a tabela
-  agregada pelas quatro dimensões do painel, em conjunção lógica, com cada filtro
-  opcional (R7.5);
-- `calcular_kpis(df)` — deriva ≥3 indicadores-chave (rótulo + valor numérico) do
-  recorte filtrado, colapsando para zero quando o filtro não casa com nenhum
-  registro (R7.1, R7.6).
-
-Cobertura:
+"""Teste de propriedade do filtro do dashboard (`dashboard.comum.aplicar_filtros`).
 
 - **Property 28 (Hypothesis, ≥100 exemplos)**: para qualquer base agregada e
   qualquer combinação de filtros (período, região, seção, macrofamília), o
   resultado é **correto** (toda linha retornada satisfaz todos os critérios) e
-  **completo** (nenhuma linha da base que satisfaz os critérios é omitida).
-  Validamos isso comparando o conjunto de índices retornados com o conjunto de
-  índices da base que satisfazem a conjunção dos filtros — a diferença simétrica
-  deve ser vazia (R7.5).
-- **Teste de exemplo dos KPIs**: `calcular_kpis` devolve ao menos 3 pares
-  ``(rótulo, valor)`` com rótulo não vazio e valor numérico (R7.1); um filtro que
-  não casa com nenhum registro produz um DataFrame vazio cujos KPIs são todos
-  ``0.0`` (R7.6).
+  **completo** (nenhuma linha que os satisfaz é omitida) — R7.5.
 
-Todas as funções sob teste são puras: nenhum servidor Streamlit, rede ou disco é
-exercido aqui.
+Os KPIs, agora derivados de colunas aditivas, são testados em
+`test_dashboard_metricas.py`.
 """
 
 from __future__ import annotations
 
-import math
 
 import pandas as pd
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from dashboard.app import aplicar_filtros, calcular_kpis
+from dashboard.comum import aplicar_filtros
 from src.agregador import (
     COLUNA_MACROFAMILIA_CBO,
     COLUNA_MES,
@@ -185,72 +165,3 @@ def test_prop28_filtro_correto_e_completo(
         assert _aceita(regiao, linha[COLUNA_REGIAO])
         assert _aceita(secao, linha[COLUNA_SECAO_INDUSTRIAL])
         assert _aceita(macrofamilia, linha[COLUNA_MACROFAMILIA_CBO])
-
-
-# ---------------------------------------------------------------------------
-# Exemplo — KPIs renderizados e zeragem em filtro vazio (R7.1, R7.6)
-# ---------------------------------------------------------------------------
-
-
-def _agregado_exemplo() -> pd.DataFrame:
-    """Tabela agregada mínima com as colunas que os KPIs consomem."""
-    return pd.DataFrame(
-        {
-            COLUNA_MES: [202509, 202509, 202510],
-            COLUNA_REGIAO: ["420010", "420020", "420010"],
-            COLUNA_SECAO_INDUSTRIAL: ["C", "C", "A"],
-            COLUNA_MACROFAMILIA_CBO: ["Indústria", "Serviços", "Indústria"],
-            COLUNA_SALDO_LIQUIDO: [10.0, -4.0, 6.0],
-            COLUNA_SALDO_POR_10K: [2.5, -1.0, 1.5],
-            COLUNA_TURNOVER: [0.3, 0.1, 0.5],
-        }
-    )
-
-
-def test_calcular_kpis_retorna_ao_menos_tres_pares_rotulo_valor() -> None:
-    """`calcular_kpis` devolve ≥3 pares (rótulo, valor numérico) (R7.1).
-
-    Cada KPI tem rótulo legível não vazio e valor numérico finito, satisfazendo o
-    contrato "no mínimo 3 KPIs, cada um exibindo rótulo e valor numérico".
-
-    Requirements: 7.1
-    """
-    kpis = calcular_kpis(_agregado_exemplo())
-
-    assert len(kpis) >= 3
-    rotulos = set()
-    for rotulo, valor in kpis:
-        assert isinstance(rotulo, str) and rotulo.strip()
-        assert isinstance(valor, float)
-        assert math.isfinite(valor)
-        rotulos.add(rotulo)
-    # Rótulos distintos — KPIs não se repetem.
-    assert len(rotulos) == len(kpis)
-
-    # Sanidade dos valores: saldo líquido total = soma da coluna.
-    valores = dict(kpis)
-    from dashboard.app import KPI_SALDO_LIQUIDO_TOTAL
-
-    assert valores[KPI_SALDO_LIQUIDO_TOTAL] == 12.0  # 10 - 4 + 6
-
-
-def test_filtro_sem_registros_zera_todos_os_kpis() -> None:
-    """Filtro que não casa com nenhum registro → DataFrame vazio e KPIs em zero (R7.6).
-
-    Selecionamos uma região inexistente na base: `aplicar_filtros` devolve um
-    recorte vazio e `calcular_kpis` colapsa **todos** os KPIs para ``0.0``, sem
-    levantar exceção, mantendo ao menos 3 indicadores.
-
-    Requirements: 7.1, 7.6
-    """
-    df = _agregado_exemplo()
-
-    vazio = aplicar_filtros(df, regiao="999999")
-    assert vazio.empty
-    assert list(vazio.columns) == list(df.columns)
-
-    kpis = calcular_kpis(vazio)
-    assert len(kpis) >= 3
-    for rotulo, valor in kpis:
-        assert isinstance(rotulo, str) and rotulo.strip()
-        assert valor == 0.0

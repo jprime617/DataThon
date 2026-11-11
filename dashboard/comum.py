@@ -53,6 +53,7 @@ from src.agregador import (
     COLUNAS_ADITIVAS,
 )
 from src.logging_pipeline import log_etapa, obter_logger
+from src.mapeamentos import NAO_CLASSIFICADO
 
 _ETAPA = "dashboard"
 
@@ -181,6 +182,30 @@ class Artefatos:
         return self.agregado is not None
 
 
+# Colunas legadas (R6) que o painel v2 não lê: ficam no arquivo para o app
+# antigo, mas não entram na memória do servidor.
+_COLUNAS_LEGADAS = {
+    "saldo_liquido", "saldo_por_10k", "turnover", "indice_aquecimento",
+    "salario_medio_admissao", "salario_medio_desligamento", "escolaridade_media",
+}
+
+
+def ler_parquet_enxuto(fonte) -> pd.DataFrame:
+    """Lê um Parquet com textos já como categorias e sem as colunas legadas.
+
+    Ler direto em dicionário evita materializar milhões de objetos `str` só
+    para convertê-los em seguida — o que, no B1, custava centenas de MB.
+    """
+    import pyarrow.parquet as pq
+
+    esquema = pq.read_schema(fonte)
+    if hasattr(fonte, "seek"):
+        fonte.seek(0)
+    colunas = [n for n in esquema.names if n not in _COLUNAS_LEGADAS]
+    textos = [n for n in colunas if str(esquema.field(n).type) in ("string", "large_string")]
+    return pq.read_table(fonte, columns=colunas, read_dictionary=textos).to_pandas()
+
+
 def schema_v2_ok(df: pd.DataFrame | None) -> bool:
     """O agregado tem todas as colunas que o painel v2 exige?"""
     return df is not None and set(COLUNAS_V2) <= set(df.columns)
@@ -206,11 +231,11 @@ def carregar_artefatos(
         agregado = perfil = None
         meta: dict = {}
         try:
-            agregado = pd.read_parquet(pasta / NOME_BLOB_AGREGADO)
+            agregado = ler_parquet_enxuto(pasta / NOME_BLOB_AGREGADO)
         except Exception as exc:  # noqa: BLE001
             avisos.append(f"Cópia local do agregado ilegível ({exc}).")
         try:
-            perfil = pd.read_parquet(pasta / NOME_BLOB_PERFIL)
+            perfil = ler_parquet_enxuto(pasta / NOME_BLOB_PERFIL)
         except Exception:  # noqa: BLE001
             avisos.append("Perfil de causa raiz indisponível na cópia local.")
         try:
@@ -222,12 +247,12 @@ def carregar_artefatos(
     credencial = (ambiente.get(VAR_CREDENCIAL_AZURE) or "").strip()
     if credencial:
         try:
-            agregado = pd.read_parquet(io.BytesIO(baixar(credencial, NOME_BLOB_AGREGADO)))
+            agregado = ler_parquet_enxuto(io.BytesIO(baixar(credencial, NOME_BLOB_AGREGADO)))
             if not schema_v2_ok(agregado):
                 raise ValueError("a cópia do Blob está no schema antigo (sem as colunas v2)")
-            perfil = pd.read_parquet(io.BytesIO(baixar(credencial, NOME_BLOB_PERFIL)))
+            perfil = ler_parquet_enxuto(io.BytesIO(baixar(credencial, NOME_BLOB_PERFIL)))
             meta = json.loads(baixar(credencial, NOME_BLOB_METADADOS).decode("utf-8"))
-            return Artefatos(agregado, perfil, meta, "blob", tuple(avisos))
+            return Artefatos(preparar_tipos(agregado), perfil, meta, "blob", tuple(avisos))
         except Exception as exc:  # noqa: BLE001
             avisos.append(f"Azure Blob não usado: {exc}. Exibindo a cópia local.")
     else:
@@ -245,14 +270,19 @@ def carregar_artefatos(
 
 def preparar_tipos(df: pd.DataFrame) -> pd.DataFrame:
     """Dimensões textuais como categorias: filtros e groupbys bem mais rápidos."""
-    resultado = df.copy()
+    resultado = df
     for coluna in (
         COLUNA_REGIAO, COLUNA_MICRORREGIAO, COLUNA_MUNICIPIO, COLUNA_NOME_MUNICIPIO,
         COLUNA_SECAO_INDUSTRIAL, COLUNA_SETOR, COLUNA_MACROFAMILIA_CBO,
         COLUNA_NIVEL_QUALIFICACAO, COLUNA_MES,
     ):
         if coluna in resultado.columns:
-            resultado[coluna] = resultado[coluna].astype(str).astype("category")
+            serie = resultado[coluna]
+            if not isinstance(serie.dtype, pd.CategoricalDtype):
+                serie = serie.astype(str).astype("category")
+            # Categorias em ordem alfabética/cronológica: o dicionário do Parquet
+            # vem na ordem do arquivo, e ordenar por ele embaralharia os meses.
+            resultado[coluna] = serie.cat.reorder_categories(sorted(serie.cat.categories, key=str))
     return resultado
 
 
@@ -401,10 +431,11 @@ DEFINICOES: dict[str, Definicao] = {
         "num1",
     ),
     M_GIRO: Definicao(
-        "Giro (proxy)",
-        "mín(adm, desl) ÷ máx(adm, desl). 1 = só reposição; 0 = só expansão ou só "
-        "retração. Não é a taxa de rotatividade do MTE (não há estoque no CAGED).",
-        "razao",
+        "Giro (reposição)",
+        "mín(adm, desl) ÷ máx(adm, desl): quanto das contratações só repõe saídas. "
+        "100% = só reposição; 0% = só expansão ou só retração. Não é a taxa de "
+        "rotatividade do MTE (o CAGED não traz estoque de vínculos).",
+        "pct",
     ),
     M_SAIDA_VOL: Definicao(
         "Saída voluntária", "desligamentos a pedido (tipo 40) ÷ desligamentos", "pct"
@@ -413,7 +444,8 @@ DEFINICOES: dict[str, Definicao] = {
         "Gap salarial de reposição",
         "salário médio de admissão ÷ salário médio de desligamento "
         f"(< {str(LIMIAR_COMPRESSAO).replace('.', ',')} = compressão). "
-        f"Exige ≥ {MIN_SALARIOS} salários em cada lado.",
+        f"Exige ≥ {MIN_SALARIOS} salários em cada lado. Salário válido: > 0 e ≤ 20× a "
+        "mediana estadual (exclui zeros e valores de rescisão/digitação).",
         "razao",
     ),
     M_GAP_ESC: Definicao(
@@ -431,6 +463,8 @@ DEFINICOES: dict[str, Definicao] = {
     ),
     M_SAL_ADM: Definicao("Salário médio de admissão", "soma dos salários ÷ admissões com salário", "brl"),
     M_SAL_DESL: Definicao("Salário médio de desligamento", "soma dos salários ÷ desligamentos com salário", "brl"),
+    COLUNA_IDHM_2010: Definicao("IDHM 2010", "Índice de Desenvolvimento Humano Municipal (PNUD, 2010)", "num2"),
+    COLUNA_PIB_PER_CAPITA_2023: Definicao("PIB per capita 2023", "PIB municipal ÷ população (IBGE, 2023)", "brl"),
 }
 
 
@@ -775,20 +809,22 @@ def gerar_recomendacoes(
                 f"gap de escolaridade ≤ {fmt_num(LIMIAR_GAP_ESCOLARIDADE, 2)} em macrofamília técnica (Técnico + Superior ≥ 50%)",
                 f"gap de escolaridade {fmt_num(u[M_GAP_ESC], 2)}; {fmt_pct(f_tec)} das movimentações em nível Técnico/Superior",
                 -u[M_GAP_ESC], alvo="Técnico/Superior")
-        if u["quadrante"] == Q_PRESSAO:
+        if u["quadrante"] == Q_PRESSAO and u[M_SALDO] > 0:
             retracao = {r_: s_ for (r_, m_), s_ in saldo_por.items() if m_ == macro and r_ != regiao and s_ < 0}
             if retracao:
                 origem = min(retracao, key=retracao.get)
                 add(ALAVANCA_MOBILIDADE,
                     "expansão sob pressão aqui e retração da mesma macrofamília em outra mesorregião",
                     f"saldo {fmt_int(u[M_SALDO])} aqui; {origem} com saldo {fmt_int(retracao[origem])} na mesma macrofamília",
-                    float(u["tensao"]) + float(u["dinamismo"]), origem=origem)
+                    float(u[M_SALDO_REL]), origem=origem)
         f_bas = float(frac_basico.get(chave, 0.0))
-        if f_bas >= 0.5 and pd.notna(giro) and giro >= giro_ref + 0.05 and u[M_SALDO] <= 0:
+        # O giro agregado fica perto de 100% (quase toda contratação repõe uma
+        # saída), então "alto" aqui é estar acima da referência do recorte.
+        if f_bas >= 0.5 and pd.notna(giro) and giro >= giro_ref and u[M_SALDO] <= 0:
             add(ALAVANCA_AUTOMACAO,
-                "nível Básico ≥ 50%, giro ≥ referência + 0,05 e saldo ≤ 0",
-                f"{fmt_pct(f_bas)} em nível Básico; giro {fmt_razao(giro)} vs {fmt_razao(giro_ref)}; saldo {fmt_int(u[M_SALDO])}",
-                (giro - giro_ref) + f_bas - 0.5, alvo="Básico")
+                "nível Básico ≥ 50%, giro acima da referência do recorte e saldo ≤ 0",
+                f"{fmt_pct(f_bas)} em nível Básico; giro {fmt_pct(giro)} vs {fmt_pct(giro_ref)}; saldo {fmt_int(u[M_SALDO])}",
+                f_bas - 0.5 + (giro - giro_ref), alvo="Básico")
         if pd.notna(saida) and saida >= saida_ref + 0.05 and pd.notna(gap) and gap >= 1:
             add(ALAVANCA_RETENCAO,
                 "saída voluntária ≥ referência + 5 p.p. com gap de reposição ≥ 1 (salário não explica)",
@@ -984,3 +1020,250 @@ def carregar_cbo() -> tuple[pd.DataFrame | None, pd.DataFrame | None, str | None
     prompt = _ler(CAMINHO_PROMPT, lambda c: Path(c).read_text(encoding="utf-8"))
     return mapa, div, prompt
 
+
+
+# ---------------------------------------------------------------------------
+# Camada Streamlit (import tardio): contexto, filtros, cartões e proteção
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class Contexto:
+    """O que cada página recebe: artefatos, filtros e os recortes já prontos."""
+
+    art: Artefatos
+    filtros: Filtros
+    df: pd.DataFrame          # agregado com todos os filtros
+    ref: pd.DataFrame         # só escopo + período: a referência "SC"
+    corte: str | None         # 1º mês do 2º semestre do período
+
+    @property
+    def tem_recorte(self) -> bool:
+        f = self.filtros
+        return bool(f.territorios or f.setores or f.macrofamilias or f.niveis)
+
+
+_CHAVES_FILTRO = ("f_escopo", "f_meses", "f_nivel", "f_terr", "f_setor", "f_macro", "f_niv")
+
+
+def carregar_artefatos_cache() -> Artefatos:
+    """`carregar_artefatos` com cache compartilhado (sem cópia por execução)."""
+    import streamlit as st
+
+    @st.cache_resource(ttl=TTL_CACHE_DADOS, show_spinner="Carregando dados agregados…")
+    def _carregar() -> Artefatos:
+        return carregar_artefatos()
+
+    return _carregar()
+
+
+def geojson_cache() -> dict | None:
+    import streamlit as st
+
+    @st.cache_resource
+    def _ler() -> dict | None:
+        return carregar_geojson()
+
+    return _ler()
+
+
+def cbo_cache():
+    import streamlit as st
+
+    @st.cache_resource
+    def _ler():
+        return carregar_cbo()
+
+    return _ler()
+
+
+def _meses(df: pd.DataFrame) -> list[str]:
+    return sorted(df[COLUNA_MES].astype(str).unique())
+
+
+def limpar_filtros(df: pd.DataFrame | None = None) -> None:
+    """Volta todos os filtros ao padrão (indústria, período inteiro)."""
+    import streamlit as st
+
+    for chave in _CHAVES_FILTRO:
+        st.session_state.pop(chave, None)
+
+
+def _opcoes(df: pd.DataFrame, coluna: str) -> list[str]:
+    return sorted(str(v) for v in df[coluna].dropna().unique())
+
+
+def barra_lateral(df: pd.DataFrame) -> Filtros:
+    """Filtros globais na barra lateral, persistidos em `st.session_state`."""
+    import streamlit as st
+
+    meses = _meses(df)
+    estado = st.session_state
+    estado.setdefault("f_escopo", ESCOPO_INDUSTRIA)
+    estado.setdefault("f_meses", (meses[0], meses[-1]))
+    estado.setdefault("f_nivel", NIVEL_MESO)
+    if tuple(estado["f_meses"])[0] not in meses or tuple(estado["f_meses"])[1] not in meses:
+        estado["f_meses"] = (meses[0], meses[-1])
+
+    lateral = st.sidebar
+    lateral.markdown("### Filtros")
+    lateral.radio("Escopo", [ESCOPO_INDUSTRIA, ESCOPO_ECONOMIA], key="f_escopo",
+                  help="Indústria = seções CNAE B a F (extrativa, transformação, "
+                       "eletricidade e gás, água e resíduos, construção).")
+    lateral.select_slider("Período", options=meses, key="f_meses", format_func=rotulo_mes)
+    lateral.radio("Nível territorial", [NIVEL_MESO, NIVEL_MICRO, NIVEL_MUNICIPIO], key="f_nivel",
+                  horizontal=True, on_change=lambda: estado.update(f_terr=[]))
+
+    escopo_df = df[df[COLUNA_ESCOPO_INDUSTRIAL]] if estado["f_escopo"] == ESCOPO_INDUSTRIA else df
+    coluna_terr = COLUNA_POR_NIVEL_TERRITORIAL[estado["f_nivel"]]
+    for chave, coluna in (("f_terr", coluna_terr), ("f_setor", COLUNA_SETOR),
+                          ("f_macro", COLUNA_MACROFAMILIA_CBO), ("f_niv", COLUNA_NIVEL_QUALIFICACAO)):
+        validas = set(_opcoes(escopo_df, coluna))
+        estado[chave] = [v for v in estado.get(chave, []) if v in validas]
+    lateral.multiselect(estado["f_nivel"], _opcoes(escopo_df, coluna_terr), key="f_terr",
+                        placeholder="Todo o estado")
+    lateral.multiselect("Setor", _opcoes(escopo_df, COLUNA_SETOR), key="f_setor", placeholder="Todos",
+                        help="Na indústria de transformação (C), o setor é a divisão CNAE agrupada.")
+    lateral.multiselect("Macrofamília (IA)", _opcoes(escopo_df, COLUNA_MACROFAMILIA_CBO), key="f_macro",
+                        placeholder="Todas")
+    ordem_niveis = ["Básico", "Qualificado", "Técnico", "Superior"]
+    niveis = sorted(_opcoes(escopo_df, COLUNA_NIVEL_QUALIFICACAO),
+                    key=lambda v: ordem_niveis.index(v) if v in ordem_niveis else 9)
+    lateral.multiselect("Nível de qualificação (IA)", niveis, key="f_niv", placeholder="Todos")
+    lateral.button("Limpar filtros", on_click=limpar_filtros, icon=":material/filter_alt_off:",
+                   width="stretch")
+
+    return Filtros(
+        escopo=estado["f_escopo"], meses=tuple(estado["f_meses"]), nivel_territorial=estado["f_nivel"],
+        territorios=tuple(estado["f_terr"]), setores=tuple(estado["f_setor"]),
+        macrofamilias=tuple(estado["f_macro"]), niveis=tuple(estado["f_niv"]),
+    )
+
+
+def montar_contexto(art: Artefatos, filtros: Filtros, filtrador=None) -> Contexto:
+    """Aplica os filtros uma vez por execução; as páginas só leem o resultado.
+
+    ``filtrador(filtros)`` permite trocar `filtrar` por uma versão em cache
+    compartilhada entre sessões (o recorte é somente leitura).
+    """
+    filtrador = filtrador or (lambda f: filtrar(art.agregado, f))
+    referencia = Filtros(escopo=filtros.escopo, meses=filtros.meses)
+    ref = filtrador(referencia)
+    df = ref if filtros == referencia else filtrador(filtros)
+    return Contexto(art, filtros, df, ref, corte_semestral(_meses(art.agregado)))
+
+
+def montar_contexto_cache(art: Artefatos, filtros: Filtros) -> Contexto:
+    """`montar_contexto` com os recortes em cache compartilhado (memória do B1)."""
+    import streamlit as st
+
+    @st.cache_resource(ttl=TTL_CACHE_DADOS, max_entries=24, show_spinner=False)
+    def _filtrar(art_id: int, f: Filtros) -> pd.DataFrame:
+        return filtrar(art.agregado, f)
+
+    return montar_contexto(art, filtros, lambda f: _filtrar(id(art.agregado), f))
+
+
+def contexto_padrao(art: Artefatos) -> Contexto:
+    """Contexto com os filtros padrão (usado no modo apresentação)."""
+    return montar_contexto(art, Filtros(meses=tuple(_meses(art.agregado)[i] for i in (0, -1))))
+
+
+def cabecalho(ctx: Contexto) -> None:
+    """Linha de filtros ativos e procedência dos dados, no topo de cada página."""
+    import streamlit as st
+
+    meta = ctx.art.metadados or {}
+    origem = {"blob": "Azure Blob", "local": "cópia local"}.get(ctx.art.origem, "—")
+    gerado = str(meta.get("gerado_em", ""))[:16].replace("T", " ")
+    st.caption(f":material/filter_alt: {ctx.filtros.descricao()}  ·  :material/database: {origem}"
+               + (f", gerado em {gerado}" if gerado else ""))
+    for aviso in ctx.art.avisos:
+        if "schema antigo" in aviso or "ilegível" in aviso:
+            st.warning(aviso, icon=":material/warning:")
+
+
+def delta_texto(nome: str, valor: float, referencia: float, sufixo: str) -> str | None:
+    """Delta pt-BR de uma métrica vs referência ("+2,3 p.p. vs SC")."""
+    if _vazio(valor) or _vazio(referencia):
+        return None
+    formato = DEFINICOES[nome].formato
+    diff = float(valor) - float(referencia)
+    if formato == "pct":
+        texto = f"{fmt_num(abs(diff) * 100, 1)} p.p."
+    elif formato == "int":
+        texto = fmt_num(abs(diff), 0)
+    elif formato == "razao":
+        texto = fmt_num(abs(diff), 2)
+    elif formato == "brl":
+        texto = f"R$ {fmt_num(abs(diff), 0)}"
+    elif formato == "pp":
+        texto = f"{fmt_num(abs(diff), 1)} p.p."
+    else:
+        texto = fmt_num(abs(diff), 2 if formato == "num2" else 1)
+    return f"{'-' if diff < 0 else '+'}{texto} {sufixo}"
+
+
+# Métricas em que subir é ruim (delta em vermelho quando sobe).
+METRICAS_INVERSAS = {M_GIRO, M_SAIDA_VOL}
+
+
+def cartoes_kpi(ctx: Contexto, metricas: list[str] | None = None, colunas: int | None = None) -> None:
+    """Cartões de KPI com fórmula no tooltip e delta vs SC ou vs 1º semestre."""
+    import streamlit as st
+
+    metricas = metricas or KPIS_PADRAO
+    atual = total(ctx.df, corte_mes=ctx.corte)
+    if ctx.tem_recorte:
+        a, b, sufixo = atual, total(ctx.ref, corte_mes=ctx.corte), "vs estado"
+    else:
+        meses = ctx.df[COLUNA_MES].astype(str)
+        corte = ctx.corte or ""
+        a, b, sufixo = total(ctx.df[meses >= corte]), total(ctx.df[meses < corte]), "2º vs 1º sem."
+    por_linha = colunas or min(3, len(metricas))
+    grade = [st.columns(por_linha) for _ in range(-(-len(metricas) // por_linha))]
+    for coluna, nome in zip([col for linha in grade for col in linha], metricas):
+        definicao = DEFINICOES[nome]
+        ajuda = definicao.formula
+        if nome == M_GAP_SAL and not atual[M_SALARIO_OK]:
+            ajuda += " — amostra salarial insuficiente nesta seleção."
+        coluna.metric(
+            definicao.rotulo, fmt_metrica(nome, atual[nome]),
+            delta=None if nome == M_ACEL else delta_texto(nome, a[nome], b[nome], sufixo),
+            help=ajuda, border=True,
+            delta_color="inverse" if nome in METRICAS_INVERSAS else "normal",
+        )
+
+
+def baixar_csv(df: pd.DataFrame, nome: str, rotulo: str = "Baixar dados filtrados (CSV)") -> None:
+    """Botão de download em CSV compatível com Excel pt-BR (; e vírgula decimal)."""
+    import streamlit as st
+
+    st.download_button(rotulo, df.to_csv(index=False, sep=";", decimal=",").encode("utf-8-sig"),
+                       file_name=nome, mime="text/csv", icon=":material/download:")
+
+
+def pagina_segura(nome: str, func: Callable[[Contexto], None]) -> Callable[[], None]:
+    """Fronteira de erro: a página nunca mostra traceback, só o que falhou."""
+
+    def _executar() -> None:
+        import streamlit as st
+
+        ctx: Contexto | None = st.session_state.get("_ctx")
+        try:
+            if ctx is None:
+                raise RuntimeError("contexto de dados não inicializado")
+            func(ctx)
+        except Exception as exc:  # noqa: BLE001
+            if type(exc).__name__ in ("RerunException", "StopException"):
+                raise
+            origem = getattr(getattr(ctx, "art", None), "origem", None) or "nenhuma"
+            obter_logger().exception("[%s] falha na página %s", _ETAPA, nome)
+            st.error(
+                f"Não foi possível montar a página **{nome}** ({type(exc).__name__}: {exc}). "
+                f"Fonte de dados em uso: {origem}. As demais páginas seguem disponíveis.",
+                icon=":material/error:",
+            )
+
+    _executar.__name__ = f"pagina_{nome}"
+    return _executar
