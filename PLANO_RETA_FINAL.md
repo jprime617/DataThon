@@ -11,7 +11,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 |---|---|---|---|
 | M0 | C1 e C2 feitos; falta o C0 (organizadores) | `dashboard-v2` | M0.C2 |
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
-| M2 | C1 feito; H1 (respostas da IA paga) pendente | `m2-ia` | M2.C1 |
+| M2 | C1–C2 feitos; **H1 (respostas da IA paga) pendente** | `m2-ia` | M2.C2 |
 | M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
 | M4 · M5 · M6 | bloqueados pelo M0.C0 | — | — |
 | M7 | não iniciado | — | — |
@@ -123,7 +123,7 @@ O que muda, e por quê:
 ## M2 · IA dos CBOs com a IA paga (via chat, substitui o Gemini)
 
 **Branch:** `m2-ia` · **Dono:** pessoa 4 · **Estimativa:** H1 de 1 a 1,5 h, código de cerca de 1 h
-**Estado:** prompts prontos em `ia_cbo/prompts/` (23 lotes, 2.207 CBOs, ≤ 100 por lote). C1 feito na branch `m2-ia` (`LLM_PROVIDER=arquivo`, sem `LLM_API_KEY`; com lote faltando, o erro lista quais). Falta o **H1** (ninguém rodou os prompts ainda: `ia_cbo/respostas/` está vazia). Próximo: C2
+**Estado:** prompts prontos em `ia_cbo/prompts/` (23 lotes, 2.207 CBOs, ≤ 100 por lote). C1 feito na branch `m2-ia` (`LLM_PROVIDER=arquivo`, sem `LLM_API_KEY`; com lote faltando, o erro lista quais). Falta o **H1** (ninguém rodou os prompts ainda: `ia_cbo/respostas/` está vazia). C2 feito (`cbo_macrofamilias_gemini.csv` versionado; no modo arquivo a rodada 2 é esse CSV; a página de ocupações mostra o que foi comparado). Próximo: H1, depois C3
 
 - [ ] **H1 (humano)** Rodar os 23 prompts na IA paga e salvar em `ia_cbo/respostas/lote_NN.json`. O passo a passo, o formato e a conferência estão em `ia_cbo/COMO_USAR.md`.
 - [x] **M2.C1 `ClienteArquivo` em `src/cbo_ia.py`.**
@@ -131,7 +131,7 @@ O que muda, e por quê:
   - Se faltar a resposta de algum `prompts/lote_NN.txt`, levanta `ErroDeValidacao` listando os lotes faltantes.
   - Em `criar_cliente_llm`, adicionar `LLM_PROVIDER=arquivo`, sem exigir `LLM_API_KEY`. O nome do modelo vem de `LLM_MODELO_MANUAL`.
   - Teste novo: `tests/test_cbo_ia_arquivo.py` (junta dois arquivos; um lote faltante dá erro).
-- [ ] **M2.C2 Concordância Gemini × IA paga.**
+- [x] **M2.C2 Concordância Gemini × IA paga.**
   - Copiar o `data_processed/cbo_macrofamilias.csv` atual para `cbo_macrofamilias_gemini.csv`.
   - Com o provedor `arquivo`, a rodada 2 compara com esse CSV, e não com a reexecução embaralhada (que daria 100% trivialmente). Usar `_registrar_concordancia`.
   - O `meta.json` registra o provedor, o modelo e a nota "classificação via chat; prompts e respostas em `ia_cbo/`".

@@ -88,6 +88,11 @@ COLUNA_JUSTIFICATIVA = "justificativa"
 
 # Rodada 2 de concordância: mesma classificação com a ordem embaralhada.
 SEED_RODADA_2 = 2026
+
+# Com o provedor `arquivo`, a rodada 2 é a classificação anterior (Gemini),
+# guardada ao lado do CSV: reexecutar o mesmo arquivo daria 100% trivialmente.
+NOME_CSV_REFERENCIA = "cbo_macrofamilias_gemini.csv"
+NOTA_ARQUIVO = "classificação via chat; prompts e respostas em `ia_cbo/`"
 NOME_CSV_DIVERGENCIAS = "cbo_divergencias.csv"
 
 # Sufixo do arquivo irmão que guarda o prompt usado no agrupamento (R5.8).
@@ -838,6 +843,16 @@ def _registrar_concordancia(
     }
 
 
+def _ler_mapeamento(caminho: Path) -> dict[str, dict[str, str]]:
+    """Lê um `cbo_macrofamilias*.csv` como `{código: {macrofamilia, nivel}}`."""
+    mapa = pd.read_csv(caminho, dtype={COLUNA_CBO: str})
+    return {
+        _normalizar_cbo(c): {"macrofamilia": f, "nivel": n}
+        for c, f, n in zip(mapa[COLUNA_CBO], mapa[COLUNA_MACROFAMILIA], mapa[COLUNA_NIVEL])
+        if _normalizar_cbo(c)
+    }
+
+
 def aplicar_mapeamento(
     df: pd.DataFrame, caminho_csv: str = CAMINHO_CSV_PADRAO
 ) -> pd.DataFrame:
@@ -963,14 +978,31 @@ def classificar_cbos(
     # mapeamento por construção).
     sem_correspondencia = int(df_enriquecido[COLUNA_MACROFAMILIA].isna().sum())
 
-    # 6. Rodada 2: a mesma classificação com a ordem embaralhada (lotes com
-    # vizinhança diferente). Só mede a estabilidade; o mapeamento final é o da
-    # rodada 1.
-    embaralhados = list(cbos)
-    random.Random(SEED_RODADA_2).shuffle(embaralhados)
-    rodada2 = _classificar_todos(embaralhados, client)
+    # 6. Rodada 2. Por API: a mesma classificação com a ordem embaralhada
+    # (lotes com vizinhança diferente). Por arquivo: a classificação anterior
+    # (Gemini), já que reler as mesmas respostas daria 100%. Só mede a
+    # estabilidade; o mapeamento final é sempre o da rodada 1.
+    extras: dict[str, object] = {}
+    referencia = Path(caminho_csv).with_name(NOME_CSV_REFERENCIA)
+    if isinstance(client, ClienteArquivo) and referencia.is_file():
+        rodada2 = _ler_mapeamento(referencia)
+        comuns = {c: d for c, d in detalhes.items() if c in rodada2}
+        extras = {
+            "comparacao": f"IA paga (chat) × classificação anterior ({referencia.name})",
+            "cbos_comparados": len(comuns),
+            "nota": NOTA_ARQUIVO,
+        }
+        r1 = comuns
+    else:
+        embaralhados = list(cbos)
+        random.Random(SEED_RODADA_2).shuffle(embaralhados)
+        rodada2 = _classificar_todos(embaralhados, client)
+        extras = {"comparacao": "mesma IA, 2ª rodada com a ordem dos códigos embaralhada"}
+        if isinstance(client, ClienteArquivo):
+            extras["nota"] = NOTA_ARQUIVO
+        r1 = detalhes
     concordancia = _registrar_concordancia(
-        detalhes, rodada2, chave_normalizada.value_counts(),
+        r1, rodada2, chave_normalizada.value_counts(),
         Path(caminho_csv).with_name(NOME_CSV_DIVERGENCIAS), logger,
     )
     # Procedência da classificação, lida depois pelo `metadados.json`.
@@ -981,6 +1013,7 @@ def classificar_cbos(
                 "modelo": getattr(client, "_modelo", None),
                 "gerado_em": pd.Timestamp.now().isoformat(timespec="seconds"),
                 **concordancia,
+                **extras,
             },
             ensure_ascii=False,
             indent=2,

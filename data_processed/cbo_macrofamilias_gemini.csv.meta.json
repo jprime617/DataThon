@@ -1,0 +1,8 @@
+{
+  "provedor": "ClienteGemini",
+  "modelo": "gemini-3.1-flash-lite",
+  "gerado_em": "2026-11-11T19:03:50-03:00",
+  "concordancia_familia": 0.9415231187669991,
+  "concordancia_nivel": 0.958295557570263,
+  "nota": "Reconstituído do log da execução de 11/11/2026 (LLM_PROVIDER=gemini, modelo padrão)."
+}

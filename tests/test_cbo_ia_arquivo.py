@@ -54,3 +54,34 @@ def test_provedor_arquivo_nao_exige_chave(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     cliente = criar_cliente_llm(env={"LLM_PROVIDER": "arquivo", "LLM_MODELO_MANUAL": "chat-pago"})
     assert isinstance(cliente, ClienteArquivo) and cliente._modelo == "chat-pago"
+
+
+def test_concordancia_do_modo_arquivo_compara_com_o_gemini(tmp_path):
+    """M2.C2: a rodada 2 é o CSV anterior (Gemini), não a releitura do mesmo arquivo."""
+    import pandas as pd
+
+    from src.cbo_ia import NOME_CSV_REFERENCIA, classificar_cbos
+
+    def resp(familia: str) -> dict:
+        return {"macrofamilia": familia, "nivel": "Qualificado", "justificativa": "Revisão humana: teste."}
+
+    ia = tmp_path / "ia_cbo"
+    ia.mkdir()
+    pasta = _pasta(ia, {"lote_01": json.dumps({"411010": resp("Administrativo e comercial"),
+                                               "784205": resp("Logística e transporte")})},
+                   prompts=("lote_01",))
+    saida = tmp_path / "dp"
+    saida.mkdir()
+    pd.DataFrame({"cbo2002ocupação": ["411010", "784205"], "descricao": ["a", "b"],
+                  "macrofamilia": ["Administrativo e comercial", "Operação de linha e processo"],
+                  "nivel_qualificacao": ["Qualificado", "Qualificado"], "lideranca": [False, False],
+                  "justificativa": ["", ""]}).to_csv(saida / NOME_CSV_REFERENCIA, index=False)
+    base = pd.DataFrame({"cbo2002ocupação": ["411010", "784205", "784205"]})
+    r = classificar_cbos(base, ClienteArquivo(pasta, modelo="pago"), destino_csv=str(saida / "cbo_macrofamilias.csv"))
+    meta = json.loads((saida / "cbo_macrofamilias.csv.meta.json").read_text(encoding="utf-8"))
+    assert meta["concordancia_familia"] == 0.5 and meta["cbos_comparados"] == 2
+    assert NOME_CSV_REFERENCIA in meta["comparacao"] and "ia_cbo" in meta["nota"]
+    assert meta["provedor"] == "ClienteArquivo" and meta["modelo"] == "pago"
+    divergencias = pd.read_csv(saida / "cbo_divergencias.csv", dtype=str)
+    assert list(divergencias["cbo2002ocupação"]) == ["784205"]
+    assert r.mapeamento["411010"] == "Administrativo e comercial"
