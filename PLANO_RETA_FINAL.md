@@ -9,12 +9,13 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 
 | Marco | Situação | Onde está | Último ciclo feito |
 |---|---|---|---|
-| M0 | C1 e C2 feitos; falta o C0 (organizadores) | `dashboard-v2` | M0.C2 |
+| M0 | **concluído** (C0 liberado pela equipe em 12/11) | `dashboard-v2` | M0.C0 |
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
 | M2 | C1–C3 e H1 em `dashboard-v2`; concordância com o Gemini 91,4% (família) e 92,2% (nível); C4 feito (20 divergências aceitas); M2 **concluído** (C5 só se M4/M5 trouxerem CBOs novos) | `dashboard-v2` | M2.C4 |
 | M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
-| M4 | C1–C2 feitos (download, layout, leitura SC+CLT); próximo: C3; **uso no pitch ainda depende do M0.C0** | `m4-rais` | M4.C2 |
-| M5 · M6 | bloqueados pelo M0.C0 | — | — |
+| M4 | C1–C4 feitos na branch (ver Estado lá); próximo: C5–C6 [painel] | `m4-rais` | M4.C3 |
+| M5 | C1–C4 feitos na branch (portão passou com MOV + FOR − EXC); próximo: C5 depois do merge do M4 | `m5-caged24` | M5.C4 |
+| M6 | falta o H2 (xlsx do PDET) | — | — |
 | M7 | não iniciado | — | — |
 
 Commits locais só sobem com autorização do João: confira `git log origin/dashboard-v2..` antes de supor que algo foi publicado.
@@ -98,7 +99,9 @@ Leia PLANO_RETA_FINAL.md, seção "Como trabalhar". Continue o marco <Mx> a part
 
 **Estado:** C1 feito (plano e `ia_cbo/` no Git, `/data/` ignorado). C2 feito (EXC com peso −1 no PLANEJAMENTO §5.1). Falta só o C0 (resposta dos organizadores) · Responsável: João
 
-- [ ] **M0.C0 (humano), bloqueia M4, M5 e M6.** Confirmar com os organizadores se dados públicos externos (FTP do MTE, RAIS, IBGE) são permitidos (PLANEJAMENTO §16). Registre a resposta aqui. Se for não, M4, M5 e M6 saem do plano.
+- [x] **M0.C0 (humano), bloqueia M4, M5 e M6.** Confirmar com os organizadores se dados públicos externos (FTP do MTE, RAIS, IBGE) são permitidos (PLANEJAMENTO §16). Registre a resposta aqui. Se for não, M4, M5 e M6 saem do plano.
+  - **Resposta (12/11, João):** liberado pela equipe. O Guia do Participante (`Instrucoes/`) não proíbe dados externos: o item 3 só lista o que a organização fornece; o item 2 pede "microdados públicos brutos" do Novo CAGED de SC, e o M5 é a mesma fonte, direto do MTE; a tabela de papéis pede "a filtragem das exclusões (MOV x EX)", que o M5 reconstrói; a RAIS (M4) é a única fonte do estoque, sem o qual não há rotatividade oficial, sinal de apagão citado no item 2.1. Cuidado de banca: o painel abre no bloco recente (os mesmos 12 meses da base fornecida) e a Metodologia cita as fontes externas como complemento.
+  - **Dono do painel:** João (ciclos [painel] de M3–M6).
 - [x] **M0.C1** Acrescentar `data/` ao `.gitignore`. Commitar este plano e a pasta `ia_cbo/`, e dar push em `dashboard-v2` para a equipe enxergar.
 - [x] **M0.C2** `PLANEJAMENTO.md` §5.1, passo 4: trocar "EXC com sinal invertido" por "cada linha do EXC entra com **peso −1** e mantém o tipo". Inverter o sinal acerta o saldo, mas conta uma admissão excluída como desligamento.
 
