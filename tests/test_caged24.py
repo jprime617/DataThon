@@ -32,3 +32,25 @@ def test_mov_for_exc_com_peso_e_filtros(tmp_path):
     assert df.peso[df["saldomovimentação"] == "-1"].sum() == 1
     assert "2000,00" in set(df["salário"])  # texto cru; a limpeza converte
     assert (tmp_path / "out.parquet").exists()
+
+
+def test_comparar_com_base_separa_mov_e_mfe():
+    import pandas as pd
+
+    from src.caged24 import comparar_com_base, resumo_validacao
+
+    cons = pd.DataFrame({
+        "competênciamov": ["202509", "202509", "202509", "202509", "202409"],
+        "município": ["420910"] * 5,
+        "saldomovimentação": ["1", "1", "-1", "1", "1"],
+        "tipo_arquivo": ["MOV", "FOR", "MOV", "EXC", "MOV"],
+        "peso": [1, 1, 1, -1, 1],
+    })
+    base = pd.DataFrame({"competênciamov": ["202509", "202509"], "município": ["420910"] * 2,
+                         "saldomovimentação": ["1", "-1"]})
+    comp = comparar_com_base(cons, base)
+    linha = comp.iloc[0]
+    assert len(comp) == 1  # 202409 fora do bloco
+    assert (linha.adm_base, linha.adm_mov, linha.adm_mfe) == (1, 1, 1)  # FOR +1, EXC −1
+    assert (linha.desl_base, linha.desl_mov, linha.desl_mfe) == (1, 1, 1)
+    assert resumo_validacao(comp) == {"adm_mov": 0, "desl_mov": 0, "adm_mfe": 0, "desl_mfe": 0}

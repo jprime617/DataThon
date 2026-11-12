@@ -53,6 +53,7 @@ O escopo cobre o pipeline completo (ingestão → limpeza → cruzamento relacio
 9. THE Ingestor SHALL registrar a contagem exata de linhas lidas de cada arquivo de origem.
 10. IF um arquivo de origem está ausente, inacessível ou ilegível, THEN THE Ingestor SHALL registrar um erro identificando o arquivo e interromper o processamento sem persistir.
 13. *(M5.C3 — depende do M0.C0.)* WHEN o CAGED de 24 meses é consolidado (`src/caged24.py`), THE Ingestor SHALL ler os arquivos MOV, FOR e EXC de 202409 a 202608 sem gravar o texto descompactado, manter só `uf == 42` e `competênciamov` na janela, acrescentar `peso` (+1 MOV/FOR, −1 EXC) e gravar `data/interim/caged_sc_24m.parquet`.
+14. *(M5.C4.)* WHEN o consolidado de 24 meses é validado (`python -m src.caged24 --validar`), THE Ingestor SHALL comparar o bloco 202509–202608 com a base fornecida por mês × município, em admissões e desligamentos, lendo só o MOV e lendo MOV + FOR − EXC, gravar `data_processed/validacao_base_fornecida.csv` e registrar a diferença total em %; a troca de fonte (M5.C5) só ocorre se a diferença de MOV + FOR − EXC for ≤ 0,1%.
 
 ### Requirement 2: Limpeza, conversão de tipos e decodificação de domínios
 

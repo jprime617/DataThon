@@ -78,5 +78,61 @@ def consolidar(diretorio: Path = DIR_7Z, destino: Path | None = DESTINO, inicio:
     return df
 
 
+BASE_FORNECIDA = RAIZ / "Dados" / "Novo_Caged_MOV_Limpo.csv"
+DESTINO_VALIDACAO = RAIZ / "data_processed" / "validacao_base_fornecida.csv"
+BLOCO_RECENTE = (202509, 202608)
+_CHAVE = ["competênciamov", "município"]
+
+
+def _contar(df: pd.DataFrame, peso: pd.Series | None = None) -> pd.DataFrame:
+    """adm/desl por mês × município; com `peso`, soma o peso em vez de contar."""
+    mov = pd.to_numeric(df["saldomovimentação"])
+    p = pd.Series(1, index=df.index) if peso is None else peso.astype(int)
+    return pd.DataFrame({
+        "competênciamov": df["competênciamov"].astype(int),
+        "município": df["município"].astype(str).str.strip(),
+        "adm": p.where(mov == 1, 0),
+        "desl": p.where(mov == -1, 0),
+    }).groupby(_CHAVE).sum()
+
+
+def comparar_com_base(consolidado: pd.DataFrame, base: pd.DataFrame, bloco: tuple[int, int] = BLOCO_RECENTE) -> pd.DataFrame:
+    """Base fornecida × só MOV × MOV + FOR − EXC, por mês × município (M5.C4).
+
+    Colunas `adm_base`, `desl_base`, `adm_mov`, `desl_mov`, `adm_mfe`, `desl_mfe`;
+    célula ausente de um lado conta 0.
+    """
+    no_bloco = lambda d: d[pd.to_numeric(d["competênciamov"]).between(*bloco)]
+    c, base = no_bloco(consolidado), no_bloco(base)
+    so_mov = c[c["tipo_arquivo"] == "MOV"]
+    return (
+        _contar(base).add_suffix("_base")
+        .join(_contar(so_mov).add_suffix("_mov"), how="outer")
+        .join(_contar(c, c["peso"]).add_suffix("_mfe"), how="outer")
+        .fillna(0).astype("int64").reset_index()
+    )
+
+
+def resumo_validacao(comp: pd.DataFrame) -> dict[str, float]:
+    """Diferença total relativa à base (%), por leitura e movimento."""
+    return {
+        f"{m}_{leitura}": 100 * (comp[f"{m}_{leitura}"].sum() / comp[f"{m}_base"].sum() - 1)
+        for leitura in ("mov", "mfe") for m in ("adm", "desl")
+    }
+
+
+def validar(consolidado_parquet: Path = DESTINO, base_csv: Path = BASE_FORNECIDA, destino: Path = DESTINO_VALIDACAO) -> dict[str, float]:
+    colunas = ["competênciamov", "município", "saldomovimentação"]
+    consolidado = pd.read_parquet(consolidado_parquet, columns=colunas + ["tipo_arquivo", "peso"])
+    base = pd.read_csv(base_csv, sep=";", usecols=colunas, dtype=str)
+    comp = comparar_com_base(consolidado, base)
+    comp.to_csv(destino, index=False)
+    resumo = resumo_validacao(comp)
+    log_etapa("caged24", "diferença × base fornecida (%): " + ", ".join(f"{k} {v:+.3f}" for k, v in resumo.items()))
+    return resumo
+
+
 if __name__ == "__main__":
-    consolidar()
+    import sys
+
+    validar() if "--validar" in sys.argv else consolidar()
