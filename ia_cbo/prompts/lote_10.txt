@@ -1,0 +1,142 @@
+Você é um classificador ocupacional especializado na Classificação Brasileira de Ocupações (CBO 2002).
+
+Classifique cada código CBO abaixo em EXATAMENTE UMA macrofamília pertencente ao conjunto fechado a seguir e em um nível de qualificação. Não invente macrofamílias nem níveis fora destes conjuntos; quando estiver incerto sobre a família, atribua 'Não classificado'.
+
+REGRAS
+A. A macrofamília é o OFÍCIO da ocupação, NUNCA o setor do empregador. Faxineiro em fábrica têxtil → Serviços de apoio e outros; costureiro → Têxtil em qualquer setor.
+B. Use só o conjunto fechado abaixo. Desempate: a família sugerida pelo prefixo da CBO (já informada por código). Só fuja dela com justificativa.
+   1. Operação de linha e processo: 781, 784, 74, 81, 82, 83, 86 (784205 Alimentador de linha, 784105 Embalador a mão, 862150 Operador de máquinas fixas)
+   2. Metalmecânica e eletroeletrônica: 72, 73 (724315 Soldador, 724205 Montador de estruturas metálicas, 721215 Operador de máquinas-ferramenta)
+   3. Construção civil e extração: 71 (717020 Servente de obras, 715210 Pedreiro, 715505 Carpinteiro)
+   4. Têxtil, confecção, couro e calçados: 76 (763210 e 763215 Costureiro, 763125 Ajudante de confecção)
+   5. Alimentos e bebidas: 84 (848520 Magarefe, 841484 Preparação de pescados, 841505 Laticínios)
+   6. Madeira, móveis, cerâmica e vidro: 75, 77 (771105 Marceneiro, 774105 Montador de móveis, 752305 Ceramista)
+   7. Manutenção e reparação: 91, 95, 99 (911305 Mecânico de manutenção, 951105 Eletricista de manutenção, 954125 Operador eletromecânico)
+   8. Logística e transporte: 782, 783, 414, 342 (414105 Almoxarife, 782510 Motorista de caminhão, 414135 Expedidor)
+   9. Engenharia, técnicos industriais e TI: grande grupo 2 de exatas, engenharia e TI; 30, 31, 39, 317 (391205 Inspetor de qualidade, 391125 Técnico de planejamento de produção, 317110 Programador)
+   10. Administrativo e comercial: grande grupo 4 (exceto 414), 25, 35, 52 (411005 Auxiliar de escritório, 411010 Assistente administrativo, 521110 Vendedor)
+   11. Serviços de apoio e outros: 51, saúde, educação, grande grupo 6 (agro), grande grupo 0 (514320 Faxineiro, 513505 Auxiliar de alimentação, 517330 Vigilante)
+   Grande grupo 1 (dirigentes): a família da área que a pessoa dirige (142105 Gerente administrativo → Administrativo e comercial).
+C. Nível de qualificação, só 4 valores ordinais: Básico < Qualificado < Técnico < Superior. O nivel_cbo informado vem do 1º dígito (1 e 2 → Superior; 3 → Técnico; demais → Qualificado). Confirme-o ou ajuste-o; ao divergir, a justificativa é obrigatória. Caso típico: rebaixar para Básico ocupações elementares (alimentador de linha, servente, embalador, faxineiro).
+D. Liderança não é nível nem família: supervisor, mestre, encarregado, chefe, gerente e diretor ficam com a família e o nível do ofício que lideram (410105 Supervisor administrativo → Administrativo e comercial, Qualificado; 710205 Mestre de construção civil → Construção civil e extração).
+
+Conjunto fechado de macrofamílias:
+- Operação de linha e processo
+- Metalmecânica e eletroeletrônica
+- Construção civil e extração
+- Têxtil, confecção, couro e calçados
+- Alimentos e bebidas
+- Madeira, móveis, cerâmica e vidro
+- Manutenção e reparação
+- Logística e transporte
+- Engenharia, técnicos industriais e TI
+- Administrativo e comercial
+- Serviços de apoio e outros
+- Não classificado
+
+Níveis válidos: Básico, Qualificado, Técnico, Superior.
+
+Cada linha traz: código | descrição | nivel_cbo | família sugerida pelo prefixo.
+Códigos CBO a classificar:
+811710 | Calandrista de Borracha | Qualificado | Operação de linha e processo
+123110 | Diretor Administrativo e Financeiro | Superior | sem sugestão
+721315 | Afiador de Ferramentas | Qualificado | Metalmecânica e eletroeletrônica
+612515 | Produtor de Especies Frutiferas Trepadeiras | Qualificado | Serviços de apoio e outros
+766120 | Editor de Texto e Imagem | Qualificado | Têxtil, confecção, couro e calçados
+510110 | Administrador de Edificios | Qualificado | Serviços de apoio e outros
+253410 | Influenciador Digital | Superior | Administrativo e comercial
+764110 | Cortador de Solas e Palmilhas, a  Maquina | Qualificado | Têxtil, confecção, couro e calçados
+721220 | Operador de Usinagem Convencional por Abrasao | Qualificado | Metalmecânica e eletroeletrônica
+342310 | Inspetor de Servicos de Transportes Rodoviarios (Passageiros e Cargas) | Técnico | Logística e transporte
+318010 | Desenhista Copista | Técnico | Engenharia, técnicos industriais e TI
+862160 | Operador de Abastecimento de Combustivel de Aeronave | Qualificado | Operação de linha e processo
+142515 | Gerente de Producao de Tecnologia da Informacao | Superior | sem sugestão
+318815 | Modelista de Calcados | Técnico | Engenharia, técnicos industriais e TI
+752205 | Aplicador Serigrafico em Vidros | Qualificado | Madeira, móveis, cerâmica e vidro
+761348 | Operador de Engomadeira de Urdume | Qualificado | Têxtil, confecção, couro e calçados
+213405 | Geologo | Superior | Engenharia, técnicos industriais e TI
+820205 | Supervisor de Fabricacao de Produtos Ceramicos, Porcelanatos e Afins | Qualificado | Operação de linha e processo
+318405 | Desenhista Tecnico (Artes Graficas) | Técnico | Engenharia, técnicos industriais e TI
+761351 | Operador de Espuladeira | Qualificado | Têxtil, confecção, couro e calçados
+730105 | Supervisor de Montagem e Instalacao Eletroeletronica | Qualificado | Metalmecânica e eletroeletrônica
+131120 | Gerente de Servicos Sociais | Superior | sem sugestão
+251225 | Economista do Setor Publico | Superior | Administrativo e comercial
+142530 | Gerente de Suporte Tecnico de Tecnologia da Informacao | Superior | sem sugestão
+318015 | Desenhista Detalhista | Técnico | Engenharia, técnicos industriais e TI
+821215 | Forneiro e Operador (Forno Eletrico) | Qualificado | Operação de linha e processo
+318205 | Desenhista Tecnico Mecanico | Técnico | Engenharia, técnicos industriais e TI
+421110 | Bilheteiro de Transportes Coletivos | Qualificado | Administrativo e comercial
+325115 | Técnico em Farmácia | Técnico | sem sugestão
+716515 | Pastilheiro | Qualificado | Construção civil e extração
+223520 | Enfermeiro de Centro Cirurgico | Superior | Serviços de apoio e outros
+422330 | Teleatendente De Emergência | Qualificado | Administrativo e comercial
+239425 | Psicopedagogo | Superior | Serviços de apoio e outros
+391135 | Tecnico de Materia-Prima e Material | Técnico | Engenharia, técnicos industriais e TI
+261730 | Reporter de Radio e Televisao | Superior | sem sugestão
+752210 | Cortador de Vidro | Qualificado | Madeira, móveis, cerâmica e vidro
+833115 | Confeccionador de Sacos de Celofane, a Maquina | Qualificado | Operação de linha e processo
+234624 | Professor de Lingua Portuguesa | Superior | Serviços de apoio e outros
+253120 | Analista de Negocios | Superior | Administrativo e comercial
+515330 | Monitor de Ressocializacao Prisional | Qualificado | Serviços de apoio e outros
+311305 | Tecnico em Materiais, Produtos Ceramicos e Vidros | Técnico | Engenharia, técnicos industriais e TI
+374110 | Tecnico em Instalacao de Equipamentos de Audio | Técnico | sem sugestão
+141115 | Gerente de Producao e Operacoes Agropecuarias | Superior | sem sugestão
+760120 | Contramestre de Tecelagem (Industria Textil) | Qualificado | Têxtil, confecção, couro e calçados
+322305 | Tecnico em Optica e Optometria | Técnico | Serviços de apoio e outros
+234905 | Professor de Artes do Espetaculo no Ensino Superior | Superior | Serviços de apoio e outros
+212210 | Engenheiro de Equipamentos em Computacao | Superior | Engenharia, técnicos industriais e TI
+111510 | Analista de Planejamento e Orçamento - Apo | Superior | sem sugestão
+954205 | Reparador de Aparelhos Eletrodomesticos (Exceto Imagem e Som) | Qualificado | Manutenção e reparação
+773505 | Operador de Centro de Usinagem de Madeira (Cnc) | Qualificado | Madeira, móveis, cerâmica e vidro
+223640 | Fisioterapeuta Osteopata | Superior | Serviços de apoio e outros
+223840 | Fonoaudiologo em Saude Coletiva | Superior | Serviços de apoio e outros
+913110 | Mecanico de Manutencao de Equipamento de Mineracao | Qualificado | Manutenção e reparação
+251540 | Psicologo do Trabalho | Superior | Administrativo e comercial
+214110 | Arquiteto de Interiores | Superior | Engenharia, técnicos industriais e TI
+234120 | Professor de Computacao (No Ensino Superior) | Superior | Serviços de apoio e outros
+214520 | Engenheiro Quimico (Papel e Celulose) | Superior | Engenharia, técnicos industriais e TI
+775120 | Marcheteiro | Qualificado | Madeira, móveis, cerâmica e vidro
+721420 | Operador de Maquina Eletroerosao, À Fio, com Comando Numerico | Qualificado | Metalmecânica e eletroeletrônica
+760305 | Encarregado de Corte na Confeccao do Vestuario | Qualificado | Têxtil, confecção, couro e calçados
+811330 | Operador de Filtro-Prensa (Tratamentos Quimicos e Afins) | Qualificado | Operação de linha e processo
+781310 | Operador De Aeronaves Não Tripuladas | Qualificado | Operação de linha e processo
+631315 | Criador de Mexilhoes | Qualificado | Serviços de apoio e outros
+113010 | Lider de Comunidade Caicara | Superior | sem sugestão
+241340 | Tabeliao de Protestos | Superior | sem sugestão
+377220 | Arbitro de Futebol | Técnico | sem sugestão
+373135 | Operador de Controle Mestre | Técnico | sem sugestão
+760115 | Contramestre de Malharia (Industria Textil) | Qualificado | Têxtil, confecção, couro e calçados
+722305 | Macheiro, a Mao | Qualificado | Metalmecânica e eletroeletrônica
+354210 | Supervisor de Compras | Técnico | Administrativo e comercial
+519105 | Ciclista Mensageiro | Qualificado | Serviços de apoio e outros
+622305 | Trabalhador na Olericultura (Frutos e Sementes) | Qualificado | Serviços de apoio e outros
+351720 | Assistente Tecnico de Seguros | Técnico | Administrativo e comercial
+215105 | Agente de Manobra e Docagem | Superior | Engenharia, técnicos industriais e TI
+354705 | Representante Comercial Autonomo | Técnico | Administrativo e comercial
+783105 | Agente de Patio | Qualificado | Logística e transporte
+222110 | Engenheiro Agronomo | Superior | Serviços de apoio e outros
+731315 | Instalador-Reparador de Equipamentos de Transmissao em Telefonia | Qualificado | Metalmecânica e eletroeletrônica
+622510 | Trabalhador no Cultivo de Especies Frutiferas Rasteiras | Qualificado | Serviços de apoio e outros
+322220 | Tecnico de Enfermagem Psiquiatrica | Técnico | Serviços de apoio e outros
+992110 | Balanceador | Qualificado | Manutenção e reparação
+715710 | Instalador de Isolantes Acusticos | Qualificado | Construção civil e extração
+510205 | Supervisor de Lavanderia | Qualificado | Serviços de apoio e outros
+415105 | Arquivista de Documentos | Qualificado | Administrativo e comercial
+732125 | Instalador Eletricista (Tracao de Veiculos) | Qualificado | Metalmecânica e eletroeletrônica
+720105 | Mestre (Afiador de Ferramentas) | Qualificado | Metalmecânica e eletroeletrônica
+723320 | Pintor de Veiculos (Fabricacao) | Qualificado | Metalmecânica e eletroeletrônica
+764205 | Costurador de Calcados, a  Maquina | Qualificado | Têxtil, confecção, couro e calçados
+516505 | Agente Funerario | Qualificado | Serviços de apoio e outros
+252310 | Secretario  Bilingue | Superior | Administrativo e comercial
+761225 | Operador de Conicaleira | Qualificado | Têxtil, confecção, couro e calçados
+252515 | Analista de Cobranca (Instituicoes Financeiras) | Superior | Administrativo e comercial
+954115 | Eletromecanico de Manutencao de Portas Automaticas | Qualificado | Manutenção e reparação
+766145 | Operador de Sistemas de Prova (Analogico e Digital) | Qualificado | Têxtil, confecção, couro e calçados
+411040 | Auxiliar de Seguros | Qualificado | Administrativo e comercial
+318110 | Desenhista Tecnico (Cartografia) | Técnico | Engenharia, técnicos industriais e TI
+773335 | Operador de Plaina Desengrossadeira | Qualificado | Madeira, móveis, cerâmica e vidro
+223705 | Dietista | Superior | Serviços de apoio e outros
+231325 | Professor de Historia do Ensino Fundamental | Superior | Serviços de apoio e outros
+811115 | Operador de Britadeira (Tratamentos Quimicos e Afins) | Qualificado | Operação de linha e processo
+
+Responda SOMENTE com um objeto JSON válido, sem texto antes ou depois, no formato {"<cbo>": {"macrofamilia": "...", "nivel": "...", "justificativa": "..."}}. A justificativa é uma frase curta, obrigatória quando a família diverge da sugerida ou o nível diverge do nivel_cbo. Inclua exatamente uma entrada por código informado.

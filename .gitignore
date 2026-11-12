@@ -24,3 +24,6 @@ data_processed/caged_bruto.parquet
 # Saídas do Azure CLI / deploy
 *.zip
 .azure/
+
+# Dados grandes baixados/intermediários (FTP do MTE, RAIS) — nunca no Git
+/data/
