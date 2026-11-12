@@ -76,7 +76,7 @@ Leia PLANO_RETA_FINAL.md, seção "Como trabalhar". Continue o marco <Mx> a part
 ## M1 · Corrigir os 3 problemas de método (sem dado novo)
 
 **Branch:** `m1-metodo` · **Dono:** pessoa 1 · **Estimativa:** 1,5 a 2 h
-**Estado:** C1–C2 feitos. A regra de Automação ficou "Básico ≥ 50% e saldo ≤ 0" (sem o giro). C3 feito: sem recorte, a sanfona não mostra delta (o "2º vs 1º sem." também media calendário). C4 feito: o `caged_agregado.parquet` atual ainda tem as duas colunas (o painel já as ignora); somem na próxima reagregação. Próximo: C5.
+**Estado:** concluído em `m1-metodo` (C1–C5), aguardando merge em `dashboard-v2`. `pytest -q`: 227 verdes (os 7 a menos são os testes de turnover/aquecimento apagados). Notas: a regra de Automação virou "Básico ≥ 50% e saldo ≤ 0"; sem filtro, a sanfona não mostra delta; o `caged_agregado.parquet` atual ainda tem `turnover`/`indice_aquecimento` (o painel ignora), que somem na próxima reagregação (M7.C1).
 
 O que muda, e por quê:
 - **Giro:** hoje é `min(adm, desl) / max(adm, desl)`, que é função exata do saldo relativo (indústria: 0,9954 = (1−|s|)/(1+|s|)). Sai de tudo. A rotatividade oficial volta no M4.
@@ -98,7 +98,7 @@ O que muda, e por quê:
 - [x] **M1.C4 Colunas legadas do pipeline.**
   - Remover `turnover` (R4.4–R4.5) e `indice_aquecimento` (R4.8–R4.9) de `src/metricas.py`, `src/agregador.py`, do notebook e dos testes (`test_metricas_turnover.py` e `test_metricas_aquecimento.py`, além das menções em `test_agregador_propriedades.py` e `test_pipeline_integracao.py`).
   - No `requirements.md`, R4.4 e R6.5 passam a apontar para a rotatividade descontada (M4), com a observação "pendente de RAIS".
-- [ ] **M1.C5 Fechamento.**
+- [x] **M1.C5 Fechamento.**
   - Reescrever o texto da Metodologia sobre o índice: "Tensão = sintomas; causas ficam no diagnóstico".
   - `pytest -q` completo.
   - `streamlit run dashboard/app.py` e clicar por todas as páginas.
