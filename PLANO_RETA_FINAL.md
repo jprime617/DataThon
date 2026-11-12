@@ -9,13 +9,13 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 
 | Marco | Situação | Onde está | Último ciclo feito |
 |---|---|---|---|
-| M0 | C1 e C2 feitos; falta o C0 (organizadores) | `dashboard-v2` | M0.C2 |
+| M0 | **concluído** (C0 liberado pela equipe em 12/11) | `dashboard-v2` | M0.C0 |
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
-| M2 | C1–C2 feitos e **mergeados** (PR #1); C3 preparado; **H1 (respostas da IA paga) pendente** | `dashboard-v2` | M2.C2 (+ C3 preparado) |
+| M2 | C1–C3 e H1 em `dashboard-v2`; concordância com o Gemini 91,4% (família) e 92,2% (nível); C4 feito (20 divergências aceitas); M2 **concluído** (C5 só se M4/M5 trouxerem CBOs novos) | `dashboard-v2` | M2.C4 |
 | M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
-| M4 | C1–C2 feitos (download, layout, leitura SC+CLT); próximo: C3; **uso no pitch ainda depende do M0.C0** | `m4-rais` | M4.C2 |
-| M5 | C1–C4 feitos; portão **passou com MOV + FOR − EXC** (+0,02%); próximo: C5; **uso no pitch depende do M0.C0** | `m5-caged24` | M5.C4 |
-| M6 | bloqueado pelo M0.C0 | — | — |
+| M4 | **concluído e mergeado** (C1–C6; C7 opcional) | `dashboard-v2` | M4.C6 |
+| M5 | C1–C4 feitos (portão passou com MOV + FOR − EXC); `dashboard-v2` já trazido para a branch; próximo: C5 | `m5-caged24` | M5.C4 |
+| M6 | falta o H2 (xlsx do PDET) | — | — |
 | M7 | não iniciado | — | — |
 
 Commits locais só sobem com autorização do João: confira `git log origin/dashboard-v2..` antes de supor que algo foi publicado.
@@ -99,7 +99,9 @@ Leia PLANO_RETA_FINAL.md, seção "Como trabalhar". Continue o marco <Mx> a part
 
 **Estado:** C1 feito (plano e `ia_cbo/` no Git, `/data/` ignorado). C2 feito (EXC com peso −1 no PLANEJAMENTO §5.1). Falta só o C0 (resposta dos organizadores) · Responsável: João
 
-- [ ] **M0.C0 (humano), bloqueia M4, M5 e M6.** Confirmar com os organizadores se dados públicos externos (FTP do MTE, RAIS, IBGE) são permitidos (PLANEJAMENTO §16). Registre a resposta aqui. Se for não, M4, M5 e M6 saem do plano.
+- [x] **M0.C0 (humano), bloqueia M4, M5 e M6.** Confirmar com os organizadores se dados públicos externos (FTP do MTE, RAIS, IBGE) são permitidos (PLANEJAMENTO §16). Registre a resposta aqui. Se for não, M4, M5 e M6 saem do plano.
+  - **Resposta (12/11, João):** liberado pela equipe. O Guia do Participante (`Instrucoes/`) não proíbe dados externos: o item 3 só lista o que a organização fornece; o item 2 pede "microdados públicos brutos" do Novo CAGED de SC, e o M5 é a mesma fonte, direto do MTE; a tabela de papéis pede "a filtragem das exclusões (MOV x EX)", que o M5 reconstrói; a RAIS (M4) é a única fonte do estoque, sem o qual não há rotatividade oficial, sinal de apagão citado no item 2.1. Cuidado de banca: o painel abre no bloco recente (os mesmos 12 meses da base fornecida) e a Metodologia cita as fontes externas como complemento.
+  - **Dono do painel:** João (ciclos [painel] de M3–M6).
 - [x] **M0.C1** Acrescentar `data/` ao `.gitignore`. Commitar este plano e a pasta `ia_cbo/`, e dar push em `dashboard-v2` para a equipe enxergar.
 - [x] **M0.C2** `PLANEJAMENTO.md` §5.1, passo 4: trocar "EXC com sinal invertido" por "cada linha do EXC entra com **peso −1** e mantém o tipo". Inverter o sinal acerta o saldo, mas conta uma admissão excluída como desligamento.
 
@@ -142,9 +144,9 @@ O que muda, e por quê:
 ## M2 · IA dos CBOs com a IA paga (via chat, substitui o Gemini)
 
 **Branch:** `m2-ia` · **Dono:** pessoa 4 · **Estimativa:** H1 de 1 a 1,5 h, código de cerca de 1 h
-**Estado:** C1–C2 (e o C3 preparado) **mergeados em `dashboard-v2`** pelo PR #1 (`8ba7695`); os próximos ciclos podem sair direto de `dashboard-v2`. Prompts prontos em `ia_cbo/prompts/` (23 lotes, 2.207 CBOs, ≤ 100 por lote). C1 feito (`LLM_PROVIDER=arquivo`, sem `LLM_API_KEY`; com lote faltando, o erro lista quais). Falta o **H1** (ninguém rodou os prompts ainda: `ia_cbo/respostas/` está vazia). C2 feito (`cbo_macrofamilias_gemini.csv` versionado; no modo arquivo a rodada 2 é esse CSV; a página de ocupações mostra o que foi comparado). C3 **preparado e não executado**: o README (Opção C), o `requirements.md` (R5.7, R5.9, R5.10 novo e R8.6) e o notebook (`PULAR_UPLOAD=1`) estão prontos; o comando está em `ia_cbo/COMO_USAR.md`, passo 5. O fluxo foi testado com respostas simuladas. **Próximo: H1** (rodar os 23 prompts na IA paga), depois o passo 5 (C3) e o passo 6 (C4) do COMO_USAR. C5 só se o M4/M5 trouxer CBOs novos. Obs.: houve 1 falha intermitente na suíte completa que não se repetiu em 3 execuções (provável teste instável que já existia)
+**Estado:** C1–C2 (e o C3 preparado) **mergeados em `dashboard-v2`** pelo PR #1 (`8ba7695`); os próximos ciclos podem sair direto de `dashboard-v2`. Prompts prontos em `ia_cbo/prompts/` (23 lotes, 2.207 CBOs, ≤ 100 por lote). C1 feito (`LLM_PROVIDER=arquivo`, sem `LLM_API_KEY`; com lote faltando, o erro lista quais). **H1 feito** na branch `m2-h1` (12/11): os 23 prompts foram respondidos pelo **Claude Opus 5.5 (`claude-opus-5-5`)**, a IA da sessão, a partir dos mesmos prompts, sem consultar o CSV do Gemini (a concordância continua válida). Conferência do COMO_USAR passo 4: 100 por lote, 7 no lote 23, **2.207 no total**; o `ClienteArquivo` carrega os 23 sem erro. Resultado: 623 códigos fogem da sugestão do prompt, todos com justificativa. Critérios que valem revisão no C4: CBO 766 (gráfica) em Operação de linha e processo, e não em Têxtil; ocupações elementares em Básico (125); auxiliares de saúde do grupo 3 em Qualificado; gerentes e diretores em Superior, na família da área dirigida. **Para o C3:** `LLM_MODELO_MANUAL=claude-opus-5-5` e registrar na Metodologia "classificação feita pelo Claude Opus 5.5 a partir dos mesmos prompts". C2 feito (`cbo_macrofamilias_gemini.csv` versionado; no modo arquivo a rodada 2 é esse CSV; a página de ocupações mostra o que foi comparado). C3 **preparado e não executado**: o README (Opção C), o `requirements.md` (R5.7, R5.9, R5.10 novo e R8.6) e o notebook (`PULAR_UPLOAD=1`) estão prontos; o comando está em `ia_cbo/COMO_USAR.md`, passo 5. O fluxo foi testado com respostas simuladas. **C3 feito** (12/11, com `LLM_MODELO_MANUAL=claude-opus-5-5`): o `meta.json` registra `ClienteArquivo`, 2.206 CBOs comparados, **concordância com o Gemini de 91,4% na família e 92,2% no nível**; `cbo_divergencias.csv` tem 348 linhas; agregado e perfil regenerados; `pytest -q` com 241 verdes. **C4 feito** (12/11): o João revisou as 20 divergências de maior volume e **aceitou todas como estão** (a classificação nova, r1, prevalece; nenhum JSON alterado). Destaques: frentista, vigia, porteiro e trabalhadores agrícolas/florestais em Básico (o Gemini dava Qualificado); encanador em Construção civil; técnico em segurança do trabalho em Engenharia/técnicos. M2 concluído; o C5 não é necessário (o M4 achou só 0,02% do estoque sem macrofamília). C5 só se o M4/M5 trouxer CBOs novos. Obs.: houve 1 falha intermitente na suíte completa que não se repetiu em 3 execuções (provável teste instável que já existia)
 
-- [ ] **H1 (humano)** Rodar os 23 prompts na IA paga e salvar em `ia_cbo/respostas/lote_NN.json`. O passo a passo, o formato e a conferência estão em `ia_cbo/COMO_USAR.md`.
+- [x] **H1 (humano)** Rodar os 23 prompts na IA paga e salvar em `ia_cbo/respostas/lote_NN.json`. O passo a passo, o formato e a conferência estão em `ia_cbo/COMO_USAR.md`.
 - [x] **M2.C1 `ClienteArquivo` em `src/cbo_ia.py`.**
   - Implementa `ClienteLLM`. No `__init__`, junta todos os `respostas/lote_*.json` com `_extrair_mapeamento`. `classificar()` devolve `json.dumps(dict_inteiro)`, porque `classificar_lote` já filtra os códigos do lote.
   - Se faltar a resposta de algum `prompts/lote_NN.txt`, levanta `ErroDeValidacao` listando os lotes faltantes.
@@ -154,10 +156,10 @@ O que muda, e por quê:
   - Copiar o `data_processed/cbo_macrofamilias.csv` atual para `cbo_macrofamilias_gemini.csv`.
   - Com o provedor `arquivo`, a rodada 2 compara com esse CSV, e não com a reexecução embaralhada (que daria 100% trivialmente). Usar `_registrar_concordancia`.
   - O `meta.json` registra o provedor, o modelo e a nota "classificação via chat; prompts e respostas em `ia_cbo/`".
-- [ ] **M2.C3 Reclassificar e reagregar** (depois do H1).
+- [x] **M2.C3 Reclassificar e reagregar** (depois do H1).
   - Rodar as etapas 5 e 6 do notebook com `LLM_PROVIDER=arquivo`.
   - No `requirements.md`, R5.7, R5.9 e R8.6 passam a valer só para os provedores por API, e entra um critério novo para o modo arquivo. README ganha uma seção "classificação via chat".
-- [ ] **M2.C4 Revisão humana** (parecer F4): revisar as 20 divergências de maior volume em `cbo_divergencias.csv`. Para corrigir, edite o `lote_NN.json`, com justificativa começando por "Revisão humana:", e rode o C3 de novo.
+- [x] **M2.C4 Revisão humana** (parecer F4): revisar as 20 divergências de maior volume em `cbo_divergencias.csv`. Para corrigir, edite o `lote_NN.json`, com justificativa começando por "Revisão humana:", e rode o C3 de novo.
 - [ ] **M2.C5 CBOs novos** (só se o M4 ou o M5 trouxer códigos sem classificação, acima de 1% do estoque ou das movimentações): gerar `lote_24+` com o mesmo script e voltar ao H1 só para eles.
 
 **Pronto quando:** o `cbo_macrofamilias.csv` vem da IA paga, a concordância Gemini × IA paga aparece na página Ocupações e `pytest -q` está verde.
@@ -184,31 +186,39 @@ O que muda, e por quê:
 ## M4 · RAIS 2025: estoque, rotatividade oficial e desligamento precoce
 
 **Branch:** `m4-rais` · **Dono:** pessoa 2 (C1–C4) e pessoa 1 nos ciclos [painel] · **Estimativa:** 3 a 4 h · **Exige M0.C0**
-**Estado:** não iniciado. O FTP respondeu em 12/11: `ftp://ftp.mtps.gov.br/pdet/microdados/RAIS/2025/RAIS_VINC_PUB_SUL.7z` (705 MB).
+**Estado:** C1 feito na branch `m4-rais` (`python scripts/baixar_rais.py`, retomável; cerca de 12 min a 1 MB/s; extrai com `7z` ou, se não houver, com `bsdtar`). C2 feito: `python -m src.rais` grava `data/interim/rais_sc_2025.parquet` (cerca de 95 s, 51 MB): **4.290.964 vínculos CLT de SC, 295 municípios, 2.565.458 ativos em 31/12, 1.725.506 desligados no ano** (68,5% com menos de 12 meses de casa). C4 feito e **já reagregado** (o `Dados/Novo_Caged_MOV_Limpo.csv` estava na máquina do João): SC tem 1.674.947 desligamentos, dos quais 881.889 descontados; min(adm, desl_desc) ÷ estoque RAIS ≈ 34,4% (oficial 33,6%). O agregado e o perfil foram regenerados (somem `turnover`/`indice_aquecimento`). C3 feito: `python -m src.rais --estoque` grava `data_processed/rais_estoque.parquet` (61.484 linhas, chaves do agregado sem `mes`): estoque 2.565.458, `desligados_rais` 1.559.914 (sem transferências 30–34), precoce 1.073.959 (68,8%), médio completo ou mais 1.951.665; só 0,02% do estoque sem macrofamília (M2.C5 não é necessário); todas as seções batem com as do agregado. A escolaridade da RAIS não tem ignorados em SC CLT, mas `estoque_escolaridade_informada` fica como denominador. C5 feito: o painel anexa o estoque a cada célula na carga e soma **uma vez por célula distinta** (como a população), então todas as páginas e filtros funcionam sem mudança; métricas `rotatividade_desc`, `variacao_rel` e `precoce` em `agregar_metricas`. SC: rotatividade descontada **34,8%** (oficial 33,6%), Transformação 27,4% (Brasil 27,6%), precoce 69,0%. O estoque visível é 2.537.443 (−1,1%: células sem movimentação no período). O notebook sobe o `rais_estoque.parquet` junto no Blob. C6 feito: Tensão = rotatividade descontada + saída voluntária + precoce (pesos iguais, expander de sensibilidade de volta); Dinamismo = variação do emprego; tema Tensão do Panorama com a referência oficial ao lado; ranking de seções com a rotatividade; Metodologia explica o estoque de 31/12/2025 como aproximação do estoque médio. Checagem: SC 34,8% × 33,6% oficial. **Pronto quando: cumprido; mergeado em `dashboard-v2` (12/11).** C7 é opcional. Cuidados que valeram para o C3:
+  - a RAIS **não tem a letra da seção**, só a subclasse CNAE de 7 dígitos: a seção sai da subclasse (divisão = 2 primeiros dígitos → seção CNAE);
+  - os desligamentos da RAIS incluem **31 = transferência sem ônus (165 mil)**, que não é desligamento de verdade; decida se `desligados_rais` exclui os códigos 30–34 (recomendado) e registre na Metodologia. O código 90 (16 mil) não aparece no layout;
+  - a escolaridade "médio completo ou mais" é `escolaridade >= 7` (−1 = ignorado, fora do denominador).
+  O que o C1 encontrou, **conferido no layout `RAIS_vinculos_layout.xls` e no próprio arquivo**:
+  - O arquivo extraído é `data/raw/rais/2025/RAIS_VINC_PUB_SUL.COMT` (4,3 GB, PR+SC+RS). **Separador `,`** (o layout diz `;`, mas está errado para 2025), **encoding Latin-1**, decimal `.`, cabeçalho entre aspas e alguns códigos entre aspas com espaço à esquerda (`" 4772500"`): use `dtype=str` e `.str.strip()`.
+  - Colunas que o M4 usa: `Município - Código` (6 dígitos; SC começa com `42`), `Tipo Vínculo - Código`, `Ind Vínculo Ativo 31/12 - Código` (0 = não, 1 = sim), `Motivo Desligamento - Código` (0 = não desligado no ano), `Mês Desligamento - Código` (0 = não desligado), `Tempo Emprego` (em **meses**, com decimal), `Escolaridade Após 2005 - Código` (1–11, médio completo = 7; −1 = ignorado), `CBO 2002 Ocupação - Código`, `CNAE 2.0 Subclasse - Codigo` (sem acento no "Codigo"), `Vl Rem Média Nom`.
+  - `Tipo Vínculo` CLT segundo o layout: **10, 15, 20, 25** (prazo indeterminado) e **60, 65, 70, 75** (prazo determinado). Ficam de fora: 30–35 (estatutário), 40 (avulso), 50 (temporário), 55 (aprendiz), 80 (diretor) e 90–97. Decisão para o C2: usar só esses oito códigos CLT; aprendiz e temporário ficam fora, e isso vai para a Metodologia.
+  - Os códigos de desligamento da RAIS **não são os do CAGED**: 10/11 = demissão com/sem justa causa, 12 = término de contrato, 20/21 = a pedido (com/sem justa causa), 30–34 = transferência, 60–64 = falecimento, 70–80 = aposentadoria. Não reaproveite o "40 = a pedido" do CAGED aqui.
 
 **Ideia central:** **só a RAIS 2025.** O estoque em 31/12/2025 cai dentro da janela set/25–ago/26 e serve de aproximação do estoque médio. Assim saem a rotatividade descontada (PLANEJAMENTO §6), a variação relativa (saldo ÷ estoque), o desligamento precoce e o gap de escolaridade contra o estoque. A RAIS 2024 e o estoque mensal rolado ficam para depois.
 
-- [ ] **M4.C1 Baixar e inspecionar** (mergeável sozinho).
+- [x] **M4.C1 Baixar e inspecionar** (mergeável sozinho).
   - Script que baixa para `data/raw/rais/2025/`, retomável (pula o que já existe), e extrai com `7z`.
   - Baixar também o layout da RAIS no FTP e anotar no Estado: nomes das colunas, separador, encoding e os códigos de `Tipo Vínculo` CLT e de `Vínculo Ativo 31/12`. **Conferir no layout, não de memória.**
-- [ ] **M4.C2 `src/rais.py: ler_rais_sc()`.**
+- [x] **M4.C2 `src/rais.py: ler_rais_sc()`.**
   - Leitura em `chunksize`, filtrando município de SC (6 dígitos começando com 42) e vínculos CLT. Manter só as colunas necessárias.
   - Grava `data/interim/rais_sc_2025.parquet`.
   - Um teste com um CSV sintético de 5 linhas.
-- [ ] **M4.C3 `estoque_rais()` → `data_processed/rais_estoque.parquet`.**
+- [x] **M4.C3 `estoque_rais()` → `data_processed/rais_estoque.parquet`.**
   - Chaves iguais às do agregado, **sem `mes`**.
   - Colunas: `estoque_31dez`, `estoque_medio_ou_mais` (médio completo ou mais), `desligados_rais` e `desligados_precoce` (menos de 12 meses de casa).
   - Reaproveitar o mapeamento subclasse → seção/setor do `agregador.py` e o `aplicar_mapeamento` dos CBOs.
   - Registrar a % do estoque em CBOs sem macrofamília; se passar de 1%, acionar o M2.C5.
-- [ ] **M4.C4 Desligamentos descontados no CAGED.**
+- [x] **M4.C4 Desligamentos descontados no CAGED.**
   - Nova coluna aditiva `desligamentos_descontados` em `src/agregador.py` (`COLUNAS_ADITIVAS` e `preparar_base`): desligamentos menos os códigos 40, 50, 60 e 80 (PLANEJAMENTO §6).
   - Atualizar a checagem de schema e reagregar.
   - ⚠️ O M5.C3 mexe na mesma função. Quem mergear por último faz o rebase.
-- [ ] **M4.C5 [painel] Carregar o estoque.**
+- [x] **M4.C5 [painel] Carregar o estoque.**
   - `rais_estoque.parquet` entra em `carregar_artefatos` (local e Blob, com novo `NOME_BLOB_*`) e no schema.
   - Em `agregar_metricas`, o estoque é somado pelos mesmos `por` e anexado. **Nunca replicar o estoque nas linhas mensais.**
   - Métricas novas: `rotatividade_desc = min(adm, desl_desc) / estoque`, `variacao_rel = saldo / estoque` e `precoce = desligados_precoce / desligados_rais`.
-- [ ] **M4.C6 [painel] Índice e KPIs.**
+- [x] **M4.C6 [painel] Índice e KPIs.**
   - Tensão = rotatividade descontada + saída voluntária + precoce, com pesos iguais e o expander de sensibilidade de volta. Dinamismo = variação relativa.
   - KPI de rotatividade ao lado da referência oficial (SC 33,6%, Brasil 34,2%, Transformação Brasil 27,6%; PLANEJAMENTO §6).
   - **Checagem:** a rotatividade de SC com todas as seções tem que ficar perto de 33,6%. Se ficar longe, investigar antes de publicar.

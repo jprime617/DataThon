@@ -109,10 +109,12 @@ COLUNA_FAIXA_ESCOLARIDADE = "faixa_escolaridade"
 COLUNA_ADMISSOES = "admissoes"
 COLUNA_DESLIGAMENTOS = "desligamentos"
 COLUNA_DESLIGAMENTOS_A_PEDIDO = "desligamentos_a_pedido"
+COLUNA_DESLIGAMENTOS_DESCONTADOS = "desligamentos_descontados"
 COLUNAS_ADITIVAS = [
     COLUNA_ADMISSOES,
     COLUNA_DESLIGAMENTOS,
     COLUNA_DESLIGAMENTOS_A_PEDIDO,
+    COLUNA_DESLIGAMENTOS_DESCONTADOS,
     "soma_salario_admissao",
     "n_salario_admissao",
     "soma_salario_desligamento",
@@ -127,6 +129,9 @@ COLUNAS_ADITIVAS = [
 # (40), aceito cru ou já decodificado pelo Limpador.
 COLUNA_TIPO_MOVIMENTACAO = "tipomovimentação"
 CODIGO_DESLIGAMENTO_A_PEDIDO = 40
+# Rotatividade descontada do MTE (PLANEJAMENTO §6): fora a pedido (40),
+# aposentadoria (50), morte (60) e transferência (80).
+CODIGOS_NAO_DESCONTADOS = (40, 50, 60, 80)
 COLUNA_SUBCLASSE = "subclasse"
 
 # Rótulo de nível quando a base não traz o nível de qualificação da CBO.
@@ -240,6 +245,7 @@ def preparar_base(df: pd.DataFrame, teto: float | None = None) -> pd.DataFrame:
     - ``nivel_qualificacao``: o nível da CBO (já mesclado pela etapa de IA);
       ausente → `NIVEL_NAO_INFORMADO`.
     - indicadores 0/1 de admissão, desligamento e desligamento a pedido (40) e
+      os desligamentos descontados (sem 40, 50, 60 e 80; PLANEJAMENTO §6) e
       os salários válidos (> 0 e ≤ `teto_salario`) e as escolaridades não
       nulas, com os seus contadores.
     """
@@ -275,11 +281,19 @@ def preparar_base(df: pd.DataFrame, teto: float | None = None) -> pd.DataFrame:
         except Exception:  # noqa: BLE001
             pass
         a_pedido = tipo.isin({CODIGO_DESLIGAMENTO_A_PEDIDO, "40", rotulo})
+        fora = set(CODIGOS_NAO_DESCONTADOS) | {str(c) for c in CODIGOS_NAO_DESCONTADOS}
+        try:
+            fora |= {mapeamentos.TIPO_MOVIMENTACAO[c] for c in CODIGOS_NAO_DESCONTADOS}
+        except Exception:  # noqa: BLE001
+            pass
+        nao_descontado = tipo.isin(fora)
     else:
         a_pedido = pd.Series(False, index=base.index)
+        nao_descontado = a_pedido
     base[COLUNA_ADMISSOES] = adm.astype("int64")
     base[COLUNA_DESLIGAMENTOS] = desl.astype("int64")
     base[COLUNA_DESLIGAMENTOS_A_PEDIDO] = (desl & a_pedido).astype("int64")
+    base[COLUNA_DESLIGAMENTOS_DESCONTADOS] = (desl & ~nao_descontado).astype("int64")
 
     for origem, nome in ((COLUNA_SALARIO, "salario"), (COLUNA_ESCOLARIDADE_ORDINAL, "escolaridade")):
         valor = (

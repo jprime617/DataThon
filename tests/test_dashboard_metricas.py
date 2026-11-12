@@ -270,3 +270,64 @@ def test_filtro_v2_por_escopo_territorio_e_nivel():
     assert c.filtrar(df, c.Filtros(escopo=c.ESCOPO_ECONOMIA))["admissoes"].sum() == 7
     assert c.filtrar(df, c.Filtros(territorios=("Serrana",)))["admissoes"].sum() == 4
     assert c.filtrar(df, c.Filtros(niveis=("Qualificado",)))["admissoes"].sum() == 1
+
+
+# --- Estoque da RAIS (M4.C5) -------------------------------------------------
+
+
+def _com_estoque(**valores) -> dict:
+    base = {"secao_industrial": "Indústrias de Transformação", "estoque_31dez": 1000,
+            "estoque_escolaridade_informada": 1000, "estoque_medio_ou_mais": 600,
+            "desligados_rais": 200, "desligados_precoce": 140}
+    base.update(valores)
+    return _celula(**base)
+
+
+def test_estoque_entra_uma_vez_por_celula_e_nao_por_mes():
+    # Mesma célula em dois meses: o estoque (1000) não pode virar 2000.
+    df = _df(_com_estoque(mes="202509", admissoes=150, desligamentos=120, desligamentos_descontados=80),
+             _com_estoque(mes="202510", admissoes=50, desligamentos=60, desligamentos_descontados=40))
+    t = c.total(df)
+    assert t[c.M_ESTOQUE] == 1000
+    assert t[c.M_ROT_DESC] == pytest.approx(min(200, 120) / 1000)
+    assert t[c.M_VAR_REL] == pytest.approx((200 - 180) / 1000)
+    assert t[c.M_PRECOCE] == pytest.approx(0.7)
+    # Duas células distintas somam os estoques.
+    outra = _com_estoque(municipio="420540", municipio_nome="Florianópolis", estoque_31dez=500,
+                         admissoes=10, desligamentos_descontados=10)
+    assert c.total(_df(*df.to_dict("records"), outra))[c.M_ESTOQUE] == 1500
+
+
+def test_sem_estoque_as_metricas_da_rais_ficam_vazias():
+    t = c.total(_df(_celula(admissoes=10, desligamentos=5)))
+    assert math.isnan(t[c.M_ROT_DESC]) and math.isnan(t[c.M_PRECOCE])
+
+
+def test_anexar_estoque_casa_pela_celula():
+    agregado = _df(_com_estoque(), _com_estoque(mes="202510")).drop(columns=c.COLUNAS_ESTOQUE)
+    estoque = _df(_com_estoque())[c.CHAVES_ESTOQUE + c.COLUNAS_ESTOQUE]
+    avisos: list[str] = []
+    junto = c.anexar_estoque(agregado, estoque, avisos)
+    assert list(junto["estoque_31dez"]) == [1000, 1000] and not avisos
+    assert c.anexar_estoque(agregado, None, avisos) is agregado and avisos
+
+
+def test_tensao_tem_os_tres_sintomas_e_dinamismo_usa_o_estoque():
+    assert set(c.PESOS_TENSAO_PADRAO) == {c.M_ROT_DESC, c.M_SAIDA_VOL, c.M_PRECOCE}
+    comum = dict(admissoes=100, desligamentos=100, desligamentos_a_pedido=40)
+    df = _df(
+        _com_estoque(setor="calmo", desligamentos_descontados=20, desligados_precoce=40, **comum),
+        _com_estoque(setor="medio", desligamentos_descontados=50, desligados_precoce=100, **comum),
+        _com_estoque(setor="tenso", desligamentos_descontados=90, desligados_precoce=180, **comum),
+    )
+    m = c.matriz_diagnostico(df, [c.COLUNA_SETOR]).set_index(c.COLUNA_SETOR)
+    # Saída voluntária igual: quem ordena é rotatividade + precoce.
+    assert list(m.index) == ["tenso", "medio", "calmo"]
+    assert m.loc["tenso", "motor"] in {"rotatividade alta", "desligamento precoce alto"}
+
+
+def test_dinamismo_cai_para_o_saldo_relativo_sem_estoque():
+    df = _df(_celula(setor="a", admissoes=200, desligamentos=100),
+             _celula(setor="b", admissoes=100, desligamentos=200))
+    m = c.matriz_diagnostico(df, [c.COLUNA_SETOR]).set_index(c.COLUNA_SETOR)
+    assert m.loc["a", "dinamismo"] > 0 > m.loc["b", "dinamismo"]

@@ -33,6 +33,7 @@ from src.agregador import (
     COLUNA_ADMISSOES,
     COLUNA_DESLIGAMENTOS,
     COLUNA_DESLIGAMENTOS_A_PEDIDO,
+    COLUNA_DESLIGAMENTOS_DESCONTADOS,
     COLUNA_ESCOPO_INDUSTRIAL,
     COLUNA_FAIXA_ESCOLARIDADE,
     COLUNA_IDHM_2010,
@@ -53,6 +54,7 @@ from src.agregador import (
     COLUNAS_ADITIVAS,
 )
 from src.logging_pipeline import log_etapa, obter_logger
+from src.rais import CHAVES_ESTOQUE, COLUNAS_ESTOQUE
 from src.mapeamentos import NAO_CLASSIFICADO
 
 _ETAPA = "dashboard"
@@ -74,6 +76,7 @@ CONTAINER_PADRAO = "caged-agregado"
 NOME_BLOB_AGREGADO = "caged_agregado.parquet"
 NOME_BLOB_PERFIL = "caged_perfil.parquet"
 NOME_BLOB_METADADOS = "metadados.json"
+NOME_BLOB_ESTOQUE = "rais_estoque.parquet"
 
 # Colunas que o painel v2 exige no agregado. Uma cópia do Blob gerada pelo
 # pipeline antigo não as tem: nesse caso o painel usa a cópia local e avisa.
@@ -242,6 +245,12 @@ def carregar_artefatos(
             meta = json.loads((pasta / NOME_BLOB_METADADOS).read_text(encoding="utf-8"))
         except Exception:  # noqa: BLE001
             avisos.append("Metadados indisponíveis na cópia local.")
+        if agregado is not None and schema_v2_ok(agregado):
+            try:
+                estoque = pd.read_parquet(pasta / NOME_BLOB_ESTOQUE)
+            except Exception:  # noqa: BLE001
+                estoque = None
+            agregado = anexar_estoque(agregado, estoque, avisos)
         return agregado, perfil, meta
 
     credencial = (ambiente.get(VAR_CREDENCIAL_AZURE) or "").strip()
@@ -252,6 +261,8 @@ def carregar_artefatos(
                 raise ValueError("a cópia do Blob está no schema antigo (sem as colunas v2)")
             perfil = ler_parquet_enxuto(io.BytesIO(baixar(credencial, NOME_BLOB_PERFIL)))
             meta = json.loads(baixar(credencial, NOME_BLOB_METADADOS).decode("utf-8"))
+            estoque = pd.read_parquet(io.BytesIO(baixar(credencial, NOME_BLOB_ESTOQUE)))
+            agregado = anexar_estoque(agregado, estoque, avisos)
             return Artefatos(preparar_tipos(agregado), perfil, meta, "blob", tuple(avisos))
         except Exception as exc:  # noqa: BLE001
             avisos.append(f"Azure Blob não usado: {exc}. Exibindo a cópia local.")
@@ -266,6 +277,18 @@ def carregar_artefatos(
         return Artefatos(None, None, {}, None, tuple(avisos),
                          "Dados agregados indisponíveis no Blob e na cópia local.")
     return Artefatos(preparar_tipos(agregado), perfil, meta, "local", tuple(avisos))
+
+
+def anexar_estoque(agregado: pd.DataFrame, estoque: pd.DataFrame | None, avisos: list[str]) -> pd.DataFrame:
+    """Anexa a cada linha o estoque RAIS da sua célula (município × seção × setor × macro × nível).
+
+    O valor se repete nas linhas mensais da célula, como a população: quem soma
+    o estoque deduplica pela célula (`agregar_metricas`); ele não é aditivo.
+    """
+    if estoque is None or not set(CHAVES_ESTOQUE) <= set(agregado.columns):
+        avisos.append("Estoque da RAIS indisponível: rotatividade e desligamento precoce ficam em branco.")
+        return agregado
+    return agregado.merge(estoque[CHAVES_ESTOQUE + COLUNAS_ESTOQUE], on=CHAVES_ESTOQUE, how="left")
 
 
 def preparar_tipos(df: pd.DataFrame) -> pd.DataFrame:
@@ -407,6 +430,10 @@ M_ESC_DESL = "escolaridade_desligamento"
 M_GAP_ESC = "gap_escolaridade"
 M_SALDO_REL = "saldo_relativo"
 M_POP = "populacao"
+M_ESTOQUE = "estoque"
+M_ROT_DESC = "rotatividade_desc"
+M_VAR_REL = "variacao_rel"
+M_PRECOCE = "precoce"
 M_AMOSTRA_OK = "amostra_ok"
 M_SALARIO_OK = "salario_ok"
 
@@ -447,6 +474,20 @@ DEFINICOES: dict[str, Definicao] = {
         "num2",
     ),
     M_SALDO_REL: Definicao("Saldo relativo", "saldo ÷ movimentações", "pct"),
+    M_ESTOQUE: Definicao("Estoque de vínculos", "vínculos CLT ativos em 31/12/2025 (RAIS)", "int"),
+    M_ROT_DESC: Definicao(
+        "Rotatividade descontada",
+        "min(admissões, desligamentos descontados) ÷ estoque em 31/12/2025 (RAIS). Descontados = sem a "
+        "pedido, aposentadoria, morte e transferência (definição do MTE). O estoque de 31/12 aproxima o "
+        "estoque médio; com menos de 12 meses no filtro, a taxa cobre só o período.",
+        "pct",
+    ),
+    M_VAR_REL: Definicao("Variação do emprego", "saldo ÷ estoque em 31/12/2025 (RAIS)", "pct"),
+    M_PRECOCE: Definicao(
+        "Desligamento precoce",
+        "desligados com menos de 12 meses de casa ÷ desligados em 2025 (RAIS, sem transferências)",
+        "pct",
+    ),
     M_SAL_ADM: Definicao("Salário médio de admissão", "soma dos salários ÷ admissões com salário", "brl"),
     M_SAL_DESL: Definicao("Salário médio de desligamento", "soma dos salários ÷ desligamentos com salário", "brl"),
     M_ESC_ADM: Definicao("Escolaridade média de quem entra",
@@ -501,6 +542,16 @@ def agregar_metricas(df: pd.DataFrame, por: list[str] | None = None) -> pd.DataF
     else:
         populacao = pd.Series(float("nan"), index=somas.index)
 
+    # Estoque: uma vez por célula RAIS distinta do grupo (nunca por linha mensal).
+    if set(COLUNAS_ESTOQUE) <= set(base.columns):
+        celulas = base.drop_duplicates([*chave, *CHAVES_ESTOQUE])
+        estoque = (
+            celulas.groupby(chave, observed=True, dropna=False)[COLUNAS_ESTOQUE]
+            .sum(min_count=1)
+            .reindex(somas.index)
+        )
+        somas = somas.join(estoque)
+
     somas = somas.reset_index()
     if not por:
         somas = somas.drop(columns="_todos")
@@ -527,6 +578,13 @@ def _derivar(somas: pd.DataFrame, populacao) -> pd.DataFrame:
     r[M_ESC_DESL] = _divisao(r["soma_escolaridade_desligamento"], r["n_escolaridade_desligamento"])
     r[M_GAP_ESC] = r[M_ESC_ADM] - r[M_ESC_DESL]
     r[M_SALDO_REL] = _divisao(r[M_SALDO], r[M_MOV])
+    sem = pd.Series(float("nan"), index=r.index)
+    r[M_ESTOQUE] = r["estoque_31dez"].astype("float64") if "estoque_31dez" in r else sem
+    desl_desc = r[COLUNA_DESLIGAMENTOS_DESCONTADOS].astype("float64")
+    r[M_ROT_DESC] = _divisao(pd.concat([adm, desl_desc], axis=1).min(axis=1), r[M_ESTOQUE])
+    r[M_VAR_REL] = _divisao(r[M_SALDO], r[M_ESTOQUE])
+    r[M_PRECOCE] = (_divisao(r["desligados_precoce"], r["desligados_rais"])
+                    if "desligados_rais" in r else sem)
     r[M_AMOSTRA_OK] = r[M_MOV] >= MIN_MOVIMENTACOES
     return r
 
@@ -559,16 +617,23 @@ Q_PRESSAO = "Expansão sob pressão"
 Q_ESTAGNACAO = "Estagnação"
 Q_APAGAO = "Apagão (rotatividade crônica)"
 
-# Tensão = só sintomas. A compressão salarial é causa (ver `causas`), não sintoma;
-# rotatividade descontada e desligamento precoce entram com a RAIS (M4).
-PESOS_TENSAO_PADRAO = {M_SAIDA_VOL: 1.0}
-# A aceleração semestral media calendário; volta por blocos de 12 meses (M5.C6).
-PESOS_DINAMISMO_PADRAO = {M_SALDO_REL: 1.0}
+# Tensão = só sintomas, com pesos iguais (M4.C6). A compressão salarial é causa
+# (ver `causas`), não sintoma. Sem o estoque da RAIS, os dois sintomas dela ficam
+# ausentes e a média usa só a saída voluntária.
+PESOS_TENSAO_PADRAO = {M_ROT_DESC: 1.0, M_SAIDA_VOL: 1.0, M_PRECOCE: 1.0}
+# Dinamismo = variação do emprego (saldo ÷ estoque); sem estoque, saldo relativo.
+# A aceleração por blocos de 12 meses volta no M5.C6.
+PESOS_DINAMISMO_PADRAO = {M_VAR_REL: 1.0}
 
 ROTULO_COMPONENTE = {
+    M_ROT_DESC: "rotatividade alta",
     M_SAIDA_VOL: "saída voluntária alta",
-    M_SALDO_REL: "saldo relativo",
+    M_PRECOCE: "desligamento precoce alto",
+    M_VAR_REL: "variação do emprego",
 }
+
+# Rotatividade descontada oficial, out/25–set/26 (MTE; PLANEJAMENTO §6).
+ROTATIVIDADE_OFICIAL = {"SC": 0.336, "Brasil": 0.342, "Transformação (Brasil)": 0.276}
 
 
 def zscore(serie: pd.Series) -> pd.Series:
@@ -623,10 +688,13 @@ def matriz_diagnostico(
         for c in ("dinamismo", "tensao", "quadrante", "motor"):
             m[c] = pd.Series(dtype="object")
         return m
+    variacao = m[M_VAR_REL] if m[M_VAR_REL].notna().any() else m[M_SALDO_REL]
     comp = pd.DataFrame(
         {
+            M_ROT_DESC: zscore(m[M_ROT_DESC]),
             M_SAIDA_VOL: zscore(m[M_SAIDA_VOL]),
-            M_SALDO_REL: zscore(m[M_SALDO_REL]),
+            M_PRECOCE: zscore(m[M_PRECOCE]),
+            M_VAR_REL: zscore(variacao),
         },
         index=m.index,
     )
@@ -1280,15 +1348,15 @@ def delta_texto(nome: str, valor: float, referencia: float, sufixo: str) -> str 
 
 
 # Métricas em que subir é ruim (delta em vermelho quando sobe).
-METRICAS_INVERSAS = {M_SAIDA_VOL}
+METRICAS_INVERSAS = {M_SAIDA_VOL, M_ROT_DESC, M_PRECOCE}
 
 
 # Temas da coluna de indicadores (sanfona do Panorama): título, ícone e métricas.
 TEMAS_KPI = [
-    ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K]),
+    ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K, M_VAR_REL]),
     ("Renda", ":material/payments:", [M_GAP_SAL, M_SAL_ADM, M_SAL_DESL]),
     ("Escolaridade", ":material/school:", [M_GAP_ESC]),
-    ("Tensão", ":material/crisis_alert:", [M_SAIDA_VOL]),
+    ("Tensão", ":material/crisis_alert:", [M_ROT_DESC, M_SAIDA_VOL, M_PRECOCE]),
 ]
 METRICAS_TEMAS = [m for _, _, ms in TEMAS_KPI for m in ms]
 
@@ -1299,6 +1367,9 @@ UNIDADES = {
     M_SALDO_10K: "vagas por 10 mil hab.",
     M_SALDO_REL: "do total movimentado",
     M_SAIDA_VOL: "dos desligamentos, a pedido",
+    M_ROT_DESC: "oficial (MTE): SC 33,6% · Brasil 34,2% · Transformação 27,6%",
+    M_VAR_REL: "do estoque de 31/12/2025",
+    M_PRECOCE: "dos desligados, com < 12 meses de casa",
     M_GAP_SAL: "do salário de quem saiu",
     M_SAL_ADM: "por mês",
     M_SAL_DESL: "por mês",

@@ -60,6 +60,16 @@ def test_desligamento_a_pedido_aceita_codigo_e_rotulo():
     assert base["desligamentos_a_pedido"].tolist() == [0, 1, 0, 0, 1, 1]
 
 
+def test_desligamentos_descontados_tiram_40_50_60_80():
+    df = _base()
+    df["tipomovimentação"] = [97, 31, 97, 50, 60, "Desligamento por transferência"]
+    base = preparar_base(df)
+    # Só a demissão sem justa causa (31) entra na rotatividade descontada.
+    assert base["desligamentos_descontados"].tolist() == [0, 1, 0, 0, 0, 0]
+    # O a pedido (40) da base original também sai.
+    assert preparar_base(_base())["desligamentos_descontados"].tolist() == [0, 0, 0, 1, 0, 0]
+
+
 def test_colunas_aditivas_somam_o_total_da_base():
     agregado = agregar(_base(), _municipios())
     assert agregado["admissoes"].sum() == 2

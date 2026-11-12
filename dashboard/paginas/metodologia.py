@@ -31,8 +31,9 @@ digraph {
 
 LIMITES = """
 - **12 meses de dados** (set/25–ago/26): sem um bloco anterior de 12 meses, não há aceleração sem sazonalidade, então ela fica fora do índice.
-- **O CAGED mede fluxos, não estoque, e não tem vagas abertas.** "Apagão" é inferido por sinais de tensão (hoje, a saída voluntária; a compressão salarial entra como causa), não observado.
-- **Sem estoque de vínculos não há taxa de rotatividade.** O antigo "giro" (mín ÷ máx entre admissões e desligamentos) saiu porque era função exata do saldo relativo; a rotatividade descontada do MTE volta com a RAIS.
+- **O CAGED mede fluxos, não estoque, e não tem vagas abertas.** "Apagão" é inferido por sinais de tensão (rotatividade descontada, saída voluntária e desligamento precoce; a compressão salarial entra como causa), não observado.
+- **Estoque de 31/12/2025 como aproximação do estoque médio.** A rotatividade descontada do MTE divide pelo estoque médio do período; usamos o estoque CLT de SC em 31/12/2025 (RAIS 2025, fonte pública do MTE), que cai no meio da janela set/25–ago/26. Resultado: SC 34,8% contra 33,6% na taxa oficial de out/25–set/26. Células sem movimentação no período ficam fora (≈ 1% do estoque). O antigo "giro" (mín ÷ máx) saiu porque era função exata do saldo relativo.
+- **A RAIS só tem o vínculo CLT** (tipos 10–25 e 60–75): aprendizes, temporários e estatutários ficam fora; transferências (motivos 30–34) não contam como desligamento.
 - **Salários são declarados pelo empregador** e não deflacionados; as medianas do perfil, ao juntar células, são aproximadas pela mediana ponderada.
 - **IDHM é de 2010**; PIB per capita de 2023; população estimada 2026. Correlações territoriais não implicam causalidade.
 - **A classificação por IA é uma interpretação**, mitigada por regras explícitas (A–D), conjunto fechado e uma 2ª rodada com a ordem embaralhada.
@@ -40,10 +41,8 @@ LIMITES = """
 """
 
 PROXIMOS = """
-- Estoque de vínculos (RAIS 2025) para a **rotatividade descontada** e mais dois sintomas no índice de Tensão.
 - **Janela de 24 meses** (MOV + FOR − EXC do FTP do MTE) para a aceleração por blocos de 12 meses, sem sazonalidade.
 - **SC × Brasil** por seção (Tabelas 6.1 e 10 do CAGED) para separar o que é estrutural do que é local.
-- **Desligamento precoce** (< 12 meses de casa), que exige a RAIS.
 - Salários deflacionados pelo INPC e intervalos de confiança por bootstrap.
 """
 
@@ -56,7 +55,7 @@ REQUISITOS = [
     ("R3", "Cruzamento CAGED × municípios",
      "Saldo por 10 mil hab. (Panorama) e população, IDHM e PIB na Ficha do território."),
     ("R4", "Métricas de negócio",
-     "Indicadores do Panorama e tabela Definições desta página. Rotatividade descontada: pendente de RAIS."),
+     "Indicadores do Panorama e tabela Definições desta página; rotatividade descontada no tema Tensão, ao lado da taxa oficial."),
     ("R5", "Agrupamento de CBOs via IA",
      "Página Que profissional falta: macrofamílias, regras A–D, prompt e concordância entre rodadas."),
     ("R6", "Agregações para o painel",
@@ -66,7 +65,7 @@ REQUISITOS = [
     ("R7.2", "Mapa de SC pelo saldo por 10 mil hab.",
      "Panorama: escolha Saldo por 10 mil hab. e Município no mapa (escala divergente, legenda em faixas)."),
     ("R7.3", "Ranking de seções por saldo",
-     "Panorama: tabela Seções, com a saída voluntária ao lado."),
+     "Panorama: tabela Seções, com a rotatividade descontada e a saída voluntária ao lado."),
     ("R7.4", "Salário × escolaridade ordinal média",
      "Por que acontece → Aprofundar: qualificação e retenção (dispersão por macrofamília)."),
     ("R7.5–7.6", "Filtros e recorte vazio",
@@ -124,9 +123,10 @@ def render(ctx: c.Contexto) -> None:
 
     st.subheader("Índice: Tensão = sintomas; causas ficam no diagnóstico")
     st.markdown(
-        "- **Dinamismo** = z-score do saldo relativo (saldo ÷ movimentações) entre as unidades com amostra.\n"
-        "- **Tensão** = média ponderada dos z-scores dos **sintomas** de dificuldade de reter gente. Hoje há um só: "
-        "a **saída voluntária**. Rotatividade descontada e desligamento precoce entram quando houver o estoque da RAIS.\n"
+        "- **Dinamismo** = z-score da variação do emprego (saldo ÷ estoque de 31/12/2025) entre as unidades com amostra.\n"
+        "- **Tensão** = média dos z-scores dos três **sintomas** de dificuldade de reter gente, com pesos iguais: "
+        "**rotatividade descontada**, **saída voluntária** e **desligamento precoce** (< 12 meses de casa). "
+        "Em Quem precisa de atenção, um expander mostra se o top 10 muda com outros pesos.\n"
         "- **Causas não entram no índice.** A compressão salarial (gap < 0,95), o gap de escolaridade e a retenção "
         "viram selos em Quem precisa de atenção e regras em O que fazer. Somá-las à tensão e depois usá-las para explicá-la "
         "seria contar a mesma coisa duas vezes.\n"
