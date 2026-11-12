@@ -42,8 +42,6 @@ from src.agregador import (
     COLUNA_SALDO_LIQUIDO,
     COLUNA_SALDO_POR_10K,
     COLUNA_SECAO_INDUSTRIAL,
-    COLUNA_TURNOVER,
-    COLUNA_INDICE_AQUECIMENTO,
     COLUNA_SALARIO_MEDIO_ADMISSAO,
     COLUNA_SALARIO_MEDIO_DESLIGAMENTO,
     COLUNA_ESCOLARIDADE_MEDIA_ADMISSAO,
@@ -169,8 +167,8 @@ def _escrever_caged(caminho: Path) -> int:
     4 = "De 10 a 19") — igual ao arquivo real —, competências dentro do intervalo
     ``[202509, 202608]`` e salários no formato brasileiro, que é o formato real
     do CAGED. Cada
-    município tem admissões e desligamentos em 2 meses para exercitar saldo,
-    turnover e índice de aquecimento (variação mensal).
+    município tem admissões e desligamentos em 2 meses para exercitar saldo
+    e as séries mensais.
     """
     linhas = [
         # (competência, município, seção, subclasse, saldo, cbo, grau, idade,
@@ -349,8 +347,6 @@ def test_pipeline_ponta_a_ponta_sobre_fixture_pequeno(tmp_path: Path) -> None:
         COLUNA_MES,
         COLUNA_SALDO_LIQUIDO,
         COLUNA_SALDO_POR_10K,
-        COLUNA_TURNOVER,
-        COLUNA_INDICE_AQUECIMENTO,
         COLUNA_SALARIO_MEDIO_ADMISSAO,
         COLUNA_SALARIO_MEDIO_DESLIGAMENTO,
         COLUNA_ESCOLARIDADE_MEDIA_ADMISSAO,
@@ -380,13 +376,6 @@ def test_pipeline_ponta_a_ponta_sobre_fixture_pequeno(tmp_path: Path) -> None:
     # O PIB per capita preserva a ordem de grandeza declarada no fixture.
     pib = relido[COLUNA_PIB_PER_CAPITA_2023].dropna()
     assert set(pib.round(2)) == {35000.00}
-
-    # O Turnover é calculável a partir das contagens de movimentação (R4.4).
-    assert relido[COLUNA_TURNOVER].notna().any(), (
-        "turnover ausente em todos os recortes — o estoque base não chegou "
-        "numérico à métrica"
-    )
-    assert ((relido[COLUNA_TURNOVER].dropna() >= 0) & (relido[COLUNA_TURNOVER].dropna() <= 1)).all()
 
     # Renda e escolaridade estão materializadas para a dispersão do dashboard (R7.4).
     assert relido[COLUNA_SALARIO_MEDIO_ADMISSAO].notna().any()

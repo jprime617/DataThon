@@ -29,7 +29,6 @@ from hypothesis import strategies as st
 
 from src.agregador import (
     COLUNA_IDHM_2010,
-    COLUNA_INDICE_AQUECIMENTO,
     COLUNA_MACROFAMILIA_CBO,
     COLUNA_MES,
     COLUNA_MUNICIPIO,
@@ -39,7 +38,6 @@ from src.agregador import (
     COLUNA_SALDO_LIQUIDO,
     COLUNA_SALDO_POR_10K,
     COLUNA_SECAO_INDUSTRIAL,
-    COLUNA_TURNOVER,
     EXTENSAO_CSV,
     EXTENSAO_PARQUET,
     exportar,
@@ -86,8 +84,6 @@ def _agregado(draw: st.DrawFn) -> pd.DataFrame:
         COLUNA_MES: draw(st.lists(_meses, min_size=n, max_size=n)),
         COLUNA_SALDO_LIQUIDO: draw(st.lists(_metricas, min_size=n, max_size=n)),
         COLUNA_SALDO_POR_10K: draw(st.lists(_metricas, min_size=n, max_size=n)),
-        COLUNA_TURNOVER: draw(st.lists(_metricas, min_size=n, max_size=n)),
-        COLUNA_INDICE_AQUECIMENTO: draw(st.lists(_metricas, min_size=n, max_size=n)),
         COLUNA_POPULACAO_2026: draw(st.lists(_populacao, min_size=n, max_size=n)),
         COLUNA_IDHM_2010: draw(st.lists(_idhm, min_size=n, max_size=n)),
         COLUNA_PIB_PER_CAPITA_2023: draw(st.lists(_pib, min_size=n, max_size=n)),
@@ -98,8 +94,6 @@ def _agregado(draw: st.DrawFn) -> pd.DataFrame:
     for coluna in (
         COLUNA_SALDO_LIQUIDO,
         COLUNA_SALDO_POR_10K,
-        COLUNA_TURNOVER,
-        COLUNA_INDICE_AQUECIMENTO,
         COLUNA_POPULACAO_2026,
         COLUNA_IDHM_2010,
         COLUNA_PIB_PER_CAPITA_2023,
@@ -167,8 +161,6 @@ def test_prop24_round_trip_de_exportacao_do_agregado(
         for coluna in (
             COLUNA_SALDO_LIQUIDO,
             COLUNA_SALDO_POR_10K,
-            COLUNA_TURNOVER,
-            COLUNA_INDICE_AQUECIMENTO,
             COLUNA_POPULACAO_2026,
             COLUNA_IDHM_2010,
             COLUNA_PIB_PER_CAPITA_2023,
@@ -199,8 +191,6 @@ def _agregado_minimo() -> pd.DataFrame:
             COLUNA_MES: [202509],
             COLUNA_SALDO_LIQUIDO: [1.0],
             COLUNA_SALDO_POR_10K: [0.5],
-            COLUNA_TURNOVER: [0.25],
-            COLUNA_INDICE_AQUECIMENTO: [0.75],
             COLUNA_POPULACAO_2026: [12345.0],
             COLUNA_IDHM_2010: [0.8],
             COLUNA_PIB_PER_CAPITA_2023: [42000.0],

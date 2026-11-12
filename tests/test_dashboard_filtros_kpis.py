@@ -26,7 +26,6 @@ from src.agregador import (
 from src.metricas import (
     COLUNA_SALDO_LIQUIDO,
     COLUNA_SALDO_POR_10K,
-    COLUNA_TURNOVER,
 )
 
 # ---------------------------------------------------------------------------
@@ -63,7 +62,7 @@ def _base_agregada(draw: st.DrawFn) -> pd.DataFrame:
     n = draw(st.integers(min_value=0, max_value=40))
     linhas = draw(
         st.lists(
-            st.tuples(_periodo, _regiao, _secao, _macro, _valor, _valor, _valor),
+            st.tuples(_periodo, _regiao, _secao, _macro, _valor, _valor),
             min_size=n,
             max_size=n,
         )
@@ -77,7 +76,6 @@ def _base_agregada(draw: st.DrawFn) -> pd.DataFrame:
             COLUNA_MACROFAMILIA_CBO,
             COLUNA_SALDO_LIQUIDO,
             COLUNA_SALDO_POR_10K,
-            COLUNA_TURNOVER,
         ],
     )
 

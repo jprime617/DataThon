@@ -11,8 +11,7 @@ anexados (R6):
   corresponde a pelo menos um registro de origem; combinações sem registros são
   omitidas (R6.1, R6.2).
 - Property 25: Métricas do agregado têm no máximo 2 casas decimais — cada
-  métrica numérica (`saldo_liquido`, `saldo_por_10k`, `turnover`,
-  `indice_aquecimento`) é NaN ou igual ao próprio valor arredondado a 2 casas
+  métrica numérica (`saldo_liquido`, `saldo_por_10k`) é NaN ou igual ao próprio valor arredondado a 2 casas
   (R6.5).
 - Property 26: Indicadores municipais anexados correspondem à base — para
   qualquer recorte municipal, população 2026, IDHM 2010 e PIB per capita 2023
@@ -48,12 +47,10 @@ from src.cbo_ia import COLUNA_MACROFAMILIA
 from src.metricas import (
     COLUNA_CHAVE_MUNICIPAL,
     COLUNA_COMPETENCIA,
-    COLUNA_INDICE_AQUECIMENTO,
     COLUNA_SALDO_LIQUIDO,
     COLUNA_SALDO_MOVIMENTACAO,
     COLUNA_SALDO_POR_10K,
     COLUNA_SECAO,
-    COLUNA_TURNOVER,
 )
 
 # ---------------------------------------------------------------------------
@@ -76,8 +73,6 @@ _estoques = st.integers(min_value=1, max_value=500)
 _COLUNAS_METRICAS = [
     COLUNA_SALDO_LIQUIDO,
     COLUNA_SALDO_POR_10K,
-    COLUNA_TURNOVER,
-    COLUNA_INDICE_AQUECIMENTO,
 ]
 
 # Colunas de recorte do agregado na saída.
@@ -241,8 +236,8 @@ def test_prop25_metricas_tem_no_maximo_duas_casas_decimais(
 ) -> None:
     """Cada métrica numérica é NaN ou igual ao próprio valor com 2 casas.
 
-    Para toda linha do agregado e cada métrica (`saldo_liquido`, `saldo_por_10k`,
-    `turnover`, `indice_aquecimento`), o valor é ausente (NaN) ou idêntico ao seu
+    Para toda linha do agregado e cada métrica (`saldo_liquido`, `saldo_por_10k`),
+    o valor é ausente (NaN) ou idêntico ao seu
     arredondamento a 2 casas decimais (R6.5).
 
     Validates: Requirements 6.5

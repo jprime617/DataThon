@@ -60,7 +60,6 @@ from src.metricas import (
     COLUNA_CHAVE_MUNICIPAL,
     COLUNA_COMPETENCIA,
     COLUNA_ESCOLARIDADE_MEDIA,
-    COLUNA_INDICE_AQUECIMENTO,
     COLUNA_MOVIMENTACAO,
     COLUNA_SALARIO_MEDIO,
     COLUNA_SALDO_LIQUIDO,
@@ -69,15 +68,12 @@ from src.metricas import (
     COLUNA_SALARIO,
     COLUNA_ESCOLARIDADE_ORDINAL,
     COLUNA_SECAO,
-    COLUNA_TURNOVER,
     MOVIMENTACAO_ADMISSAO,
     MOVIMENTACAO_DESLIGAMENTO,
     escolaridade_media_por_movimentacao,
-    indice_aquecimento,
     salario_medio_por_movimentacao,
     saldo_liquido,
     saldo_por_10k,
-    turnover,
 )
 
 # Nome da etapa usado nas mensagens de log do pipeline (R8.4).
@@ -176,8 +172,6 @@ _COLUNAS_SAIDA = [
     COLUNA_MES,
     COLUNA_SALDO_LIQUIDO,
     COLUNA_SALDO_POR_10K,
-    COLUNA_TURNOVER,
-    COLUNA_INDICE_AQUECIMENTO,
     COLUNA_SALARIO_MEDIO_ADMISSAO,
     COLUNA_SALARIO_MEDIO_DESLIGAMENTO,
     COLUNA_ESCOLARIDADE_MEDIA_ADMISSAO,
@@ -198,8 +192,6 @@ _COLUNAS_SAIDA = [
 _COLUNAS_METRICAS = [
     COLUNA_SALDO_LIQUIDO,
     COLUNA_SALDO_POR_10K,
-    COLUNA_TURNOVER,
-    COLUNA_INDICE_AQUECIMENTO,
     COLUNA_SALARIO_MEDIO_ADMISSAO,
     COLUNA_SALARIO_MEDIO_DESLIGAMENTO,
     COLUNA_ESCOLARIDADE_MEDIA_ADMISSAO,
@@ -319,13 +311,7 @@ def agregar(df_metricas: pd.DataFrame, municipios: pd.DataFrame) -> pd.DataFrame
     - `saldo_liquido` — Saldo_Liquido por (município × seção × macrofamília × mês);
     - `saldo_por_10k` — normaliza o saldo pela população estimada 2026 (``NaN``
       quando a população é ausente ou não positiva);
-    - `turnover` — rotatividade por (município × seção × macrofamília) replicada
-      a cada mês do recorte (o estoque base é característica do recorte, não do
-      mês);
-    - `indice_aquecimento` — Saldo_por_10k somado à variação mensal do
-      Saldo_Liquido dentro de cada (município × seção × macrofamília).
-
-    As quatro métricas são arredondadas a 2 casas decimais (R6.5). Por fim,
+    As métricas são arredondadas a 2 casas decimais (R6.5). Por fim,
     anexa os indicadores de população estimada 2026, IDHM 2010 e PIB per capita
     2023 do município (R6.6); municípios sem o indicador na base — ou sem linha
     na Base_de_Municipios — recebem ``NaN`` sem interromper a agregação (R6.7).
@@ -345,8 +331,7 @@ def agregar(df_metricas: pd.DataFrame, municipios: pd.DataFrame) -> pd.DataFrame
     Returns:
         Um DataFrame com as colunas do schema agregado (R6): ``regiao``,
         ``municipio``, ``secao_industrial``, ``macrofamilia_cbo``, ``mes``,
-        ``saldo_liquido``, ``saldo_por_10k``, ``turnover``,
-        ``indice_aquecimento``, ``populacao_2026``, ``idhm_2010`` e
+        ``saldo_liquido``, ``saldo_por_10k``, ``populacao_2026``, ``idhm_2010`` e
         ``pib_per_capita_2023``.
 
     Raises:
@@ -383,18 +368,7 @@ def agregar(df_metricas: pd.DataFrame, municipios: pd.DataFrame) -> pd.DataFrame
     # Saldo_por_10k: normaliza pela população 2026 do município (R4.2/4.3).
     saldo = saldo_por_10k(saldo, municipios)
 
-    # Indice_de_Aquecimento: soma nível + variação mensal dentro de cada
-    # (município × seção × macrofamília); `indice_aquecimento` usa como recorte
-    # todas as colunas que não são competência nem métricas de saldo, o que
-    # corresponde exatamente ao recorte sem o mês (R4.8/4.9).
-    saldo = indice_aquecimento(saldo)
-
-    # Turnover por (município × seção × macrofamília); replicado a cada mês do
-    # recorte via merge, pois o estoque base não varia por mês (R4.4/4.5).
-    por_turnover = [c for c in _COLUNAS_RECORTE if c != COLUNA_COMPETENCIA]
-    turn = turnover(df_metricas, por_turnover)
-
-    agregado = saldo.merge(turn, how="left", on=por_turnover)
+    agregado = saldo
 
     # Salário médio e escolaridade média no mesmo recorte, para que a dispersão
     # renda × escolaridade do dashboard (R7.4) tenha fonte e responda aos mesmos
@@ -425,8 +399,6 @@ def agregar(df_metricas: pd.DataFrame, municipios: pd.DataFrame) -> pd.DataFrame
             COLUNA_MES: agregado[COLUNA_COMPETENCIA],
             COLUNA_SALDO_LIQUIDO: agregado[COLUNA_SALDO_LIQUIDO],
             COLUNA_SALDO_POR_10K: agregado[COLUNA_SALDO_POR_10K],
-            COLUNA_TURNOVER: agregado[COLUNA_TURNOVER],
-            COLUNA_INDICE_AQUECIMENTO: agregado[COLUNA_INDICE_AQUECIMENTO],
             COLUNA_SALARIO_MEDIO_ADMISSAO: agregado[COLUNA_SALARIO_MEDIO_ADMISSAO],
             COLUNA_SALARIO_MEDIO_DESLIGAMENTO: agregado[
                 COLUNA_SALARIO_MEDIO_DESLIGAMENTO
@@ -495,7 +467,7 @@ def _anexar_renda_escolaridade(
     municipal ausente (R6.7).
 
     Args:
-        agregado: DataFrame de recortes já com as métricas de saldo/turnover.
+        agregado: DataFrame de recortes já com as métricas de saldo.
         df_metricas: base enriquecida de origem.
 
     Returns:
