@@ -16,7 +16,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 | M4 | **concluído e mergeado** (C1–C6; C7 opcional) | `dashboard-v2` | M4.C6 |
 | M5 | **concluído e mergeado** (C1–C6) | `dashboard-v2` | M5.C6 |
 | M6 | falta o H2 (xlsx do PDET) | — | — |
-| M7 | C1–C3 feitos (**no ar**: https://datathon-caged-sc-br.azurewebsites.net) e C4; próximo: C5 (tag às 22h) | `dashboard-v2` | M7.C4 |
+| M7 | C1–C3 feitos (**no ar**: https://datathon-caged-sc-br.azurewebsites.net) **concluído**; tag `entrega-v1`, código congelado | `dashboard-v2` | M7.C5 |
 
 Commits locais só sobem com autorização do João: confira `git log origin/dashboard-v2..` antes de supor que algo foi publicado.
 
@@ -279,7 +279,7 @@ O que muda, e por quê:
 ## M7 · Integração, deploy e congelamento (19h–22h)
 
 **Branch:** `dashboard-v2` · **Dono:** pessoa 1, com apoio de todos
-**Estado:** C1 feito (12/11, 20h14): notebook do zero no commit `3fd2dfb` (24 meses, 6.782.144 linhas, agregado com 511.621 linhas, IA = Claude Opus 5.5 pelo modo arquivo), `pytest -q` com 265 verdes. C2 feito: as 8 páginas renderizadas no Chromium headless, temas claro e escuro, sem exceção; corrigido o texto da "Maior tensão" e dos cartões de alerta, que ainda explicavam a tensão só pela saída voluntária (agora citam o sintoma que mais pesa, em geral a rotatividade). C3 feito (12/11, 20h30): os 4 artefatos subiram juntos para o Blob (`caged-agregado`); o pacote de 15 MB (sem `.env`, sem `data/`, varrido atrás de credenciais) foi publicado em `datathon-caged-sc-br` (`RuntimeSuccessful`); smoke test com HTTP 200, `/_stcore/health` ok e as páginas renderizadas na URL pública com "Origem em uso: Azure Blob Storage", commit `3fd2dfb`. O README corrigido (exclui `data/` do zip e sobe o `rais_estoque`). C4 feito: D4, D6 e D8 atualizados, premissas 3–5 do §15, pendências do §16 fechadas e §17 "Próximos passos" criado. Próximo: C5 (tag `entrega-v1` às 22h).
+**Estado:** C1 feito (12/11, 20h14): notebook do zero no commit `3fd2dfb` (24 meses, 6.782.144 linhas, agregado com 511.621 linhas, IA = Claude Opus 5.5 pelo modo arquivo), `pytest -q` com 265 verdes. C2 feito: as 8 páginas renderizadas no Chromium headless, temas claro e escuro, sem exceção; corrigido o texto da "Maior tensão" e dos cartões de alerta, que ainda explicavam a tensão só pela saída voluntária (agora citam o sintoma que mais pesa, em geral a rotatividade). C3 feito (12/11, 20h30): os 4 artefatos subiram juntos para o Blob (`caged-agregado`); o pacote de 15 MB (sem `.env`, sem `data/`, varrido atrás de credenciais) foi publicado em `datathon-caged-sc-br` (`RuntimeSuccessful`); smoke test com HTTP 200, `/_stcore/health` ok e as páginas renderizadas na URL pública com "Origem em uso: Azure Blob Storage", commit `3fd2dfb`. O README corrigido (exclui `data/` do zip e sobe o `rais_estoque`). C4 feito: D4, D6 e D8 atualizados, premissas 3–5 do §15, pendências do §16 fechadas e §17 "Próximos passos" criado. C5 feito: tag `entrega-v1` criada às 20h40 (antecipada a pedido do João); **código congelado**: depois dela, só ajustes combinados com a equipe.
 
 - [x] **M7.C1** Rodar o notebook completo do zero com tudo que foi mergeado, gerando `metadados.json` com o commit. `pytest -q` verde.
 - [x] **M7.C2** Abrir o `streamlit run dashboard/app.py` local e clicar por todas as páginas, nos temas claro e escuro.
@@ -288,7 +288,7 @@ O que muda, e por quê:
   - decisões alteradas: D4 (IA por API e por arquivo), D8 (Azure) e §8.2 (taxonomia);
   - fechar as pendências do §16;
   - lista de "Próximos passos": RAIS 2024 e estoque mensal rolado, bootstrap e Mann-Whitney, clusters, 6 notebooks, além do que ficou no corte das 18h.
-- [ ] **M7.C5** 22h: `git tag entrega-v1` e congelar o código.
+- [x] **M7.C5** 22h: `git tag entrega-v1` e congelar o código. *(Antecipado para 20h40 de 12/11, a pedido do João.)*
 
 ---
 
