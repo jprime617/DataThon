@@ -11,7 +11,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 |---|---|---|---|
 | M0 | C1 e C2 feitos; falta o C0 (organizadores) | `dashboard-v2` | M0.C2 |
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
-| M2 | C1–C2 feitos, C3 preparado; **H1 (respostas da IA paga) pendente** | `m2-ia` | M2.C2 (+ C3 preparado) |
+| M2 | C1–C2 feitos e **mergeados** (PR #1); C3 preparado; **H1 (respostas da IA paga) pendente** | `dashboard-v2` | M2.C2 (+ C3 preparado) |
 | M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
 | M4 · M5 · M6 | bloqueados pelo M0.C0 | — | — |
 | M7 | não iniciado | — | — |
@@ -123,7 +123,7 @@ O que muda, e por quê:
 ## M2 · IA dos CBOs com a IA paga (via chat, substitui o Gemini)
 
 **Branch:** `m2-ia` · **Dono:** pessoa 4 · **Estimativa:** H1 de 1 a 1,5 h, código de cerca de 1 h
-**Estado:** prompts prontos em `ia_cbo/prompts/` (23 lotes, 2.207 CBOs, ≤ 100 por lote). C1 feito na branch `m2-ia` (`LLM_PROVIDER=arquivo`, sem `LLM_API_KEY`; com lote faltando, o erro lista quais). Falta o **H1** (ninguém rodou os prompts ainda: `ia_cbo/respostas/` está vazia). C2 feito (`cbo_macrofamilias_gemini.csv` versionado; no modo arquivo a rodada 2 é esse CSV; a página de ocupações mostra o que foi comparado). C3 **preparado e não executado**: o README (Opção C), o `requirements.md` (R5.7, R5.9, R5.10 novo e R8.6) e o notebook (`PULAR_UPLOAD=1`) estão prontos; o comando está em `ia_cbo/COMO_USAR.md`, passo 5. O fluxo foi testado com respostas simuladas. **Próximo: H1** (rodar os 23 prompts na IA paga), depois o passo 5 (C3) e o passo 6 (C4) do COMO_USAR. C5 só se o M4/M5 trouxer CBOs novos. Obs.: houve 1 falha intermitente na suíte completa que não se repetiu em 3 execuções (provável teste instável que já existia)
+**Estado:** C1–C2 (e o C3 preparado) **mergeados em `dashboard-v2`** pelo PR #1 (`8ba7695`); os próximos ciclos podem sair direto de `dashboard-v2`. Prompts prontos em `ia_cbo/prompts/` (23 lotes, 2.207 CBOs, ≤ 100 por lote). C1 feito (`LLM_PROVIDER=arquivo`, sem `LLM_API_KEY`; com lote faltando, o erro lista quais). Falta o **H1** (ninguém rodou os prompts ainda: `ia_cbo/respostas/` está vazia). C2 feito (`cbo_macrofamilias_gemini.csv` versionado; no modo arquivo a rodada 2 é esse CSV; a página de ocupações mostra o que foi comparado). C3 **preparado e não executado**: o README (Opção C), o `requirements.md` (R5.7, R5.9, R5.10 novo e R8.6) e o notebook (`PULAR_UPLOAD=1`) estão prontos; o comando está em `ia_cbo/COMO_USAR.md`, passo 5. O fluxo foi testado com respostas simuladas. **Próximo: H1** (rodar os 23 prompts na IA paga), depois o passo 5 (C3) e o passo 6 (C4) do COMO_USAR. C5 só se o M4/M5 trouxer CBOs novos. Obs.: houve 1 falha intermitente na suíte completa que não se repetiu em 3 execuções (provável teste instável que já existia)
 
 - [ ] **H1 (humano)** Rodar os 23 prompts na IA paga e salvar em `ia_cbo/respostas/lote_NN.json`. O passo a passo, o formato e a conferência estão em `ia_cbo/COMO_USAR.md`.
 - [x] **M2.C1 `ClienteArquivo` em `src/cbo_ia.py`.**
@@ -202,7 +202,7 @@ O que muda, e por quê:
 ## M5 · CAGED 24 meses (MOV + FOR − EXC) e INPC
 
 **Branch:** `m5-caged24` · **Dono:** pessoa 3 e pessoa 1 no [painel] · **Estimativa:** 4 a 5 h · **Exige M0.C0**
-**Estado:** não iniciado. O FTP já tem até 202609, mas a janela continua **set/24–ago/26** (D1), para bater com a base fornecida.
+**Estado:** não iniciado. O FTP já tem até 202609, mas a janela continua **set/24–ago/26** (D1), para bater com a base fornecida. ⚠️ O portão do C4 precisa do `Dados/Novo_Caged_MOV_Limpo.csv`, que é ignorado pelo Git e **não está em todas as máquinas** (não está no codespace de 12/11): consiga o arquivo antes de começar. ⚠️ O `7z` não está instalado no codespace; o `bsdtar` (libarchive) é a alternativa já presente.
 
 - [ ] **M5.C1 `src/download.py`** (mergeável sozinho).
   - Baixa `NOVO CAGED/AAAA/AAAAMM/CAGED{MOV,FOR,EXC}AAAAMM.7z` de 202409 a 202608 (72 arquivos, cerca de 1,3 GB) para `data/raw/caged/`, de forma retomável.
