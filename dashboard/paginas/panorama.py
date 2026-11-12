@@ -26,9 +26,19 @@ def metricas_mapa(df: pd.DataFrame, nivel: str) -> pd.DataFrame:
 
 def aplicar_achado(filtros: dict) -> None:
     """Aplica os filtros que provam um achado (callback de botão)."""
-    for chave in ("f_terr", "f_setor", "f_macro", "f_niv"):
+    for chave in _CHAVES_ACHADO:
         st.session_state[chave] = []
     st.session_state.update(filtros)
+
+
+_CHAVES_ACHADO = ("f_terr", "f_setor", "f_macro", "f_niv")
+
+
+def achado_ativo(filtros: dict, estado) -> bool:
+    """O recorte atual é exatamente o que o achado aplica?"""
+    if "f_nivel" in filtros and estado.get("f_nivel") != filtros["f_nivel"]:
+        return False
+    return all(list(estado.get(k) or []) == list(filtros.get(k, [])) for k in _CHAVES_ACHADO)
 
 
 def render(ctx: c.Contexto) -> None:
@@ -70,15 +80,22 @@ def render(ctx: c.Contexto) -> None:
 
     st.divider()
     st.subheader("Principais achados")
-    achados = nar.principais_achados(ctx.df)
+    # Achados do estado (só escopo e período): aplicar um deles não pode
+    # reescrever a própria lista, senão os demais somem.
+    achados = nar.principais_achados(ctx.ref)
     if not achados:
         st.caption("Sem unidades com amostra suficiente para gerar achados nesta seleção.")
     for i, achado in enumerate(achados):
-        with st.container(border=True):
+        ativo = achado_ativo(achado.filtros, st.session_state)
+        with st.container(border=True, key=f"rx-achado-{i}" + ("-ativo" if ativo else "")):
             texto, botao = st.columns([5, 1])
             texto.markdown(f"**{i + 1}. {achado.titulo}** — {achado.texto}")
-            botao.button("Ver evidência", key=f"achado_{i}", on_click=aplicar_achado, args=(achado.filtros,),
-                         icon=":material/filter_alt:", width="stretch")
+            if ativo:
+                botao.button("Voltar ao estado", key=f"achado_{i}", on_click=aplicar_achado, args=({},),
+                             icon=":material/undo:", width="stretch", type="primary")
+            else:
+                botao.button("Ver evidência", key=f"achado_{i}", on_click=aplicar_achado, args=(achado.filtros,),
+                             icon=":material/filter_alt:", width="stretch")
 
     mensal = c.agregar_metricas(ctx.df, [c.COLUNA_MES])
     st.plotly_chart(fig.construir_serie_mensal(mensal), width="stretch")

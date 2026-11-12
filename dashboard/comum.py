@@ -1241,7 +1241,7 @@ _CSS = """
 }
 
 /* Cartão de destaque: topo laranja, número grande em azul-claro, régua de ranking */
-.st-key-rx-destaque {border-top: 4px solid var(--rx-laranja) !important;}
+.st-key-rx-destaque, [class*="-ativo"][class*="st-key-rx-achado-"] {border-top: 4px solid var(--rx-laranja) !important;}
 .rx-destaque {color: var(--rx-texto); max-width: 34rem;}
 .rx-d-rotulo {font-weight: 700; font-size: 1.05rem;}
 .rx-d-valor {color: var(--rx-destaque); font-size: 2.4rem; font-weight: 700; line-height: 1.2;}
