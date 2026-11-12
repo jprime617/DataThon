@@ -14,7 +14,8 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 | M2 | C1–C2 feitos e **mergeados** (PR #1); C3 preparado; **H1 (respostas da IA paga) pendente** | `dashboard-v2` | M2.C2 (+ C3 preparado) |
 | M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
 | M4 | C1–C2 feitos (download, layout, leitura SC+CLT); próximo: C3; **uso no pitch ainda depende do M0.C0** | `m4-rais` | M4.C2 |
-| M5 · M6 | bloqueados pelo M0.C0 | — | — |
+| M5 | C1 feito (download retomável); próximo: C2; **uso no pitch depende do M0.C0** | `m5-caged24` | M5.C1 |
+| M6 | bloqueado pelo M0.C0 | — | — |
 | M7 | não iniciado | — | — |
 
 Commits locais só sobem com autorização do João: confira `git log origin/dashboard-v2..` antes de supor que algo foi publicado.
@@ -220,9 +221,9 @@ O que muda, e por quê:
 ## M5 · CAGED 24 meses (MOV + FOR − EXC) e INPC
 
 **Branch:** `m5-caged24` · **Dono:** pessoa 3 e pessoa 1 no [painel] · **Estimativa:** 4 a 5 h · **Exige M0.C0**
-**Estado:** não iniciado. O FTP já tem até 202609, mas a janela continua **set/24–ago/26** (D1), para bater com a base fornecida. ⚠️ O portão do C4 precisa do `Dados/Novo_Caged_MOV_Limpo.csv`, que é ignorado pelo Git e **não está em todas as máquinas** (não está no codespace de 12/11): consiga o arquivo antes de começar. ⚠️ O `7z` não está instalado no codespace; o `bsdtar` (libarchive) é a alternativa já presente.
+**Estado:** C1 feito: `python -m src.download` baixa os 72 `.7z` (MOV/FOR/EXC, 202409–202608) para `data/raw/caged/`, retomável (rode de novo se cair). O FTP já tem até 202609, mas a janela continua **set/24–ago/26** (D1), para bater com a base fornecida. ⚠️ O portão do C4 precisa do `Dados/Novo_Caged_MOV_Limpo.csv`, que é ignorado pelo Git e **não está em todas as máquinas** (não está no codespace de 12/11): consiga o arquivo antes de começar. ⚠️ O `7z` não está instalado no codespace; o `bsdtar` (libarchive) é a alternativa já presente.
 
-- [ ] **M5.C1 `src/download.py`** (mergeável sozinho).
+- [x] **M5.C1 `src/download.py`** (mergeável sozinho).
   - Baixa `NOVO CAGED/AAAA/AAAAMM/CAGED{MOV,FOR,EXC}AAAAMM.7z` de 202409 a 202608 (72 arquivos, cerca de 1,3 GB) para `data/raw/caged/`, de forma retomável.
   - **Deixe rodando em segundo plano** e siga para o C2.
 - [ ] **M5.C2 INPC** (mergeável sozinho).
