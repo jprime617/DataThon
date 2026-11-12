@@ -19,6 +19,23 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 
 Commits locais só sobem com autorização do João: confira `git log origin/dashboard-v2..` antes de supor que algo foi publicado.
 
+### Fila sem dependência humana (12/11, ~14h20)
+
+Tudo isto pode ser feito por quem estiver livre, ou pela IA, sem esperar ninguém. Faça nas branches dos marcos e **não mergeie** M4, M5 ou M6 antes do M0.C0.
+
+1. **M5.C1:** iniciar o download do CAGED de 24 meses em segundo plano (cerca de 1,3 GB) antes de qualquer outra coisa.
+2. **M4.C3** (branch `m4-rais`): gerar o estoque por recorte a partir de `data/interim/rais_sc_2025.parquet`. Quem não tem o parquet roda `python scripts/baixar_rais.py && python -m src.rais` (cerca de 15 min). Os cuidados estão no Estado do M4 *na branch `m4-rais`*: seção derivada da subclasse e transferências (30–34) fora dos desligados.
+3. **M4.C4:** coluna `desligamentos_descontados` no agregador, com código e testes. A reagregação precisa do `Dados/Novo_Caged_MOV_Limpo.csv` e fica para o M7.C1.
+4. **M5.C2:** INPC (SIDRA → `data_processed/inpc.csv`, deflator e teste).
+5. **M5.C3 e M6 (H2 + C1):** leitura do CAGED de 24 meses; baixar o xlsx do PDET e escrever `src/validacao.py`.
+
+**Depende de alguém:**
+- **M0.C0 (organizadores):** decide se M4, M5 e M6 entram no painel e no pitch.
+- **Dono do painel:** os ciclos [painel] (M4.C5–C6, M5.C6, M6.C2).
+- **M2.H1:** alguém roda os 23 prompts, ou a equipe decide que a IA da sessão (Claude) pode classificar a partir dos mesmos prompts. Se for a IA, registre isso na Metodologia.
+- **João:** liberar o M3.C5 (mapa), os merges e o deploy (M7).
+- **Arquivo `Dados/Novo_Caged_MOV_Limpo.csv`:** precisa estar na máquina que rodar o M5.C4 e o M7.C1.
+
 ---
 
 ## Como trabalhar (vale para todos)
