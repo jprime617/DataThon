@@ -50,6 +50,7 @@ PAGINAS = [
 def main() -> None:
     st.set_page_config(page_title="Raio-X da Indústria SC", page_icon=":material/factory:", layout="wide")
     c.registrar_template()
+    c.estilo_global()
 
     paginas = {
         chave: st.Page(c.pagina_segura(titulo, modulo.render), title=titulo, icon=icone, url_path=url,
@@ -66,15 +67,23 @@ def main() -> None:
         st.error(f"{art.motivo} {' '.join(art.avisos)}", icon=":material/cloud_off:")
         return
 
-    st.sidebar.markdown("## Raio-X da Indústria SC")
+    # Menu próprio (lista plana sob o título); o nativo fica oculto, mas as
+    # rotas — inclusive a do modo apresentação — continuam valendo.
+    navegacao = st.navigation(list(paginas.values()), position="hidden")
+    st.sidebar.html('<p class="rx-trilha">Santa Catarina /</p>'
+                    '<p class="rx-titulo" role="heading" aria-level="2">Raio-X da Indústria SC</p>')
     st.sidebar.caption("Apagão de mão de obra e expansão na indústria catarinense — Novo CAGED.")
+    for chave, *_ in PAGINAS:
+        if chave != "apresentacao":
+            st.sidebar.page_link(paginas[chave])
+    # O link ativo não expõe aria-current; marca-o pelo href (a página padrão usa "").
+    ativo = next((url for chave, _, _, _, url in PAGINAS if paginas[chave] is navegacao), None)
+    if ativo:
+        href = "" if ativo == "panorama" else ativo
+        st.sidebar.html(f'<style>[data-testid="stSidebar"] a[data-testid="stPageLink-NavLink"][href="{href}"]'
+                        "{background:#17809A;font-weight:700}</style>")
     filtros = c.barra_lateral(art.agregado)
     st.session_state["_ctx"] = c.montar_contexto_cache(art, filtros)
-
-    navegacao = st.navigation({
-        "Narrativa": [paginas[k] for k in ("panorama", "diagnostico", "causa_raiz", "ocupacoes", "recomendacoes")],
-        "Aprofundar": [paginas[k] for k in ("ficha", "metodologia", "apresentacao")],
-    })
     navegacao.run()
 
 

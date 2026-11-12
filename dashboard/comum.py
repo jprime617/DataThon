@@ -961,6 +961,10 @@ SIMBOLOS_QUADRANTE = {Q_SAUDAVEL: "circle", Q_PRESSAO: "diamond", Q_ESTAGNACAO: 
 PALETA_CATEGORICA = ["#0072B2", "#E69F00", "#009E73", "#CC79A7", "#56B4E9", "#D55E00", "#F0E442", "#000000", "#999999", "#882255", "#44AA99", "#117733"]
 ESCALA_DIVERGENTE = [[0.0, COR_TENSAO], [0.5, "#F2F2F2"], [1.0, COR_EXPANSAO]]
 ESCALA_TENSAO = [[0.0, "#FBE3D6"], [1.0, COR_TENSAO]]
+# Classes do mapa: sequencial verde-água → azul (claro → escuro) e divergente
+# simétrica (tensão ← neutro → expansão), cinza fica reservado a "sem dado".
+CLASSES_SEQUENCIAL = ["#A6DBC8", "#47B5C2", "#2B7FBF", "#1B4F72"]
+CLASSES_DIVERGENTE = ["#D55E00", "#EC9A66", "#F7D6C1", "#C6DCEE", "#62A0D2", "#0072B2"]
 TEMPLATE = "sc_painel"
 
 
@@ -980,6 +984,9 @@ def registrar_template() -> str:
         base.layout.separators = ",."
         base.layout.paper_bgcolor = "rgba(0,0,0,0)"
         base.layout.plot_bgcolor = "rgba(0,0,0,0)"
+        grade = {"gridcolor": "rgba(128,128,128,.18)", "zerolinecolor": "rgba(128,128,128,.35)"}
+        base.layout.xaxis.update(grade)
+        base.layout.yaxis.update(grade)
         pio.templates[TEMPLATE] = base
     pio.templates.default = TEMPLATE
     return TEMPLATE
@@ -1169,6 +1176,102 @@ def contexto_padrao(art: Artefatos) -> Contexto:
     return montar_contexto(art, Filtros(meses=tuple(_meses(art.agregado)[i] for i in (0, -1))))
 
 
+# Tokens do visual institucional; o tema vem de `st.context.theme` (segue o
+# menu Settings do Streamlit, não só a preferência do sistema).
+_TOKENS = {
+    "light": {"texto": "#1B2430", "suave": "#56636F", "painel": "#E8ECEF", "painel-forte": "#D9DFE4",
+              "linha": "#CDD3D8", "tema": "#1A5F79", "destaque": "#2E9BC6", "laranja": "#F7941D",
+              "laranja-texto": "#A65400", "bom": "#1E7B34", "ruim": "#B3261E", "cartao": "#FFFFFF",
+              "foco": "#1F6E8C"},
+    "dark": {"texto": "#E6EDF3", "suave": "#A7B3BF", "painel": "#1A2430", "painel-forte": "#243142",
+             "linha": "#2E3B4C", "tema": "#7FCDE6", "destaque": "#6FC3E3", "laranja": "#F7941D",
+             "laranja-texto": "#F7A84A", "bom": "#6CCB8A", "ruim": "#FF8A80", "cartao": "#0F1720",
+             "foco": "#7FCDE6"},
+}
+
+_CSS = """
+/* Barra lateral: trilha + título + lista plana de páginas */
+.rx-trilha {margin: 0; font-size: .85rem; opacity: .9;}
+.rx-titulo {margin: 0 0 .25rem; font-size: 1.5rem; font-weight: 700; line-height: 1.15;}
+[data-testid="stSidebar"] [data-testid="stPageLink"] {margin: 0;}
+[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] {
+  border-radius: 0; padding: .7rem 2rem; margin: 0 -2rem; width: calc(100% + 4rem);
+  border-bottom: 1px solid rgba(255,255,255,.18);
+}
+[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"]:hover {background: rgba(255,255,255,.10);}
+[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"] p {font-size: 1rem; color: #FFFFFF;}
+[data-testid="stSidebar"] [data-testid="stRadioOption"] > div > div:first-child {border: 1.5px solid #FFFFFF;}
+[data-testid="stSidebar"] [data-testid="stMultiSelectTagsContainer"] [data-tag],
+[data-testid="stSidebar"] [data-testid="stMultiSelectTagsContainer"] [data-tag] * {color: #164E63;}
+[data-testid="stSidebar"] :focus-visible {outline: 2px solid #FFFFFF !important; outline-offset: 2px;}
+
+/* Foco visível no conteúdo */
+[data-testid="stMain"] :focus-visible {outline: 2px solid var(--rx-foco) !important; outline-offset: 2px;}
+
+/* Títulos institucionais, sem sombra, borda fina */
+[data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="stMain"] h3 {font-weight: 700; letter-spacing: 0;}
+[data-testid="stMain"] hr {border: 0; border-top: 3px solid var(--rx-laranja); margin: 2rem 0 1rem;}
+
+/* Coluna de indicadores em sanfona */
+.st-key-rx-indicadores {background: var(--rx-painel); padding: .25rem 0 .75rem; gap: 0;}
+.st-key-rx-indicadores [data-testid="stExpander"] details {border: 0; border-radius: 0; background: transparent;}
+.st-key-rx-indicadores [data-testid="stExpander"] summary {
+  background: var(--rx-painel); border-bottom: 1px solid var(--rx-linha); border-radius: 0; padding: .8rem 1rem;
+}
+.st-key-rx-indicadores [data-testid="stExpander"] details[open] > summary {background: var(--rx-painel-forte);}
+.st-key-rx-indicadores [data-testid="stExpander"] summary p,
+.st-key-rx-indicadores [data-testid="stExpander"] summary span {
+  color: var(--rx-tema); font-weight: 700; text-transform: uppercase; font-size: 1.02rem;
+}
+.st-key-rx-indicadores [data-testid="stExpanderDetails"] {padding: 0 1rem .5rem 1rem;}
+.rx-linha {
+  display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: .25rem 1rem; align-items: center;
+  padding: .55rem 0 .55rem 1.5rem; border-bottom: 1px solid var(--rx-linha); color: var(--rx-texto);
+}
+.rx-linha:last-child {border-bottom: 0;}
+.rx-rotulo {font-size: .95rem;}
+.rx-periodo {white-space: nowrap;}
+.rx-valor b {font-size: 1.2rem; font-weight: 700;}
+.rx-valor small {color: var(--rx-suave); font-size: .85rem;}
+.rx-delta {display: block; font-size: .8rem; margin-top: .1rem;}
+.rx-bom {color: var(--rx-bom);}
+.rx-ruim {color: var(--rx-ruim);}
+@media (max-width: 640px) {
+  .rx-linha {grid-template-columns: 1fr; padding-left: .5rem;}
+}
+
+/* Cartão de destaque: topo laranja, número grande em azul-claro, régua de ranking */
+.st-key-rx-destaque {border-top: 4px solid var(--rx-laranja) !important;}
+.rx-destaque {color: var(--rx-texto); max-width: 34rem;}
+.rx-d-rotulo {font-weight: 700; font-size: 1.05rem;}
+.rx-d-valor {color: var(--rx-destaque); font-size: 2.4rem; font-weight: 700; line-height: 1.2;}
+.rx-d-valor span {font-size: 1rem;}
+.rx-d-comp {margin-top: 1rem; font-size: 1.15rem;}
+.rx-d-nivel {margin-top: .75rem;}
+.rx-regua {max-width: 18rem; margin: .25rem 0 1.6rem;}
+.rx-extremos {display: flex; justify-content: space-between; font-weight: 700; font-size: .85rem;}
+.rx-trilho {
+  position: relative; height: 12px; margin-top: .2rem;
+  border-left: 1px solid var(--rx-suave); border-right: 1px solid var(--rx-suave);
+  background: linear-gradient(var(--rx-suave), var(--rx-suave)) center / 100% 1px no-repeat,
+              repeating-linear-gradient(90deg, var(--rx-suave) 0 1px, transparent 1px 10%) center / 100% 6px no-repeat;
+}
+.rx-marca {position: absolute; top: -3px; width: 7px; height: 18px; margin-left: -3.5px; background: var(--rx-laranja);}
+.rx-marca em {position: absolute; top: 19px; left: 50%; transform: translateX(-50%);
+  font-style: normal; font-weight: 700; font-size: .85rem; color: var(--rx-laranja-texto);}
+.rx-d-nota {color: var(--rx-suave); font-size: .85rem; margin: 0;}
+"""
+
+
+def estilo_global() -> None:
+    """Injeta o CSS do painel (uma vez por execução, em `app.py`)."""
+    import streamlit as st
+
+    tipo = getattr(getattr(st.context, "theme", None), "type", None) or "light"
+    tokens = "".join(f"--rx-{k}: {v};" for k, v in _TOKENS.get(tipo, _TOKENS["light"]).items())
+    st.html(f"<style>:root {{{tokens}}}{_CSS}</style>")
+
+
 def cabecalho(ctx: Contexto) -> None:
     """Linha de filtros ativos e procedência dos dados, no topo de cada página."""
     import streamlit as st
@@ -1208,8 +1311,40 @@ def delta_texto(nome: str, valor: float, referencia: float, sufixo: str) -> str 
 METRICAS_INVERSAS = {M_GIRO, M_SAIDA_VOL}
 
 
-def cartoes_kpi(ctx: Contexto, metricas: list[str] | None = None, colunas: int | None = None) -> None:
-    """Cartões de KPI com fórmula no tooltip e delta vs SC ou vs 1º semestre."""
+# Temas da coluna de indicadores (sanfona do Panorama): título, ícone e métricas.
+TEMAS_KPI = [
+    ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K, M_ACEL]),
+    ("Renda", ":material/payments:", [M_GAP_SAL, M_SAL_ADM, M_SAL_DESL]),
+    ("Escolaridade", ":material/school:", [M_GAP_ESC]),
+    ("Tensão", ":material/crisis_alert:", [M_GIRO, M_SAIDA_VOL]),
+]
+METRICAS_TEMAS = [m for _, _, ms in TEMAS_KPI for m in ms]
+
+# Unidade por extenso, em cinza sob/ao lado do valor.
+UNIDADES = {
+    M_MOV: "admissões + desligamentos",
+    M_SALDO: "vagas",
+    M_SALDO_10K: "vagas por 10 mil hab.",
+    M_SALDO_REL: "do total movimentado",
+    M_ACEL: "2º − 1º semestre",
+    M_GIRO: "das contratações repõem saídas",
+    M_SAIDA_VOL: "dos desligamentos, a pedido",
+    M_GAP_SAL: "admissão ÷ desligamento",
+    M_SAL_ADM: "por mês",
+    M_SAL_DESL: "por mês",
+    M_GAP_ESC: "níveis, admitidos − desligados",
+}
+
+
+def _periodo(ctx: Contexto) -> str:
+    meses = ctx.filtros.meses
+    return f"[{rotulo_mes(meses[0])}–{rotulo_mes(meses[1])}]" if meses else ""
+
+
+def cartoes_kpi(ctx: Contexto, metricas: list[str] | None = None) -> None:
+    """Indicadores agrupados por tema (sanfona), com fórmula e delta vs SC ou vs 1º semestre."""
+    import html
+
     import streamlit as st
 
     metricas = metricas or KPIS_PADRAO
@@ -1220,19 +1355,84 @@ def cartoes_kpi(ctx: Contexto, metricas: list[str] | None = None, colunas: int |
         meses = ctx.df[COLUNA_MES].astype(str)
         corte = ctx.corte or ""
         a, b, sufixo = total(ctx.df[meses >= corte]), total(ctx.df[meses < corte]), "2º vs 1º sem."
-    por_linha = colunas or min(3, len(metricas))
-    grade = [st.columns(por_linha) for _ in range(-(-len(metricas) // por_linha))]
-    for coluna, nome in zip([col for linha in grade for col in linha], metricas):
+    periodo = html.escape(_periodo(ctx))
+
+    def _linha(nome: str) -> str:
         definicao = DEFINICOES[nome]
         ajuda = definicao.formula
         if nome == M_GAP_SAL and not atual[M_SALARIO_OK]:
             ajuda += " — amostra salarial insuficiente nesta seleção."
-        coluna.metric(
-            definicao.rotulo, fmt_metrica(nome, atual[nome]),
-            delta=None if nome == M_ACEL else delta_texto(nome, a[nome], b[nome], sufixo),
-            help=ajuda, border=True,
-            delta_color="inverse" if nome in METRICAS_INVERSAS else "normal",
-        )
+        delta = None if nome == M_ACEL else delta_texto(nome, a[nome], b[nome], sufixo)
+        extra = ""
+        if delta:
+            subiu = delta.startswith("+")
+            bom = subiu != (nome in METRICAS_INVERSAS)
+            extra = (f'<span class="rx-delta {"rx-bom" if bom else "rx-ruim"}">'
+                     f'{"↑" if subiu else "↓"} {html.escape(delta)}</span>')
+        return (f'<div class="rx-linha" title="{html.escape(ajuda)}">'
+                f'<span class="rx-rotulo">{html.escape(definicao.rotulo)} <span class="rx-periodo">{periodo}</span></span>'
+                f'<span class="rx-valor"><b>{html.escape(fmt_metrica(nome, atual[nome]))}</b> '
+                f'<small>{html.escape(UNIDADES.get(nome, ""))}</small>{extra}</span></div>')
+
+    restantes = [m for m in metricas if m not in METRICAS_TEMAS]
+    temas = [(t, i, [m for m in ms if m in metricas]) for t, i, ms in TEMAS_KPI]
+    temas += [("Outros", ":material/more_horiz:", restantes)] if restantes else []
+    with st.container(key="rx-indicadores"):
+        for titulo, icone, nomes in temas:
+            if nomes:
+                with st.expander(titulo, expanded=True, icon=icone):
+                    st.html("".join(_linha(n) for n in nomes))
+
+
+def posicao_ranking(por: pd.DataFrame, coluna: str, metrica: str, alvo: str) -> tuple[int, int] | None:
+    """Posição de `alvo` (1º = maior valor) entre as unidades com amostra suficiente."""
+    validas = por[por[M_AMOSTRA_OK] & por[metrica].notna()]
+    ordem = validas.sort_values(metrica, ascending=False, kind="stable")[coluna].astype(str).tolist()
+    return (ordem.index(alvo) + 1, len(ordem)) if alvo in ordem else None
+
+
+_PLURAL_NIVEL = {NIVEL_MESO: "mesorregiões", NIVEL_MICRO: "microrregiões", NIVEL_MUNICIPIO: "municípios"}
+
+
+def cartao_destaque(ctx: Contexto, metrica: str) -> None:
+    """Indicador em destaque com a régua de ranking do território filtrado."""
+    import html
+
+    import streamlit as st
+
+    definicao = DEFINICOES[metrica]
+    f = ctx.filtros
+    valor = total(ctx.df, corte_mes=ctx.corte)[metrica]
+    partes = [
+        f'<div class="rx-d-rotulo">{html.escape(definicao.rotulo)} {html.escape(_periodo(ctx))}</div>',
+        f'<div class="rx-d-valor">{html.escape(fmt_metrica(metrica, valor))} '
+        f'<span>{html.escape(UNIDADES.get(metrica, ""))}</span></div>',
+        '<div class="rx-d-comp">Comparando a outras regiões</div>',
+    ]
+    plural = _PLURAL_NIVEL[f.nivel_territorial]
+    rank = None
+    if len(f.territorios) == 1:
+        coluna = COLUNA_POR_NIVEL_TERRITORIAL[f.nivel_territorial]
+        base = filtrar(ctx.art.agregado, f, ignorar=("territorio",))
+        rank = posicao_ranking(agregar_metricas(base, [coluna], corte_mes=ctx.corte), coluna, metrica,
+                               f.territorios[0])
+    if rank:
+        pos, n = rank
+        x = 100.0 if n == 1 else (n - pos) / (n - 1) * 100
+        partes.append(
+            f'<div class="rx-d-nivel">Entre as {plural}</div>'
+            f'<div class="rx-regua" role="img" aria-label="{pos}º de {n} {plural} (1º = maior valor)">'
+            f'<div class="rx-extremos" aria-hidden="true"><span>{n}º</span><span>1º</span></div>'
+            f'<div class="rx-trilho" aria-hidden="true"><span class="rx-marca" style="left:{x:.1f}%">'
+            f'<em>{pos}º</em></span></div></div>'
+            '<p class="rx-d-nota">1º = maior valor entre as unidades com amostra suficiente.</p>')
+    elif len(f.territorios) == 1:
+        partes.append('<p class="rx-d-nota">Sem amostra suficiente para ranquear este território.</p>')
+    else:
+        partes.append(f'<p class="rx-d-nota">Valor do estado. Filtre uma única '
+                      f'{html.escape(f.nivel_territorial.lower())} na barra lateral para ver a posição '
+                      f'dela entre as {plural}.</p>')
+    st.html(f'<div class="rx-destaque">{"".join(partes)}</div>')
 
 
 def baixar_csv(df: pd.DataFrame, nome: str, rotulo: str = "Baixar dados filtrados (CSV)") -> None:
