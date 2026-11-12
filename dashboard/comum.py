@@ -398,7 +398,6 @@ LIMIAR_COMPRESSAO = 0.95
 M_MOV = "movimentacoes"
 M_SALDO = "saldo"
 M_SALDO_10K = "saldo_10k"
-M_GIRO = "giro"
 M_SAIDA_VOL = "saida_voluntaria"
 M_SAL_ADM = "salario_admissao"
 M_SAL_DESL = "salario_desligamento"
@@ -407,7 +406,6 @@ M_ESC_ADM = "escolaridade_admissao"
 M_ESC_DESL = "escolaridade_desligamento"
 M_GAP_ESC = "gap_escolaridade"
 M_SALDO_REL = "saldo_relativo"
-M_ACEL = "aceleracao"
 M_POP = "populacao"
 M_AMOSTRA_OK = "amostra_ok"
 M_SALARIO_OK = "salario_ok"
@@ -430,13 +428,6 @@ DEFINICOES: dict[str, Definicao] = {
         "saldo ÷ população 2026 dos municípios distintos da seleção × 10.000",
         "num1",
     ),
-    M_GIRO: Definicao(
-        "Giro (reposição)",
-        "mín(adm, desl) ÷ máx(adm, desl): quanto das contratações só repõe saídas. "
-        "100% = só reposição; 0% = só expansão ou só retração. Não é a taxa de "
-        "rotatividade do MTE (o CAGED não traz estoque de vínculos).",
-        "pct",
-    ),
     M_SAIDA_VOL: Definicao(
         "Saída voluntária", "desligamentos a pedido (tipo 40) ÷ desligamentos", "pct"
     ),
@@ -455,12 +446,6 @@ DEFINICOES: dict[str, Definicao] = {
         "num2",
     ),
     M_SALDO_REL: Definicao("Saldo relativo", "saldo ÷ movimentações", "pct"),
-    M_ACEL: Definicao(
-        "Aceleração",
-        "saldo relativo do 2º semestre do período − do 1º semestre, em p.p. "
-        "Sensível à sazonalidade (dez/jan no 1º semestre).",
-        "pp",
-    ),
     M_SAL_ADM: Definicao("Salário médio de admissão", "soma dos salários ÷ admissões com salário", "brl"),
     M_SAL_DESL: Definicao("Salário médio de desligamento", "soma dos salários ÷ desligamentos com salário", "brl"),
     COLUNA_IDHM_2010: Definicao("IDHM 2010", "Índice de Desenvolvimento Humano Municipal (PNUD, 2010)", "num2"),
@@ -474,24 +459,12 @@ def _divisao(numerador: pd.Series, denominador: pd.Series) -> pd.Series:
     return numerador.astype("float64") / den.where(den != 0)
 
 
-def corte_semestral(meses) -> str | None:
-    """1º mês do 2º semestre do período (metade das competências distintas)."""
-    distintos = sorted({str(m) for m in meses})
-    if len(distintos) < 2:
-        return None
-    return distintos[len(distintos) // 2]
-
-
-def agregar_metricas(
-    df: pd.DataFrame, por: list[str] | None = None, *, corte_mes: str | None = None
-) -> pd.DataFrame:
+def agregar_metricas(df: pd.DataFrame, por: list[str] | None = None) -> pd.DataFrame:
     """Reagrega o recorte e deriva todas as métricas (soma antes de dividir).
 
     Args:
         df: subconjunto do agregado com as colunas aditivas.
         por: dimensões do resultado; ``None``/``[]`` = uma linha com o total.
-        corte_mes: 1º mês do 2º semestre para a aceleração; por padrão, a
-            metade das competências presentes em ``df``.
 
     Returns:
         Uma linha por grupo com contagens, razões e as flags de amostra.
@@ -509,8 +482,7 @@ def agregar_metricas(
                 somas[c] = pd.Series(dtype="float64")
         else:
             somas = pd.DataFrame([{c: 0 for c in COLUNAS_ADITIVAS}])
-        nan = [float("nan")] * len(somas)
-        return _derivar(somas, nan, nan)
+        return _derivar(somas, [float("nan")] * len(somas))
 
     agrupado = base.groupby(chave, observed=True, dropna=False)
     somas = agrupado[COLUNAS_ADITIVAS].sum()
@@ -526,31 +498,13 @@ def agregar_metricas(
     else:
         populacao = pd.Series(float("nan"), index=somas.index)
 
-    # Aceleração: saldo relativo do 2º semestre − o do 1º, em p.p.
-    aceleracao = pd.Series(float("nan"), index=somas.index)
-    corte = corte_mes
-    if corte is None and COLUNA_MES in base.columns:
-        corte = corte_semestral(base[COLUNA_MES].unique())
-    if corte is not None:
-        segundo = (base[COLUNA_MES].astype(str) >= corte).to_numpy()
-        relativos = []
-        for mascara in (~segundo, segundo):
-            g = base[mascara].groupby(chave, observed=True, dropna=False)[
-                [COLUNA_ADMISSOES, COLUNA_DESLIGAMENTOS]
-            ].sum().reindex(somas.index)
-            relativos.append(
-                _divisao(g[COLUNA_ADMISSOES] - g[COLUNA_DESLIGAMENTOS],
-                         g[COLUNA_ADMISSOES] + g[COLUNA_DESLIGAMENTOS])
-            )
-        aceleracao = (relativos[1] - relativos[0]) * 100
-
     somas = somas.reset_index()
     if not por:
         somas = somas.drop(columns="_todos")
-    return _derivar(somas, populacao.to_numpy(), aceleracao.to_numpy())
+    return _derivar(somas, populacao.to_numpy())
 
 
-def _derivar(somas: pd.DataFrame, populacao, aceleracao) -> pd.DataFrame:
+def _derivar(somas: pd.DataFrame, populacao) -> pd.DataFrame:
     """Deriva as razões a partir das somas de cada grupo."""
     r = somas.copy()
     adm = r[COLUNA_ADMISSOES].astype("float64")
@@ -559,8 +513,6 @@ def _derivar(somas: pd.DataFrame, populacao, aceleracao) -> pd.DataFrame:
     r[M_SALDO] = adm - desl
     r[M_POP] = pd.Series(populacao, index=r.index, dtype="float64")
     r[M_SALDO_10K] = _divisao(r[M_SALDO], r[M_POP]) * 10_000
-    r[M_GIRO] = _divisao(pd.concat([adm, desl], axis=1).min(axis=1),
-                         pd.concat([adm, desl], axis=1).max(axis=1))
     r[M_SAIDA_VOL] = _divisao(r[COLUNA_DESLIGAMENTOS_A_PEDIDO], desl)
     r[M_SAL_ADM] = _divisao(r["soma_salario_admissao"], r["n_salario_admissao"])
     r[M_SAL_DESL] = _divisao(r["soma_salario_desligamento"], r["n_salario_desligamento"])
@@ -572,14 +524,13 @@ def _derivar(somas: pd.DataFrame, populacao, aceleracao) -> pd.DataFrame:
     r[M_ESC_DESL] = _divisao(r["soma_escolaridade_desligamento"], r["n_escolaridade_desligamento"])
     r[M_GAP_ESC] = r[M_ESC_ADM] - r[M_ESC_DESL]
     r[M_SALDO_REL] = _divisao(r[M_SALDO], r[M_MOV])
-    r[M_ACEL] = pd.Series(aceleracao, index=r.index, dtype="float64")
     r[M_AMOSTRA_OK] = r[M_MOV] >= MIN_MOVIMENTACOES
     return r
 
 
-def total(df: pd.DataFrame, *, corte_mes: str | None = None) -> pd.Series:
+def total(df: pd.DataFrame) -> pd.Series:
     """Métricas do recorte inteiro como uma Series (uma linha)."""
-    return agregar_metricas(df, None, corte_mes=corte_mes).iloc[0]
+    return agregar_metricas(df, None).iloc[0]
 
 
 def calcular_kpis(df: pd.DataFrame) -> list[tuple[str, float]]:
@@ -592,7 +543,7 @@ def calcular_kpis(df: pd.DataFrame) -> list[tuple[str, float]]:
     return [(DEFINICOES[m].rotulo, float(t[m])) for m in KPIS_PADRAO]
 
 
-KPIS_PADRAO = [M_SALDO, M_SALDO_10K, M_GIRO, M_SAIDA_VOL, M_GAP_SAL, M_GAP_ESC]
+KPIS_PADRAO = [M_MOV, M_SALDO, M_SALDO_10K, M_SAIDA_VOL, M_GAP_SAL, M_GAP_ESC]
 
 
 # ---------------------------------------------------------------------------
@@ -604,15 +555,15 @@ Q_PRESSAO = "Expansão sob pressão"
 Q_ESTAGNACAO = "Estagnação"
 Q_APAGAO = "Apagão (rotatividade crônica)"
 
-PESOS_TENSAO_PADRAO = {M_GIRO: 1.0, M_SAIDA_VOL: 1.0, "compressao": 1.0}
-PESOS_DINAMISMO_PADRAO = {M_SALDO_REL: 1.0, M_ACEL: 1.0}
+# Tensão = só sintomas. A compressão salarial é causa (ver `causas`), não sintoma;
+# rotatividade descontada e desligamento precoce entram com a RAIS (M4).
+PESOS_TENSAO_PADRAO = {M_SAIDA_VOL: 1.0}
+# A aceleração semestral media calendário; volta por blocos de 12 meses (M5.C6).
+PESOS_DINAMISMO_PADRAO = {M_SALDO_REL: 1.0}
 
 ROTULO_COMPONENTE = {
-    M_GIRO: "giro alto",
     M_SAIDA_VOL: "saída voluntária alta",
-    "compressao": "compressão salarial",
     M_SALDO_REL: "saldo relativo",
-    M_ACEL: "aceleração",
 }
 
 
@@ -670,11 +621,8 @@ def matriz_diagnostico(
         return m
     comp = pd.DataFrame(
         {
-            M_GIRO: zscore(m[M_GIRO]),
             M_SAIDA_VOL: zscore(m[M_SAIDA_VOL]),
-            "compressao": zscore(1 - m[M_GAP_SAL]),
             M_SALDO_REL: zscore(m[M_SALDO_REL]),
-            M_ACEL: zscore(m[M_ACEL]),
         },
         index=m.index,
     )
@@ -772,7 +720,7 @@ def gerar_recomendacoes(
         return []
     mediana_regional = mediana_regional or {}
     ref = total(df)
-    saida_ref, giro_ref = ref[M_SAIDA_VOL], ref[M_GIRO]
+    saida_ref = ref[M_SAIDA_VOL]
     por = [COLUNA_REGIAO, COLUNA_MACROFAMILIA_CBO]
     m = matriz_diagnostico(df, por)
     if m.empty:
@@ -790,7 +738,7 @@ def gerar_recomendacoes(
         regiao, macro = str(chave[0]), str(chave[1])
         nivel = nivel_dominante.get(chave, "—")
         mov = float(u[M_MOV])
-        saida, gap, giro = u[M_SAIDA_VOL], u[M_GAP_SAL], u[M_GIRO]
+        saida, gap = u[M_SAIDA_VOL], u[M_GAP_SAL]
 
         def add(alavanca, regra, evidencia, severidade, alvo=nivel, **extras):
             recs.append(Recomendacao(regiao, macro, alavanca, regra, evidencia, alvo,
@@ -818,13 +766,13 @@ def gerar_recomendacoes(
                     f"saldo {fmt_int(u[M_SALDO])} aqui; {origem} com saldo {fmt_int(retracao[origem])} na mesma macrofamília",
                     float(u[M_SALDO_REL]), origem=origem)
         f_bas = float(frac_basico.get(chave, 0.0))
-        # O giro agregado fica perto de 100% (quase toda contratação repõe uma
-        # saída), então "alto" aqui é estar acima da referência do recorte.
-        if f_bas >= 0.5 and pd.notna(giro) and giro >= giro_ref and u[M_SALDO] <= 0:
+        # Sem a taxa de reposição (função exata do saldo relativo, M1.C2), a
+        # regra fica com o que ela media: mão de obra básica sem expansão.
+        if f_bas >= 0.5 and u[M_SALDO] <= 0:
             add(ALAVANCA_AUTOMACAO,
-                "nível Básico ≥ 50%, giro acima da referência do recorte e saldo ≤ 0",
-                f"{fmt_pct(f_bas)} em nível Básico; giro {fmt_pct(giro)} vs {fmt_pct(giro_ref)}; saldo {fmt_int(u[M_SALDO])}",
-                f_bas - 0.5 + (giro - giro_ref), alvo="Básico")
+                "nível Básico ≥ 50% e saldo ≤ 0",
+                f"{fmt_pct(f_bas)} em nível Básico; saldo {fmt_int(u[M_SALDO])}",
+                f_bas - 0.5, alvo="Básico")
         if pd.notna(saida) and saida >= saida_ref + 0.05 and pd.notna(gap) and gap >= 1:
             add(ALAVANCA_RETENCAO,
                 "saída voluntária ≥ referência + 5 p.p. com gap de reposição ≥ 1 (salário não explica)",
@@ -1042,7 +990,6 @@ class Contexto:
     filtros: Filtros
     df: pd.DataFrame          # agregado com todos os filtros
     ref: pd.DataFrame         # só escopo + período: a referência "SC"
-    corte: str | None         # 1º mês do 2º semestre do período
 
     @property
     def tem_recorte(self) -> bool:
@@ -1157,7 +1104,7 @@ def montar_contexto(art: Artefatos, filtros: Filtros, filtrador=None) -> Context
     referencia = Filtros(escopo=filtros.escopo, meses=filtros.meses)
     ref = filtrador(referencia)
     df = ref if filtros == referencia else filtrador(filtros)
-    return Contexto(art, filtros, df, ref, corte_semestral(_meses(art.agregado)))
+    return Contexto(art, filtros, df, ref)
 
 
 def montar_contexto_cache(art: Artefatos, filtros: Filtros) -> Contexto:
@@ -1308,15 +1255,15 @@ def delta_texto(nome: str, valor: float, referencia: float, sufixo: str) -> str 
 
 
 # Métricas em que subir é ruim (delta em vermelho quando sobe).
-METRICAS_INVERSAS = {M_GIRO, M_SAIDA_VOL}
+METRICAS_INVERSAS = {M_SAIDA_VOL}
 
 
 # Temas da coluna de indicadores (sanfona do Panorama): título, ícone e métricas.
 TEMAS_KPI = [
-    ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K, M_ACEL]),
+    ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K]),
     ("Renda", ":material/payments:", [M_GAP_SAL, M_SAL_ADM, M_SAL_DESL]),
     ("Escolaridade", ":material/school:", [M_GAP_ESC]),
-    ("Tensão", ":material/crisis_alert:", [M_GIRO, M_SAIDA_VOL]),
+    ("Tensão", ":material/crisis_alert:", [M_SAIDA_VOL]),
 ]
 METRICAS_TEMAS = [m for _, _, ms in TEMAS_KPI for m in ms]
 
@@ -1326,8 +1273,6 @@ UNIDADES = {
     M_SALDO: "vagas",
     M_SALDO_10K: "vagas por 10 mil hab.",
     M_SALDO_REL: "do total movimentado",
-    M_ACEL: "2º − 1º semestre",
-    M_GIRO: "das contratações repõem saídas",
     M_SAIDA_VOL: "dos desligamentos, a pedido",
     M_GAP_SAL: "admissão ÷ desligamento",
     M_SAL_ADM: "por mês",
@@ -1342,19 +1287,15 @@ def _periodo(ctx: Contexto) -> str:
 
 
 def cartoes_kpi(ctx: Contexto, metricas: list[str] | None = None) -> None:
-    """Indicadores agrupados por tema (sanfona), com fórmula e delta vs SC ou vs 1º semestre."""
+    """Indicadores agrupados por tema (sanfona), com fórmula e, havendo recorte, delta vs estado."""
     import html
 
     import streamlit as st
 
     metricas = metricas or KPIS_PADRAO
-    atual = total(ctx.df, corte_mes=ctx.corte)
-    if ctx.tem_recorte:
-        a, b, sufixo = atual, total(ctx.ref, corte_mes=ctx.corte), "vs estado"
-    else:
-        meses = ctx.df[COLUNA_MES].astype(str)
-        corte = ctx.corte or ""
-        a, b, sufixo = total(ctx.df[meses >= corte]), total(ctx.df[meses < corte]), "2º vs 1º sem."
+    atual = total(ctx.df)
+    # Sem recorte não há com o que comparar: o delta semestral media calendário (M1.C3).
+    ref = total(ctx.ref) if ctx.tem_recorte else None
     periodo = html.escape(_periodo(ctx))
 
     def _linha(nome: str) -> str:
@@ -1362,7 +1303,7 @@ def cartoes_kpi(ctx: Contexto, metricas: list[str] | None = None) -> None:
         ajuda = definicao.formula
         if nome == M_GAP_SAL and not atual[M_SALARIO_OK]:
             ajuda += " — amostra salarial insuficiente nesta seleção."
-        delta = None if nome == M_ACEL else delta_texto(nome, a[nome], b[nome], sufixo)
+        delta = None if ref is None else delta_texto(nome, atual[nome], ref[nome], "vs estado")
         extra = ""
         if delta:
             subiu = delta.startswith("+")
@@ -1402,7 +1343,7 @@ def cartao_destaque(ctx: Contexto, metrica: str) -> None:
 
     definicao = DEFINICOES[metrica]
     f = ctx.filtros
-    valor = total(ctx.df, corte_mes=ctx.corte)[metrica]
+    valor = total(ctx.df)[metrica]
     partes = [
         f'<div class="rx-d-rotulo">{html.escape(definicao.rotulo)} {html.escape(_periodo(ctx))}</div>',
         f'<div class="rx-d-valor">{html.escape(fmt_metrica(metrica, valor))} '
@@ -1414,7 +1355,7 @@ def cartao_destaque(ctx: Contexto, metrica: str) -> None:
     if len(f.territorios) == 1:
         coluna = COLUNA_POR_NIVEL_TERRITORIAL[f.nivel_territorial]
         base = filtrar(ctx.art.agregado, f, ignorar=("territorio",))
-        rank = posicao_ranking(agregar_metricas(base, [coluna], corte_mes=ctx.corte), coluna, metrica,
+        rank = posicao_ranking(agregar_metricas(base, [coluna]), coluna, metrica,
                                f.territorios[0])
     if rank:
         pos, n = rank

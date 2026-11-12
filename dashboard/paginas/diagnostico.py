@@ -75,24 +75,24 @@ def render(ctx: c.Contexto) -> None:
         st.caption("Primeiro as unidades com ≥ 1% das movimentações do recorte, da mais à menos tensa. Causas: Salarial = gap < 0,95; Qualificação = gap de escolaridade ≤ −0,10 com Técnico + "
                    "Superior ≥ 50%; Retenção = saída voluntária ≥ estado + 5 p.p. com gap ≥ 1.")
 
-    with st.expander("Sensibilidade: o top 10 muda com outros pesos?"):
-        st.caption("Pesos iniciais iguais (PLANEJAMENTO §7.1). Mude-os e veja quantas unidades permanecem no top 10 de tensão.")
-        cols = st.columns(3)
-        pesos = {
-            c.M_GIRO: cols[0].slider("Peso do giro", 0.0, 3.0, 1.0, 0.5),
-            c.M_SAIDA_VOL: cols[1].slider("Peso da saída voluntária", 0.0, 3.0, 1.0, 0.5),
-            "compressao": cols[2].slider("Peso da compressão salarial", 0.0, 3.0, 1.0, 0.5),
-        }
-        if sum(pesos.values()) == 0:
-            st.warning("Ao menos um peso precisa ser maior que zero.")
-        else:
-            alt = c.matriz_diagnostico(ctx.df, por, pesos_tensao=pesos)
-            base10 = list(rotulo_unidade(m, segunda).head(10))
-            alt10 = list(rotulo_unidade(alt, segunda).head(10))
-            mantidas = len(set(base10) & set(alt10))
-            st.markdown(f"**{mantidas} de {min(10, len(base10))}** unidades permanecem no top 10.")
-            st.dataframe(pd.DataFrame({"Pesos iguais": pd.Series(base10), "Pesos escolhidos": pd.Series(alt10)},
-                                      index=range(1, max(len(base10), len(alt10)) + 1)), width="stretch")
+    # Com um só componente de tensão não há peso para variar; volta no M4.C6.
+    if len(c.PESOS_TENSAO_PADRAO) > 1:
+        with st.expander("Sensibilidade: o top 10 muda com outros pesos?"):
+            st.caption("Pesos iniciais iguais (PLANEJAMENTO §7.1). Mude-os e veja quantas unidades permanecem "
+                       "no top 10 de tensão.")
+            cols = st.columns(len(c.PESOS_TENSAO_PADRAO))
+            pesos = {nome: col.slider(f"Peso: {c.ROTULO_COMPONENTE[nome]}", 0.0, 3.0, 1.0, 0.5)
+                     for col, nome in zip(cols, c.PESOS_TENSAO_PADRAO)}
+            if sum(pesos.values()) == 0:
+                st.warning("Ao menos um peso precisa ser maior que zero.")
+            else:
+                alt = c.matriz_diagnostico(ctx.df, por, pesos_tensao=pesos)
+                base10 = list(rotulo_unidade(m, segunda).head(10))
+                alt10 = list(rotulo_unidade(alt, segunda).head(10))
+                mantidas = len(set(base10) & set(alt10))
+                st.markdown(f"**{mantidas} de {min(10, len(base10))}** unidades permanecem no top 10.")
+                st.dataframe(pd.DataFrame({"Pesos iguais": pd.Series(base10), "Pesos escolhidos": pd.Series(alt10)},
+                                          index=range(1, max(len(base10), len(alt10)) + 1)), width="stretch")
 
     c.baixar_csv(m.drop(columns=[col for col in m.columns if col.startswith(("soma_", "n_"))]),
                  "diagnostico_matriz.csv")

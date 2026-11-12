@@ -39,11 +39,9 @@ def _layout(figura: go.Figure, titulo: str, altura: int = ALTURA_PADRAO, **extra
 ESCALAS_MAPA = {
     c.M_SALDO_10K: ("divergente", 0.0),
     c.M_SALDO_REL: ("divergente", 0.0),
-    c.M_ACEL: ("divergente", 0.0),
     c.M_GAP_SAL: ("divergente", 1.0),
     c.M_GAP_ESC: ("divergente", 0.0),
     c.M_SAIDA_VOL: ("tensao", None),
-    c.M_GIRO: ("tensao", None),
 }
 PERCENTIL_LIMITE_ESCALA = 98
 COR_SEM_DADO = "#D9D9D9"
@@ -209,8 +207,8 @@ def construir_matriz(matriz: pd.DataFrame, rotulo: pd.Series) -> go.Figure:
                               showarrow=False, xanchor="right" if x else "left",
                               yanchor="top" if y else "bottom", font={"size": 14, "color": c.CORES_QUADRANTE[texto]})
     return _layout(figura, "Quem precisa de atenção: dinamismo × tensão", 560,
-                   xaxis_title="Dinamismo (z: saldo relativo e aceleração) →",
-                   yaxis_title="Tensão (z: giro, saída voluntária, compressão) →",
+                   xaxis_title="Dinamismo (z: saldo relativo) →",
+                   yaxis_title="Tensão (z: saída voluntária) →",
                    legend={"orientation": "h", "y": -0.18})
 
 

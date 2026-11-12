@@ -75,7 +75,7 @@ def render(ctx: c.Contexto) -> None:
     st.caption(f"População 2026: {c.fmt_int(socio['populacao'])} · IDHM 2010: {c.fmt_num(socio['idhm'], 3)} · "
                f"PIB per capita 2023: {c.fmt_brl(socio['pib'])}{nota}")
     # Na ficha o delta é sempre contra o estado (mesmos filtros, sem território).
-    t, ref = c.total(dados, corte_mes=ctx.corte), c.total(base, corte_mes=ctx.corte)
+    t, ref = c.total(dados), c.total(base)
     cols = [col for _ in range(2) for col in st.columns(3)]
     for col, m in zip(cols, c.KPIS_PADRAO):
         col.metric(c.DEFINICOES[m].rotulo, c.fmt_metrica(m, t[m]), border=True, help=c.DEFINICOES[m].formula,

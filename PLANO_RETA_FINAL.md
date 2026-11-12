@@ -76,29 +76,29 @@ Leia PLANO_RETA_FINAL.md, seção "Como trabalhar". Continue o marco <Mx> a part
 ## M1 · Corrigir os 3 problemas de método (sem dado novo)
 
 **Branch:** `m1-metodo` · **Dono:** pessoa 1 · **Estimativa:** 1,5 a 2 h
-**Estado:** não iniciado
+**Estado:** concluído em `m1-metodo` (C1–C5), aguardando merge em `dashboard-v2`. `pytest -q`: 227 verdes (os 7 a menos são os testes de turnover/aquecimento apagados). Notas: a regra de Automação virou "Básico ≥ 50% e saldo ≤ 0"; sem filtro, a sanfona não mostra delta; o `caged_agregado.parquet` atual ainda tem `turnover`/`indice_aquecimento` (o painel ignora), que somem na próxima reagregação (M7.C1).
 
 O que muda, e por quê:
 - **Giro:** hoje é `min(adm, desl) / max(adm, desl)`, que é função exata do saldo relativo (indústria: 0,9954 = (1−|s|)/(1+|s|)). Sai de tudo. A rotatividade oficial volta no M4.
 - **Tensão:** hoje soma giro, saída voluntária e compressão salarial, e depois a compressão aparece também como "causa". Passa a usar **só sintomas**: por ora só a saída voluntária, e o M4 traz os outros dois.
 - **Aceleração:** hoje compara set–fev com mar–ago, o que mede calendário (+4,3 p.p. na indústria). Sai. Volta calculada por blocos de 12 meses no M5.
 
-- [ ] **M1.C1 Tensão só com sintomas.**
+- [x] **M1.C1 Tensão só com sintomas.**
   - Em `dashboard/comum.py`: `PESOS_TENSAO_PADRAO = {M_SAIDA_VOL: 1.0}`. Tirar `"compressao"` dos componentes e dos motivos.
   - A compressão continua só como causa (`causas()`, Salarial).
   - Em `diagnostico.py`, esconder o expander de sensibilidade enquanto houver um único componente; ele volta no M4.C6.
   - Testes: `test_dashboard_metricas.py`.
-- [ ] **M1.C2 Giro fora.**
+- [x] **M1.C2 Giro fora.**
   - Apagar `M_GIRO` de `comum.py`: definição, `KPIS_PADRAO`, grupos de indicadores, `METRICAS_INVERSAS` e as regras de recomendação que o usam.
   - Apagar também de `narrativa.py`, `figuras.py`, `paginas/` (panorama, diagnóstico, causa raiz, recomendações, apresentação, metodologia) e dos testes.
   - Conferir com `grep -rn "M_GIRO\|giro" dashboard tests`, que deve voltar vazio.
-- [ ] **M1.C3 Aceleração semestral fora.**
+- [x] **M1.C3 Aceleração semestral fora.**
   - Tirar `M_ACEL` do Dinamismo (`PESOS_DINAMISMO_PADRAO = {M_SALDO_REL: 1.0}`), dos KPIs, do mapa e da sanfona.
   - **Apagar** `corte_semestral` e o cálculo semestral em `agregar_metricas`. O M5.C6 recria a aceleração por blocos.
-- [ ] **M1.C4 Colunas legadas do pipeline.**
+- [x] **M1.C4 Colunas legadas do pipeline.**
   - Remover `turnover` (R4.4–R4.5) e `indice_aquecimento` (R4.8–R4.9) de `src/metricas.py`, `src/agregador.py`, do notebook e dos testes (`test_metricas_turnover.py` e `test_metricas_aquecimento.py`, além das menções em `test_agregador_propriedades.py` e `test_pipeline_integracao.py`).
   - No `requirements.md`, R4.4 e R6.5 passam a apontar para a rotatividade descontada (M4), com a observação "pendente de RAIS".
-- [ ] **M1.C5 Fechamento.**
+- [x] **M1.C5 Fechamento.**
   - Reescrever o texto da Metodologia sobre o índice: "Tensão = sintomas; causas ficam no diagnóstico".
   - `pytest -q` completo.
   - `streamlit run dashboard/app.py` e clicar por todas as páginas.

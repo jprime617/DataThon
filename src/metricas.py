@@ -16,10 +16,10 @@ Métricas cobertas até aqui:
 - `saldo_por_10k`: normaliza o Saldo_Liquido pela população estimada 2026 do
   município — ``(saldo / populacao) * 10_000`` quando a população é maior que
   zero, ou ``NaN`` quando a população está ausente ou é zero (R4.2, R4.3).
-- `turnover`: rotatividade por recorte (município × Secao_Industrial) como
-  ``min(admissões, desligamentos) / max(admissões, desligamentos)``, em
-  ``[0, 1]`` por construção; ``NaN`` quando o recorte não tem movimentação
-  alguma (R4.4, R4.5).
+
+O antigo `turnover` (mín/máx de admissões e desligamentos) e o
+`indice_aquecimento` saíram no M1.C4: o primeiro era função exata do saldo
+relativo; a rotatividade descontada volta com o estoque da RAIS (M4).
 """
 
 from __future__ import annotations
@@ -31,10 +31,8 @@ import pandas as pd
 # Coluna de movimentação do CAGED: +1 admissão, -1 desligamento (R4.1).
 COLUNA_SALDO_MOVIMENTACAO = "saldomovimentação"
 
-# O Turnover não usa estoque de vínculos como denominador — ver `turnover`.
-
-# Nome da coluna de turnover produzida por `turnover` (R4.4).
-COLUNA_TURNOVER = "turnover"
+# Competência mensal (AAAAMM) do CAGED.
+COLUNA_COMPETENCIA = "competênciamov"
 
 # Nome da coluna de saldo líquido produzida por `saldo_liquido` (R4.1).
 COLUNA_SALDO_LIQUIDO = "saldo_liquido"
@@ -200,245 +198,16 @@ def saldo_por_10k(saldo_df: pd.DataFrame, municipios: pd.DataFrame) -> pd.DataFr
     return resultado
 
 
-def _turnover_valor(admissoes: int, desligamentos: int) -> float:
-    """Aplica a fórmula do Turnover a um recorte (R4.4, R4.5).
-
-    ``turnover = min(admissoes, desligamentos) / max(admissoes, desligamentos)``
-    quando o recorte tem ao menos uma movimentação; ``NaN`` quando não tem
-    nenhuma (não há rotatividade definida sobre o conjunto vazio — R4.5).
-
-    O resultado está em ``[0, 1]`` **por construção**, sem precisar de clamp:
-    o numerador é o menor dos dois contadores e o denominador, o maior.
-    """
-    maior = max(admissoes, desligamentos)
-    if maior <= 0:
-        return math.nan
-    return min(admissoes, desligamentos) / maior
-
-
-def turnover(df: pd.DataFrame, por: list[str]) -> pd.DataFrame:
-    """Calcula o Turnover por recorte (R4.4, R4.5).
-
-    Para cada recorte declarado em ``por`` (tipicamente
-    ``["chave_municipal", "seção"]`` — município × Secao_Industrial), conta as
-    admissões (``saldomovimentação == +1``) e os desligamentos
-    (``saldomovimentação == -1``) e aplica:
-
-    ``turnover = min(admissões, desligamentos) / max(admissões, desligamentos)``
-    quando o recorte tem ao menos uma movimentação (R4.4);
-    ``turnover = NaN`` quando não tem nenhuma (R4.5).
-
-    **Por que o denominador não é o estoque de vínculos.** R4.4 nasceu pedindo
-    `min(adm, desl) / estoque`, a fórmula clássica de rotatividade. Esse estoque
-    não é recuperável do CAGED movimentado: o arquivo não traz identificador de
-    estabelecimento, então um estabelecimento com 50 movimentações aparece 50
-    vezes e não há como saber que é o mesmo. Qualquer estoque montado a partir da
-    faixa `tamestabjan` erra por um fator desconhecido — usar a faixa média
-    saturava 62,7% dos recortes em 1,0, e somá-la por linha superestimava o
-    estoque e derrubava a mediana para 0,035.
-
-    O denominador adotado é ``max(admissões, desligamentos)``, que mede a mesma
-    coisa e é identificável. Sob o modelo natural de que o volume de movimentação
-    de um estabelecimento é proporcional ao seu tamanho, o total de movimentações
-    é proporcional ao estoque do recorte — e a razão
-    ``min/max`` é a fórmula com estoque a menos de uma constante.
-
-    A leitura é direta: ``1`` é rotatividade pura (admissões e desligamentos
-    equilibrados, saldo nulo) e ``0`` é crescimento ou encolhimento puro (só
-    entrada ou só saída). É exatamente a distinção entre apagão por rotatividade
-    e expansão/contração líquida que a pergunta de negócio faz.
-
-    Quando o DataFrame de entrada é vazio, o retorno é um DataFrame vazio com as
-    colunas ``por + ["turnover"]``.
-
-    Args:
-        df: base cruzada/enriquecida contendo `saldomovimentação` e as colunas
-            de recorte em ``por``. Não é modificada.
-        por: lista não vazia de colunas que definem o recorte de agregação.
-
-    Returns:
-        Um DataFrame com uma linha por combinação distinta de ``por`` e a coluna
-        ``turnover`` (``float`` em ``[0, 1]`` ou ``NaN``).
-
-    Raises:
-        ValueError: se ``por`` for vazio.
-        KeyError: se `saldomovimentação` ou alguma coluna de ``por`` estiver
-            ausente no DataFrame.
-    """
-    if not por:
-        raise ValueError("A lista de colunas de recorte 'por' não pode ser vazia.")
-
-    faltando = [
-        coluna
-        for coluna in [*por, COLUNA_SALDO_MOVIMENTACAO]
-        if coluna not in df.columns
-    ]
-    if faltando:
-        raise KeyError(
-            "Colunas ausentes no DataFrame para o cálculo de Turnover: "
-            f"{faltando}."
-        )
-
-    if df.empty:
-        return pd.DataFrame(columns=[*por, COLUNA_TURNOVER])
-
-    movimentacao = df[COLUNA_SALDO_MOVIMENTACAO]
-    trabalho = df[[*por]].copy()
-    trabalho["_admissao"] = (movimentacao == 1).astype(int)
-    trabalho["_desligamento"] = (movimentacao == -1).astype(int)
-    agrupado = trabalho.groupby(por, dropna=False)
-    agregado = agrupado.agg(
-        _admissoes=("_admissao", "sum"),
-        _desligamentos=("_desligamento", "sum"),
-    ).reset_index()
-
-    agregado[COLUNA_TURNOVER] = [
-        _turnover_valor(int(adm), int(desl))
-        for adm, desl in zip(
-            agregado["_admissoes"], agregado["_desligamentos"], strict=True
-        )
-    ]
-
-    return agregado[[*por, COLUNA_TURNOVER]]
-
-
 __all__ = [
     "COLUNA_SALDO_MOVIMENTACAO",
     "COLUNA_SALDO_LIQUIDO",
     "COLUNA_SALDO_POR_10K",
     "COLUNA_CHAVE_MUNICIPAL",
     "COLUNA_POPULACAO_2026",
-    "COLUNA_TURNOVER",
+    "COLUNA_COMPETENCIA",
     "FATOR_POR_10K",
     "saldo_liquido",
     "saldo_por_10k",
-    "turnover",
-]
-
-
-# ---------------------------------------------------------------------------
-# Indice_de_Aquecimento (tarefa 7.7 — R4.8, R4.9)
-# ---------------------------------------------------------------------------
-
-# Coluna de competência mensal (formato AAAAMM) usada para ordenar a série e
-# calcular a variação mês a mês do Saldo_Liquido (R4.8, R4.9).
-COLUNA_COMPETENCIA = "competênciamov"
-
-# Nome da coluna de variação mensal do Saldo_Liquido produzida internamente
-# por `indice_aquecimento` (R4.8).
-COLUNA_VARIACAO_MENSAL = "variacao_mensal"
-
-# Nome da coluna de Indice_de_Aquecimento produzida por `indice_aquecimento` (R4.8).
-COLUNA_INDICE_AQUECIMENTO = "indice_aquecimento"
-
-
-def indice_aquecimento(saldo_mensal_df: pd.DataFrame) -> pd.DataFrame:
-    """Calcula o Indice_de_Aquecimento por recorte e mês (R4.8, R4.9).
-
-    O Indice_de_Aquecimento combina o nível relativo do saldo com o seu
-    crescimento mês a mês::
-
-        variacao_mensal        = Saldo_Liquido(mês) - Saldo_Liquido(mês anterior)
-        variacao_mensal        = 0, se não há mês anterior na série do recorte (R4.9)
-        Indice_de_Aquecimento  = Saldo_por_10k + variacao_mensal                 (R4.8)
-
-    A variação é calculada **dentro de cada recorte**: as colunas de recorte são
-    todas as colunas de ``saldo_mensal_df`` que não são a competência mensal
-    (`competênciamov`) nem as métricas `saldo_liquido`/`saldo_por_10k`. Para cada
-    recorte, a série é ordenada pela competência em ordem crescente e a
-    `variacao_mensal` é a diferença de `saldo_liquido` em relação ao mês
-    imediatamente anterior da série; o primeiro mês de cada recorte não tem mês
-    anterior e, portanto, recebe variação ``0`` (R4.9).
-
-    Quando o DataFrame de entrada é vazio, o retorno é um DataFrame vazio com as
-    colunas originais acrescidas de ``variacao_mensal`` e ``indice_aquecimento``.
-
-    Args:
-        saldo_mensal_df: DataFrame mensal de saldos por recorte, saída de
-            `saldo_por_10k` (após `saldo_liquido`), contendo ao menos as colunas
-            `competênciamov`, `saldo_liquido` e `saldo_por_10k`, além das colunas
-            de recorte. Não é modificado.
-
-    Returns:
-        Uma cópia de ``saldo_mensal_df`` acrescida das colunas
-        ``variacao_mensal`` (``float``) e ``indice_aquecimento`` (``float``). A
-        ordem das linhas é preservada em relação à entrada.
-
-    Raises:
-        KeyError: se `competênciamov`, `saldo_liquido` ou `saldo_por_10k`
-            estiver ausente no DataFrame.
-    """
-    faltando = [
-        coluna
-        for coluna in [
-            COLUNA_COMPETENCIA,
-            COLUNA_SALDO_LIQUIDO,
-            COLUNA_SALDO_POR_10K,
-        ]
-        if coluna not in saldo_mensal_df.columns
-    ]
-    if faltando:
-        raise KeyError(
-            "Colunas ausentes no DataFrame para o Indice_de_Aquecimento: "
-            f"{faltando}."
-        )
-
-    if saldo_mensal_df.empty:
-        # Sem séries mensais, não há variação nem índice a reportar (R4.9).
-        vazio = saldo_mensal_df.copy()
-        vazio[COLUNA_VARIACAO_MENSAL] = pd.Series(dtype="float64")
-        vazio[COLUNA_INDICE_AQUECIMENTO] = pd.Series(dtype="float64")
-        return vazio
-
-    # O recorte é definido por todas as colunas que não são a competência mensal
-    # nem as métricas de saldo — ex.: chave_municipal × Secao_Industrial.
-    colunas_recorte = [
-        coluna
-        for coluna in saldo_mensal_df.columns
-        if coluna
-        not in {
-            COLUNA_COMPETENCIA,
-            COLUNA_SALDO_LIQUIDO,
-            COLUNA_SALDO_POR_10K,
-        }
-    ]
-
-    resultado = saldo_mensal_df.copy()
-
-    # Ordena por recorte e competência para que o diff compare meses consecutivos
-    # dentro da mesma série; preserva o índice original para restaurar a ordem.
-    ordenado = resultado.sort_values(
-        by=[*colunas_recorte, COLUNA_COMPETENCIA], kind="stable"
-    )
-
-    if colunas_recorte:
-        variacao = ordenado.groupby(colunas_recorte, dropna=False)[
-            COLUNA_SALDO_LIQUIDO
-        ].diff()
-    else:
-        # Sem colunas de recorte, toda a entrada é uma única série mensal.
-        variacao = ordenado[COLUNA_SALDO_LIQUIDO].diff()
-
-    # O primeiro mês de cada recorte não tem mês anterior → variação 0 (R4.9).
-    variacao = variacao.fillna(0.0)
-
-    # Restaura a ordem original das linhas antes de anexar as colunas.
-    variacao = variacao.reindex(resultado.index)
-
-    resultado[COLUNA_VARIACAO_MENSAL] = variacao.astype("float64")
-    resultado[COLUNA_INDICE_AQUECIMENTO] = (
-        resultado[COLUNA_SALDO_POR_10K].astype("float64")
-        + resultado[COLUNA_VARIACAO_MENSAL]
-    )
-
-    return resultado
-
-
-__all__ += [
-    "COLUNA_COMPETENCIA",
-    "COLUNA_VARIACAO_MENSAL",
-    "COLUNA_INDICE_AQUECIMENTO",
-    "indice_aquecimento",
 ]
 
 

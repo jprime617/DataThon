@@ -9,7 +9,7 @@ from dashboard import comum as c
 from dashboard import figuras as fig
 from dashboard import narrativa as nar
 
-METRICAS_MAPA = [c.M_SAIDA_VOL, c.M_GAP_SAL, c.M_SALDO_10K, c.M_GIRO, c.M_ACEL, c.M_GAP_ESC]
+METRICAS_MAPA = [c.M_SAIDA_VOL, c.M_GAP_SAL, c.M_SALDO_10K, c.M_GAP_ESC]
 
 
 def metricas_mapa(df: pd.DataFrame, nivel: str) -> pd.DataFrame:
