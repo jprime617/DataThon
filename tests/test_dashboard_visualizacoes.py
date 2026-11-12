@@ -78,6 +78,32 @@ def test_mapa_pinta_amostra_insuficiente_de_cinza_em_traco_separado():
     assert "n = 10" in cinza.text[0] and "amostra insuficiente" in cinza.text[0]
 
 
+def _mapa_saida(valores: list[float], **kw) -> go.Figure:
+    df = _metricas_mapa(valores).rename(columns={c.M_SALDO_10K: c.M_SAIDA_VOL})
+    return fig.construir_mapa(df, _geojson_minimo(list(df[c.COLUNA_MUNICIPIO])), c.M_SAIDA_VOL,
+                              rotulo_territorio="rotulo", **kw)
+
+
+def test_mapa_sequencial_usa_quatro_quantis_com_legenda_em_degraus():
+    traco = _mapa_saida([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]).data[-1]
+    assert sorted(set(traco.z)) == [0, 1, 2, 3]
+    rotulos = list(traco.colorbar.ticktext)
+    assert len(rotulos) == 4 and rotulos[0].startswith("até ") and rotulos[-1].startswith("mais que ")
+
+
+def test_mapa_contorna_o_territorio_em_destaque_de_magenta():
+    figura = _mapa_saida([0.1, 0.2, 0.3], destaque=["Município 1"])
+    realce = figura.data[-1]
+    assert list(realce.locations) == ["420001"] and realce.marker.line.color == fig.COR_REALCE
+
+
+def test_posicao_ranking_ignora_amostra_insuficiente_e_conta_do_maior():
+    por = pd.DataFrame({"t": ["a", "b", "c", "d"], c.M_SAIDA_VOL: [0.5, 0.9, 0.7, 0.99],
+                        c.M_AMOSTRA_OK: [True, True, True, False]})
+    assert c.posicao_ranking(por, "t", c.M_SAIDA_VOL, "c") == (2, 3)
+    assert c.posicao_ranking(por, "t", c.M_SAIDA_VOL, "d") is None
+
+
 @st.composite
 def _metricas_barras(draw: st.DrawFn) -> pd.DataFrame:
     n = draw(st.integers(min_value=1, max_value=12))

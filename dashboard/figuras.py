@@ -46,6 +46,19 @@ ESCALAS_MAPA = {
     c.M_GIRO: ("tensao", None),
 }
 PERCENTIL_LIMITE_ESCALA = 98
+COR_SEM_DADO = "#D9D9D9"
+COR_REALCE = "#C2185B"  # magenta: território filtrado
+
+
+def _degraus(cores: list[str]) -> list[list]:
+    """Escala Plotly em degraus: uma faixa sólida por classe."""
+    n = len(cores)
+    return [par for i, cor in enumerate(cores) for par in ([i / n, cor], [(i + 1) / n, cor])]
+
+
+def _rotulos_classes(metrica: str, bordas: list[float]) -> list[str]:
+    """Legenda em degraus: "até X" por classe e "mais que X" na última."""
+    return [f"até {c.fmt_metrica(metrica, b)}" for b in bordas] + [f"mais que {c.fmt_metrica(metrica, bordas[-1])}"]
 
 
 def construir_mapa(
@@ -54,13 +67,16 @@ def construir_mapa(
     metrica: str,
     *,
     rotulo_territorio: str = c.COLUNA_NOME_MUNICIPIO,
+    destaque: list[str] | tuple[str, ...] = (),
 ) -> go.Figure:
-    """Coroplético por município, colorido pela `metrica` da unidade territorial.
+    """Coroplético por município, em classes, colorido pela `metrica` da unidade territorial.
 
     ``metricas`` traz uma linha por **município** com ``municipio`` (chave de 6
     dígitos), o rótulo da unidade (o próprio município, a micro ou a
     mesorregião — cada município é pintado com o valor da sua unidade), a
-    métrica e ``movimentacoes``. Unidades sem amostra suficiente ficam em cinza.
+    métrica e ``movimentacoes``. Taxas de tensão usam 4 quantis na escala
+    sequencial; métricas com sinal, 6 classes simétricas na divergente. Unidades
+    sem amostra suficiente ficam em cinza; as de ``destaque`` ganham contorno magenta.
     """
     if geojson is None:
         return c.figura_vazia("Mapa indisponível: malha de municípios não encontrada.")
@@ -86,41 +102,54 @@ def construir_mapa(
         figura.add_trace(go.Choropleth(
             geojson=geojson, featureidkey="properties.chave_municipal",
             locations=insuficientes[c.COLUNA_MUNICIPIO].astype(str),
-            z=[0] * len(insuficientes), colorscale=[[0, "#D9D9D9"], [1, "#D9D9D9"]],
-            showscale=False, marker_line_width=0.3, marker_line_color="white",
+            z=[0] * len(insuficientes), colorscale=[[0, COR_SEM_DADO], [1, COR_SEM_DADO]],
+            showscale=False, showlegend=True, marker_line_width=0.3, marker_line_color="white",
             text=_hover(insuficientes), hoverinfo="text",
-            customdata=insuficientes[rotulo_territorio].astype(str), name="amostra insuficiente",
+            customdata=insuficientes[rotulo_territorio].astype(str),
+            name="Dado inexistente (amostra insuficiente)",
         ))
     if not validas.empty:
         valores = validas[metrica].astype(float)
         if escala == "divergente":
             desvio = (valores - centro).abs()
             limite = float(desvio.quantile(PERCENTIL_LIMITE_ESCALA / 100)) or float(desvio.max()) or 1.0
-            zmin, zmax, cores = centro - limite, centro + limite, c.ESCALA_DIVERGENTE
-            if metrica == c.M_GAP_SAL:
-                cores = c.ESCALA_DIVERGENTE  # < 1 = compressão (vermelhão); > 1 = azul
+            zmin, zmax = centro - limite, centro + limite
+            cores = c.CLASSES_DIVERGENTE
+            passo = (zmax - zmin) / len(cores)
+            bordas = [zmin + passo * (i + 1) for i in range(len(cores) - 1)]
+            z, ticks = valores, [zmin + passo * (i + 0.5) for i in range(len(cores))]
         else:
-            zmin, zmax = float(valores.quantile(0.02)), float(valores.quantile(0.98))
-            if zmin == zmax:
-                zmax = zmin + 1e-9
-            cores = c.ESCALA_TENSAO
-        formato = c.DEFINICOES[metrica].formato
-        ticks = [zmin, (zmin + zmax) / 2, zmax]
+            bordas = sorted(set(float(valores.quantile(q)) for q in (0.25, 0.5, 0.75)))
+            cores = c.CLASSES_SEQUENCIAL[-(len(bordas) + 1):]
+            z = valores.map(lambda v: sum(v > b for b in bordas))
+            zmin, zmax = -0.5, len(cores) - 0.5
+            ticks = list(range(len(cores)))
         figura.add_trace(go.Choropleth(
             geojson=geojson, featureidkey="properties.chave_municipal",
-            locations=validas[c.COLUNA_MUNICIPIO].astype(str), z=valores,
-            zmin=zmin, zmax=zmax, colorscale=cores,
+            locations=validas[c.COLUNA_MUNICIPIO].astype(str), z=z,
+            zmin=zmin, zmax=zmax, colorscale=_degraus(cores),
             marker_line_width=0.3, marker_line_color="white",
             text=_hover(validas), hoverinfo="text",
-            customdata=validas[rotulo_territorio].astype(str),
-            colorbar={"title": {"text": definicao.rotulo}, "tickvals": ticks,
-                      "ticktext": [c.fmt_metrica(metrica, t) for t in ticks],
-                      "len": 0.8, "thickness": 14},
+            customdata=validas[rotulo_territorio].astype(str), name=definicao.rotulo,
+            colorbar={"title": {"text": "Legenda", "side": "top"}, "orientation": "h",
+                      "x": 0, "xanchor": "left", "y": -0.02, "yanchor": "top", "len": 1, "thickness": 12,
+                      "tickvals": ticks, "ticktext": _rotulos_classes(metrica, bordas), "outlinewidth": 0},
         ))
-        _ = formato
+    alvo = metricas[metricas[rotulo_territorio].astype(str).isin([str(d) for d in destaque])]
+    if not alvo.empty:
+        # ponytail: contorna cada município do território (não a fronteira dissolvida);
+        # dissolver exigiria shapely/geopandas.
+        figura.add_trace(go.Choropleth(
+            geojson=geojson, featureidkey="properties.chave_municipal",
+            locations=alvo[c.COLUNA_MUNICIPIO].astype(str), z=[0] * len(alvo),
+            colorscale=[[0, "rgba(0,0,0,0)"], [1, "rgba(0,0,0,0)"]], showscale=False,
+            marker_line_width=2, marker_line_color=COR_REALCE, hoverinfo="skip",
+            customdata=alvo[rotulo_territorio].astype(str), name="Território filtrado", showlegend=True,
+        ))
     figura.update_geos(fitbounds="locations", visible=False, bgcolor="rgba(0,0,0,0)")
-    return _layout(figura, f"Onde: {definicao.rotulo.lower()} por território", 520,
-                   margin={"l": 0, "r": 0, "t": 50, "b": 0}, dragmode=False)
+    return _layout(figura, f"{definicao.rotulo} por território", 400,
+                   margin={"l": 0, "r": 0, "t": 50, "b": 90}, dragmode=False,
+                   legend={"orientation": "h", "x": 0, "y": -0.2, "yanchor": "top", "font": {"size": 13}})
 
 
 # --- Série mensal ---------------------------------------------------------------
