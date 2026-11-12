@@ -1,216 +1,349 @@
 cbo2002ocupação,descricao,movimentacoes,macrofamilia_r1,macrofamilia_r2,nivel_r1,nivel_r2
-411005,"Auxiliar de Escritorio, em Geral",103444,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
-521140,Atendente de Lojas e Mercados,88610,Administrativo e comercial,Administrativo e comercial,Básico,Qualificado
-513205,Cozinheiro Geral,38597,Serviços de apoio e outros,Alimentos e bebidas,Qualificado,Qualificado
-521135,Frentista,30559,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
-517330,Vigilante,25622,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-862150,"Operador de Maquinas Fixas, em Geral",12413,Operação de linha e processo,Operação de linha e processo,Qualificado,Básico
-514325,Trabalhador da Manutenção de Edificações,10673,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-517420,Vigia,10268,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-422310,Operador de Telemarketing Ativo e Receptivo,9907,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
-517410,Porteiro de Edificios,9747,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-622020,Trabalhador Volante da Agricultura,8227,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-631210,Pescador Profissional,7313,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-517425,Fiscal de Loja,6567,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-351605,Tecnico em Seguranca no Trabalho,5998,Administrativo e comercial,"Engenharia, técnicos industriais e TI",Técnico,Técnico
-513425,Copeiro,5941,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-623310,Trabalhador da Avicultura de Postura,4102,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-422315,Operador de Telemarketing Receptivo,4014,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
-622010,Jardineiro,3606,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-516345,Auxiliar de Lavanderia,3436,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-841484,Trabalhador de Preparacao de Pescados (Limpeza),3305,Alimentos e bebidas,Alimentos e bebidas,Qualificado,Básico
-141205,Gerente de Producao e Operacoes,3065,Operação de linha e processo,"Engenharia, técnicos industriais e TI",Superior,Superior
-513610,Pizzaiolo,2674,Alimentos e bebidas,Serviços de apoio e outros,Qualificado,Qualificado
-784110,"Embalador, a Maquina",2486,Operação de linha e processo,Operação de linha e processo,Qualificado,Básico
-422205,Telefonista,1940,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
-252715,Analista de Logistica,1927,Logística e transporte,Administrativo e comercial,Superior,Superior
-623305,Trabalhador da Avicultura de Corte,1894,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-842120,Auxiliar de Processamento de Fumo,1836,Alimentos e bebidas,Alimentos e bebidas,Qualificado,Básico
-271105,Chefe de Cozinha (Desativado em 2010),1786,Alimentos e bebidas,Serviços de apoio e outros,Superior,Qualificado
-412205,Continuo,1642,Administrativo e comercial,Administrativo e comercial,Básico,Qualificado
-391115,Controlador de Entrada e Saida,1625,"Engenharia, técnicos industriais e TI",Logística e transporte,Técnico,Técnico
-725505,Montador de Veiculos (Linha de Montagem),1623,Metalmecânica e eletroeletrônica,Operação de linha e processo,Qualificado,Qualificado
-233210,Instrutor de Aprendizagem e Treinamento Industrial,1621,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Superior,Superior
-412110,Digitador,1617,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
-513215,Cozinheiro Industrial,1530,Serviços de apoio e outros,Alimentos e bebidas,Qualificado,Qualificado
-641010,Operador de Maquinas de Beneficiamento de Produtos Agricolas,1488,Operação de linha e processo,Serviços de apoio e outros,Qualificado,Qualificado
-715405,Operador de Betoneira,1379,Construção civil e extração,Construção civil e extração,Qualificado,Básico
-632120,Operador de Motosserra,1260,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-519305,Auxiliar de Veterinario,1237,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-314410,Tecnico em Manutencao de Maquinas,1200,Manutenção e reparação,"Engenharia, técnicos industriais e TI",Técnico,Técnico
-818110,Auxiliar de Laboratorio de Analises Fisico-Quimicas,1111,Operação de linha e processo,"Engenharia, técnicos industriais e TI",Qualificado,Técnico
-763115,Enfestador de Roupas,1036,"Têxtil, confecção, couro e calçados","Têxtil, confecção, couro e calçados",Básico,Qualificado
-422335,Monitor De Teleatendimento,1013,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
-763325,Passadeira de Pecas Confeccionadas,1009,"Têxtil, confecção, couro e calçados","Têxtil, confecção, couro e calçados",Qualificado,Básico
-725705,Mecanico de Refrigeracao,877,Metalmecânica e eletroeletrônica,Manutenção e reparação,Qualificado,Qualificado
-421205,Recebedor de Apostas (Loteria),834,Administrativo e comercial,Administrativo e comercial,Básico,Qualificado
-142360,,727,Não classificado,Administrativo e comercial,Superior,Superior
-374405,Editor de Tv  e Video,695,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Técnico,Técnico
-783220,Estivador,601,Logística e transporte,Logística e transporte,Qualificado,Básico
-423115,,577,Administrativo e comercial,Administrativo e comercial,Básico,Qualificado
-421115,Bilheteiro no Servico de Diversoes,575,Administrativo e comercial,Administrativo e comercial,Básico,Qualificado
-523110,Instalador de Som e Acessorios de Veiculos,564,Administrativo e comercial,Manutenção e reparação,Qualificado,Qualificado
-513220,Cozinheiro de Hospital,517,Serviços de apoio e outros,Alimentos e bebidas,Qualificado,Qualificado
-352205,Agente de Defesa Ambiental,473,Serviços de apoio e outros,Administrativo e comercial,Técnico,Técnico
-523105,"Instalador de Cortinas e Persianas, Portas Sanfonadas e Boxe",467,Administrativo e comercial,Construção civil e extração,Qualificado,Qualificado
-821405,Encarregado de Acabamento de Chapas e Metais  (Tempera),415,Operação de linha e processo,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
-511215,Cobrador de Transportes Coletivos (Exceto Trem),374,Logística e transporte,Serviços de apoio e outros,Básico,Básico
-766120,Editor de Texto e Imagem,336,Serviços de apoio e outros,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
-622615,Trabalhador da Cultura de Erva-Mate,329,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-374110,Tecnico em Instalacao de Equipamentos de Audio,299,Metalmecânica e eletroeletrônica,"Engenharia, técnicos industriais e TI",Técnico,Técnico
-251530,Psicologo Social,294,Administrativo e comercial,Serviços de apoio e outros,Superior,Superior
-373105,Operador de Audio de Continuidade (Radio),276,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
-622425,Trabalhador no Cultivo de Plantas Ornamentais,245,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-514330,Limpador de Piscinas,245,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-515205,Auxiliar de Banco de Sangue,244,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-511210,Despachante de Transportes Coletivos (Exceto Trem),242,Serviços de apoio e outros,Logística e transporte,Qualificado,Qualificado
-421110,Bilheteiro de Transportes Coletivos,238,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
-374420,Montador de Filmes,236,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
-741105,Ajustador de Instrumentos de Precisao,228,Metalmecânica e eletroeletrônica,Operação de linha e processo,Qualificado,Qualificado
-421120,Emissor de Passagens,220,Logística e transporte,Administrativo e comercial,Qualificado,Qualificado
-321210,Tecnico Florestal,215,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Técnico,Técnico
-375120,Decorador de Eventos,211,"Madeira, móveis, cerâmica e vidro",Serviços de apoio e outros,Técnico,Técnico
-741115,Montador de Instrumentos de Precisao,197,Operação de linha e processo,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
-784125,Operador de Prensa de Enfardamento,184,Operação de linha e processo,Operação de linha e processo,Qualificado,Básico
-516340,Atendente de Lavanderia,179,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-415130,Operador de Maquina Copiadora (Exceto Operador de Grafica Rapida),177,Administrativo e comercial,Administrativo e comercial,Básico,Qualificado
-517405,Porteiro (Hotel),174,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-514230,Coletor de Resíduos Sólidos de Serviços de Saúde,172,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-511205,Fiscal de Transportes Coletivos (Exceto Trem),164,Logística e transporte,Serviços de apoio e outros,Qualificado,Qualificado
-372115,Operador de Camera de Televisao,155,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
-375105,Designer de Interiores,154,"Madeira, móveis, cerâmica e vidro","Engenharia, técnicos industriais e TI",Técnico,Técnico
-142410,Gerente de Suprimentos,153,Logística e transporte,Administrativo e comercial,Superior,Superior
-717010,Operador de Martelete,146,Construção civil e extração,Construção civil e extração,Básico,Qualificado
-820205,"Supervisor de Fabricacao de Produtos Ceramicos, Porcelanatos e Afins",137,"Madeira, móveis, cerâmica e vidro",Operação de linha e processo,Qualificado,Qualificado
-261615,Editor de Midia Eletronica,131,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Superior,Superior
-374415,Finalizador de Video,129,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Técnico,Técnico
-516320,"Limpador a Seco, À Maquina",126,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-252720,Analista de Projetos Logisticos,118,Logística e transporte,Administrativo e comercial,Superior,Superior
-391225,Escolhedor de Papel,115,"Engenharia, técnicos industriais e TI",Operação de linha e processo,Técnico,Básico
-623325,Sexador,110,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-523115,Chaveiro,110,Manutenção e reparação,Serviços de apoio e outros,Qualificado,Qualificado
-622320,"Trabalhador na Olericultura (Talos, Folhas e Flores)",101,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-415205,Carteiro,97,Administrativo e comercial,Logística e transporte,Qualificado,Qualificado
-516315,Lavador de Artefatos de Tapecaria,97,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-519105,Ciclista Mensageiro,96,Serviços de apoio e outros,Logística e transporte,Qualificado,Básico
-261530,Redator de Textos Tecnicos,93,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
-373130,Tecnico de Sistemas Audiovisuais,90,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
-524305,Vendedor Ambulante,88,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
-516205,Baba,86,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-239435,Designer Educacional,78,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
-915105,Tecnico em Manutencao de Instrumentos de Medicao e Precisao,76,Manutenção e reparação,Manutenção e reparação,Técnico,Qualificado
-821220,Forneiro e Operador (Refino de Metais Nao-Ferrosos),73,Operação de linha e processo,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
-632215,Trabalhador da Exploracao de Resinas,73,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-781110,Condutor de Processos Robotizados de Soldagem,73,Metalmecânica e eletroeletrônica,Operação de linha e processo,Qualificado,Qualificado
-992220,Pedreiro de Conservacao de Vias Permanentes (Exceto Trilhos),69,Construção civil e extração,Manutenção e reparação,Qualificado,Qualificado
-631020,Pescador Artesanal de Peixes e Camaroes,67,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-375110,Designer de Vitrines,65,Administrativo e comercial,"Engenharia, técnicos industriais e TI",Técnico,Técnico
-411035,Auxiliar de Estatistica,55,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
-223435,Farmaceutico Industrial,55,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Superior,Superior
-215105,Agente de Manobra e Docagem,55,"Engenharia, técnicos industriais e TI",Logística e transporte,Superior,Superior
-622305,Trabalhador na Olericultura (Frutos e Sementes),53,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-234120,Professor de Computacao (No Ensino Superior),52,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
-415215,Entregador de Publicacoes,50,Administrativo e comercial,Logística e transporte,Básico,Básico
-813130,"Tecnico de Operacao (Quimica, Petroquimica e Afins)",45,Operação de linha e processo,"Engenharia, técnicos industriais e TI",Qualificado,Técnico
-766420,Auxiliar de Radiologia (Revelacao Fotografica),45,"Têxtil, confecção, couro e calçados",Serviços de apoio e outros,Básico,Qualificado
-122205,"Diretor de Producao e Operacoes da Industria de Transformacao, Extracao Mineral e Utilidades",43,Manutenção e reparação,Operação de linha e processo,Superior,Superior
-514115,Sacristao,43,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-632510,"Trabalhador da Exploracao de Cipos Produtores de Substancias Aromaticas, Medicinais e Toxicas",38,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-823220,Forneiro no Recozimento de Vidro,36,Operação de linha e processo,"Madeira, móveis, cerâmica e vidro",Qualificado,Qualificado
-325015,Perfumista,36,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Técnico,Técnico
-324120,Técnólogo em Radiologia,36,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Técnico,Técnico
-631415,Proeiro,35,Serviços de apoio e outros,Logística e transporte,Qualificado,Qualificado
-821320,Operador de Laminador de Metais Nao-Ferrosos,33,Operação de linha e processo,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
-820210,Supervisor de Fabricacao de Produtos de Vidro,33,Operação de linha e processo,"Madeira, móveis, cerâmica e vidro",Qualificado,Qualificado
-862110,Maquinista de Embarcacoes,33,Logística e transporte,Operação de linha e processo,Qualificado,Qualificado
-262330,Diretor de Arte,33,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
-262135,Tecnólogo em Produção Audiovisual,31,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
-717025,Vibradorista,31,Construção civil e extração,Construção civil e extração,Básico,Qualificado
-341225,Patrao de Pesca na Navegacao Interior,30,Serviços de apoio e outros,Logística e transporte,Técnico,Técnico
-261410,Interprete,29,Administrativo e comercial,Serviços de apoio e outros,Superior,Superior
-511220,"Bilheteiro (Estacoes de Metro, Ferroviarias e Assemelhadas)",28,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-741125,Relojoeiro (Reparacao),27,Manutenção e reparação,Operação de linha e processo,Qualificado,Qualificado
-271110,Tecnólogo em Gastronomia,27,Alimentos e bebidas,Serviços de apoio e outros,Superior,Superior
-516605,Operador de Forno (Servicos Funerarios),26,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-424110,Entrevistador de Pesquisa de Opiniao e Midia,23,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
-632420,Trabalhador da Exploracao de Pupunha,23,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-234815,Professor de Contabilidade,23,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
-783240,Amarrador e Desamarrado de Embarcacoes,22,Logística e transporte,Logística e transporte,Básico,Qualificado
-314610,Tecnico em Caldeiraria,21,Metalmecânica e eletroeletrônica,"Engenharia, técnicos industriais e TI",Técnico,Técnico
-777110,Carpinteiro Naval (Embarcacoes),19,"Madeira, móveis, cerâmica e vidro",Construção civil e extração,Qualificado,Qualificado
-203515,Pesquisador em Ciencias da Educacao,18,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
-782820,Condutor de Veiculos a Pedais,18,Logística e transporte,Logística e transporte,Qualificado,Básico
-311610,Tecnico Textil (Tratamentos Quimicos),17,"Têxtil, confecção, couro e calçados","Engenharia, técnicos industriais e TI",Técnico,Técnico
-415310,Analista De Informação Em Saúde,17,Administrativo e comercial,Serviços de apoio e outros,Qualificado,Qualificado
-141525,Gerente de Turismo,14,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
-622605,Trabalhador da Cultura de Cacau,14,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-374130,Tecnico em Mixagem de Audio,13,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Técnico,Técnico
-214280,Tecnólogo em Construção Civil,12,Construção civil e extração,"Engenharia, técnicos industriais e TI",Superior,Superior
-234105,Professor de Matematica Aplicada (No Ensino Superior),12,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
-142140,,11,Administrativo e comercial,Não classificado,Superior,Superior
-373230,Supervisor Tecnico (Midias Audiovisuais),11,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Técnico,Técnico
-761110,Lavador de La,11,"Têxtil, confecção, couro e calçados","Têxtil, confecção, couro e calçados",Qualificado,Básico
-822120,Forneiro de Reaquecimento e Tratamento Termico na Metalurgia,11,Metalmecânica e eletroeletrônica,Operação de linha e processo,Qualificado,Qualificado
-791130,Artesão Escultor,10,Serviços de apoio e outros,Não classificado,Qualificado,Qualificado
-820110,Mestre de Aciaria,10,Metalmecânica e eletroeletrônica,Operação de linha e processo,Qualificado,Qualificado
-142135,Oficial De Proteção De Dados Pessoais (Dpo),9,"Engenharia, técnicos industriais e TI",Administrativo e comercial,Superior,Superior
-823330,Trabalhador da Fabricacao de Pedras Artificiais,9,Operação de linha e processo,"Madeira, móveis, cerâmica e vidro",Qualificado,Qualificado
-516410,"Limpador de Roupas a Seco, À Mao",9,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-114205,Dirigentes de Entidades de Trabalhadores,9,Administrativo e comercial,Serviços de apoio e outros,Superior,Superior
-613415,Minhocultor,8,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-717005,Demolidor de Edificacoes,8,Construção civil e extração,Construção civil e extração,Qualificado,Básico
-524205,Feirante,8,Administrativo e comercial,Administrativo e comercial,Básico,Qualificado
-632610,Carbonizador,7,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-351610,Técnico em Higiene Ocupacional,7,"Engenharia, técnicos industriais e TI",Administrativo e comercial,Técnico,Técnico
-622730,Trabalhador na Cultura de Soja,7,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-821420,"Operador de Bobinadeira de Tiras a Quente, no Acabamento de Chapas e Metais",6,Metalmecânica e eletroeletrônica,Operação de linha e processo,Qualificado,Qualificado
-114405,Dirigente e Administrador de Organizacao da Sociedade Civil sem Fins Lucrativos,6,Administrativo e comercial,Serviços de apoio e outros,Superior,Superior
-513310,Camareira de Televisao,6,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-341325,Condutor de Maquinas (Mecânico),6,Manutenção e reparação,Logística e transporte,Técnico,Técnico
-325010,Aromista,5,Alimentos e bebidas,"Engenharia, técnicos industriais e TI",Técnico,Técnico
-242905,Oficial de Inteligencia,5,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
-141520,Gerente de Pensao,5,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
-321205,Tecnico em Madeira,5,"Madeira, móveis, cerâmica e vidro","Engenharia, técnicos industriais e TI",Técnico,Técnico
-623420,Trabalhador na Sericicultura,5,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-372210,Radiotelegrafista,5,Logística e transporte,"Engenharia, técnicos industriais e TI",Técnico,Técnico
-823235,Operador de Banho Metalico de Vidro por Flutuacao,5,Operação de linha e processo,"Madeira, móveis, cerâmica e vidro",Qualificado,Qualificado
-203520,Pesquisador em Historia,4,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Superior,Superior
-324130,Tecnico em Espirometria,4,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Técnico,Técnico
-262230,Diretor de Producao,4,Operação de linha e processo,Administrativo e comercial,Superior,Superior
-251105,Antropologo,4,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
-242405,Defensor Publico,4,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
-203525,Pesquisador em Psicologia,4,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
-223420,Farmaceutico de Alimentos,4,Alimentos e bebidas,Serviços de apoio e outros,Superior,Superior
-632515,Trabalhador da Exploracao de Madeiras Tanantes,4,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-241210,Procurador Autarquico,3,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
-822105,Forneiro de Cubilo,3,Metalmecânica e eletroeletrônica,Operação de linha e processo,Qualificado,Qualificado
-374310,Operador-Mantenedor de Projetor Cinematografico,3,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Técnico,Técnico
-324140,,3,"Engenharia, técnicos industriais e TI",Serviços de apoio e outros,Técnico,Técnico
-632415,Trabalhador da Exploracao de Pinhao,3,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-791120,Artesão Confeccionador de Biojóias e Ecojóias,2,Serviços de apoio e outros,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
-341315,Eletricista de Bordo,2,Manutenção e reparação,Logística e transporte,Técnico,Técnico
-517130,,2,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-516905,,2,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-622210,Trabalhador da Cultura de Sisal,2,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-352320,Agente Fiscal Textil,2,"Têxtil, confecção, couro e calçados",Administrativo e comercial,Técnico,Técnico
-222105,Engenheiro Agricola,2,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
-742115,Confeccionador de Instrumentos de Corda,2,"Madeira, móveis, cerâmica e vidro",Operação de linha e processo,Qualificado,Qualificado
-632505,"Trabalhador da Exploracao de Arvores e Arbustos Produtores de Substancias Aromat., Medic. e Toxicas",2,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
-214735,Engenheiro de Minas (Processo),2,Construção civil e extração,"Engenharia, técnicos industriais e TI",Superior,Superior
-225285,Médico Urologista,2,Não classificado,Serviços de apoio e outros,Superior,Superior
-111250,Prefeito,2,Não classificado,Administrativo e comercial,Superior,Superior
-768130,"Crocheteiro, a  Mao",2,"Têxtil, confecção, couro e calçados","Têxtil, confecção, couro e calçados",Qualificado,Básico
-261620,Editor de Revista,2,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
-751005,Engastador (Joias),2,Metalmecânica e eletroeletrônica,"Madeira, móveis, cerâmica e vidro",Qualificado,Qualificado
-122515,Diretor de  Producao e Operacoes de Turismo,2,Serviços de apoio e outros,Logística e transporte,Superior,Superior
-261105,Arquivista Pesquisador (Jornalismo),2,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
-203415,Pesquisador em Ciencias da Zootecnia,1,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
-203005,Pesquisador em Biologia Ambiental,1,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
-632205,Seringueiro,1,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-632410,Trabalhador da Exploracao de Castanha,1,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
-321310,Tecnico em Carcinicultura,1,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
-262225,Diretor de Programacao,1,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
-415120,Fitotecario,1,Administrativo e comercial,Serviços de apoio e outros,Qualificado,Qualificado
-782810,Tropeiro,1,Logística e transporte,Logística e transporte,Básico,Qualificado
-242210,Procurador de Justica,1,Administrativo e comercial,Serviços de apoio e outros,Superior,Superior
-623035,,1,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+521135,Frentista,30559,Administrativo e comercial,Administrativo e comercial,Básico,Qualificado
+622505,Trabalhador no Cultivo de Arvores Frutiferas,25858,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+354125,Assistente de Vendas,24874,Administrativo e comercial,Administrativo e comercial,Qualificado,Técnico
+621005,Trabalhador Agropecuario em Geral,14933,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+331110,Auxiliar de Desenvolvimento Infantil,13450,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+514325,Trabalhador da Manutenção de Edificações,10673,Manutenção e reparação,Serviços de apoio e outros,Qualificado,Qualificado
+517420,Vigia,10268,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+517410,Porteiro de Edificios,9747,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+622020,Trabalhador Volante da Agricultura,8227,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+724110,Encanador,6749,Construção civil e extração,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
+351605,Tecnico em Seguranca no Trabalho,5998,"Engenharia, técnicos industriais e TI",Administrativo e comercial,Técnico,Técnico
+354120,Agente de Vendas de Servicos,5888,Administrativo e comercial,Administrativo e comercial,Qualificado,Técnico
+623215,Trabalhador da Suinocultura,5415,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+514310,Auxiliar de Manutenção Predial,5244,Manutenção e reparação,Serviços de apoio e outros,Qualificado,Qualificado
+519110,Motociclista no Transporte de Documentos e Pequenos Volumes,4371,Logística e transporte,Logística e transporte,Qualificado,Básico
+632125,"Trabalhador de Extracao Florestal, em Geral",4222,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+623310,Trabalhador da Avicultura de Postura,4102,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+354145,Vendedor Pracista,4089,Administrativo e comercial,Administrativo e comercial,Qualificado,Técnico
+322415,Auxiliar em Saude Bucal,3559,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+841484,Trabalhador de Preparacao de Pescados (Limpeza),3305,Alimentos e bebidas,Alimentos e bebidas,Básico,Qualificado
+342125,Tecnólogo em Logistica de Transporte,3242,Logística e transporte,Logística e transporte,Superior,Técnico
+371410,Recreador,3222,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+354130,Promotor de Vendas Especializado,2869,Administrativo e comercial,Administrativo e comercial,Qualificado,Técnico
+992225,Auxiliar Geral de Conservacao de Vias Permanentes (Exceto Trilhos),2695,Construção civil e extração,Manutenção e reparação,Básico,Básico
+513610,Pizzaiolo,2674,Serviços de apoio e outros,Alimentos e bebidas,Qualificado,Qualificado
+766305,Acabador de Embalagens (Flexiveis e Cartotecnicas),2583,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+262410,Desenhista Industrial Grafico (Designer Grafico),2519,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
+141510,Gerente de Restaurante,2438,Serviços de apoio e outros,Alimentos e bebidas,Superior,Superior
+514110,Garagista,2422,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+334105,Inspetor de Alunos de Escola Privada,2417,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+351405,Escrevente,2317,Administrativo e comercial,Administrativo e comercial,Qualificado,Técnico
+513615,Sushiman,2088,Serviços de apoio e outros,Alimentos e bebidas,Qualificado,Qualificado
+623305,Trabalhador da Avicultura de Corte,1894,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+317205,Operador de Computador (Inclusive Microcomputador),1859,"Engenharia, técnicos industriais e TI","Engenharia, técnicos industriais e TI",Qualificado,Técnico
+842120,Auxiliar de Processamento de Fumo,1836,Alimentos e bebidas,Alimentos e bebidas,Básico,Qualificado
+766315,Operador de Acabamento (Industria Grafica),1817,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+271105,Chefe de Cozinha (Desativado em 2010),1786,Serviços de apoio e outros,Alimentos e bebidas,Qualificado,Superior
+377110,Atleta Profissional de Futebol,1746,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+513415,Cumim,1711,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+391115,Controlador de Entrada e Saida,1625,Logística e transporte,"Engenharia, técnicos industriais e TI",Qualificado,Técnico
+233210,Instrutor de Aprendizagem e Treinamento Industrial,1621,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
+351430,Auxiliar de Servicos Juridicos,1548,Administrativo e comercial,Administrativo e comercial,Qualificado,Técnico
+641010,Operador de Maquinas de Beneficiamento de Produtos Agricolas,1488,Serviços de apoio e outros,Operação de linha e processo,Qualificado,Qualificado
+623110,Trabalhador da Pecuaria (Bovinos Corte),1296,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+632120,Operador de Motosserra,1260,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+334115,Monitor de Transporte Escolar,1228,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+519940,Leiturista,1224,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+622315,"Trabalhador na Olericultura (Raizes, Bulbos e Tuberculos)",1216,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+314410,Tecnico em Manutencao de Maquinas,1200,"Engenharia, técnicos industriais e TI",Manutenção e reparação,Técnico,Técnico
+951315,Monitor de Sistemas Eletronicos de Seguranca Interno,1189,Serviços de apoio e outros,Manutenção e reparação,Qualificado,Qualificado
+623115,Trabalhador da Pecuaria (Bovinos Leite),1060,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+763115,Enfestador de Roupas,1036,"Têxtil, confecção, couro e calçados","Têxtil, confecção, couro e calçados",Qualificado,Básico
+342315,Supervisor de Carga e Descarga,928,Logística e transporte,Logística e transporte,Qualificado,Técnico
+951320,Monitor de Sistemas Eletronicos de Seguranca Externo,919,Serviços de apoio e outros,Manutenção e reparação,Qualificado,Qualificado
+515225,Auxiliar de Producao Farmaceutica,901,Operação de linha e processo,Serviços de apoio e outros,Qualificado,Qualificado
+623020,Tratador de Animais,901,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+821445,Preparador de Sucata e Aparas,875,Operação de linha e processo,Operação de linha e processo,Básico,Qualificado
+765235,Estofador de Moveis,870,"Madeira, móveis, cerâmica e vidro","Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+334110,Inspetor de Alunos de Escola Publica,854,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+421205,Recebedor de Apostas (Loteria),834,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
+766205,Impressor (Serigrafia),797,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+354820,Organizador de Evento,766,Serviços de apoio e outros,Administrativo e comercial,Técnico,Técnico
+142360,,727,Administrativo e comercial,Não classificado,Superior,Superior
+823210,Extrusor de Fios ou Fibras de Vidro,695,"Madeira, móveis, cerâmica e vidro",Operação de linha e processo,Qualificado,Qualificado
+374405,Editor de Tv  e Video,695,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+318810,Modelista de Roupas,671,"Têxtil, confecção, couro e calçados","Engenharia, técnicos industriais e TI",Técnico,Técnico
+262425,Desenhista Industrial de Produto de Moda (Designer de Moda),652,"Têxtil, confecção, couro e calçados","Engenharia, técnicos industriais e TI",Superior,Superior
+322230,Auxiliar de Enfermagem,641,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+354815,Agente de Viagem,640,Administrativo e comercial,Administrativo e comercial,Qualificado,Técnico
+332105,Professor Leigo no Ensino Fundamental,614,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+823125,Preparador de Esmaltes (Ceramica),603,"Madeira, móveis, cerâmica e vidro",Operação de linha e processo,Qualificado,Qualificado
+783220,Estivador,601,Logística e transporte,Logística e transporte,Básico,Qualificado
+766310,Impressor de Corte e Vinco,587,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+423115,,577,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
+421115,Bilheteiro no Servico de Diversoes,575,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
+141515,Gerente de Bar,571,Serviços de apoio e outros,Alimentos e bebidas,Superior,Superior
+523110,Instalador de Som e Acessorios de Veiculos,564,Manutenção e reparação,Administrativo e comercial,Qualificado,Qualificado
+341220,Patrao de Pesca de Alto-Mar,539,Serviços de apoio e outros,Logística e transporte,Técnico,Técnico
+414205,Apontador de Mao-De-Obra,523,Administrativo e comercial,Logística e transporte,Qualificado,Qualificado
+325205,Tecnico de Alimentos,503,"Engenharia, técnicos industriais e TI",Alimentos e bebidas,Técnico,Técnico
+823115,Preparador de Massa de Argila,470,"Madeira, móveis, cerâmica e vidro",Operação de linha e processo,Qualificado,Qualificado
+766235,Impressor Flexografico,468,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+523105,"Instalador de Cortinas e Persianas, Portas Sanfonadas e Boxe",467,Construção civil e extração,Administrativo e comercial,Qualificado,Qualificado
+322420,Auxiliar de Protese Dentaria,420,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+252725,Analista de Gestao de Estoque,412,Logística e transporte,Administrativo e comercial,Superior,Superior
+261715,Locutor de Radio e Televisao,390,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Superior
+511215,Cobrador de Transportes Coletivos (Exceto Trem),374,Logística e transporte,Logística e transporte,Qualificado,Básico
+766225,Impressor de Rotogravura,359,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+828105,Oleiro (Fabricacao de Telhas),359,"Madeira, móveis, cerâmica e vidro",Operação de linha e processo,Qualificado,Qualificado
+514315,Limpador de Fachadas,346,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+766215,Impressor de Ofsete (Plano e Rotativo),339,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+766120,Editor de Texto e Imagem,336,Operação de linha e processo,Serviços de apoio e outros,Qualificado,Qualificado
+622615,Trabalhador da Cultura de Erva-Mate,329,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+374110,Tecnico em Instalacao de Equipamentos de Audio,299,Serviços de apoio e outros,Metalmecânica e eletroeletrônica,Técnico,Técnico
+622015,Trabalhador na Producao de Mudas e Sementes,299,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+766230,Impressor Digital,296,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+251530,Psicologo Social,294,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
+354810,Operador de Turismo,258,Serviços de apoio e outros,Administrativo e comercial,Qualificado,Técnico
+622425,Trabalhador no Cultivo de Plantas Ornamentais,245,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+511210,Despachante de Transportes Coletivos (Exceto Trem),242,Logística e transporte,Serviços de apoio e outros,Qualificado,Qualificado
+992210,Encarregado de Equipe de Conservacao de Vias Permanentes (Exceto Trilhos),235,Construção civil e extração,Manutenção e reparação,Qualificado,Qualificado
+741105,Ajustador de Instrumentos de Precisao,228,Operação de linha e processo,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
+421120,Emissor de Passagens,220,Administrativo e comercial,Logística e transporte,Qualificado,Qualificado
+371105,Auxiliar de Biblioteca,218,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+321210,Tecnico Florestal,215,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+375120,Decorador de Eventos,211,Serviços de apoio e outros,"Madeira, móveis, cerâmica e vidro",Técnico,Técnico
+234810,Professor de Administracao,201,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
+375115,Visual Merchandiser,186,Administrativo e comercial,Serviços de apoio e outros,Técnico,Técnico
+351415,Escrivao Extra - Judicial,179,Administrativo e comercial,Administrativo e comercial,Qualificado,Técnico
+516340,Atendente de Lavanderia,179,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+519215,Operador de Prensa de Material Reciclável,178,Serviços de apoio e outros,Operação de linha e processo,Qualificado,Básico
+517405,Porteiro (Hotel),174,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+514230,Coletor de Resíduos Sólidos de Serviços de Saúde,172,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+622420,Trabalhador no Cultivo de Mudas,170,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+992205,Encarregado Geral de Operacoes de Conservacao de Vias Permanentes (Exceto Trilhos),161,Construção civil e extração,Manutenção e reparação,Qualificado,Qualificado
+354705,Representante Comercial Autonomo,161,Administrativo e comercial,Administrativo e comercial,Qualificado,Técnico
+374125,Tecnico em Sonorizacao,161,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+716315,Vidraceiro (Vitrais),159,"Madeira, móveis, cerâmica e vidro",Construção civil e extração,Qualificado,Qualificado
+523125,Estampador De Placa De Identificação Veicular (Epiv),157,Operação de linha e processo,Administrativo e comercial,Qualificado,Qualificado
+375105,Designer de Interiores,154,Serviços de apoio e outros,"Madeira, móveis, cerâmica e vidro",Técnico,Técnico
+261215,Analista de Informacoes (Pesquisador de Informacoes de Rede),153,Administrativo e comercial,"Engenharia, técnicos industriais e TI",Superior,Superior
+215305,Piloto de Aeronaves,153,Logística e transporte,"Engenharia, técnicos industriais e TI",Superior,Superior
+261210,Documentalista,147,Administrativo e comercial,Serviços de apoio e outros,Superior,Superior
+261805,Fotografo,146,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Superior
+717010,Operador de Martelete,146,Construção civil e extração,Construção civil e extração,Qualificado,Básico
+766320,Operador de Guilhotina (Corte de Papel),144,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+999999,Não Identificado,144,Não classificado,Não classificado,Qualificado,Básico
+915305,Tecnico em Manutencao de Equipamentos e Instrumentos Medico-Hospitalares,140,Manutenção e reparação,Manutenção e reparação,Qualificado,Técnico
+766145,Operador de Sistemas de Prova (Analogico e Digital),138,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+823305,Classificador e Empilhador de Tijolos Refratarios,134,"Madeira, móveis, cerâmica e vidro",Operação de linha e processo,Básico,Qualificado
+992215,Operador de Ceifadeira na Conservacao de Vias Permanentes,132,Construção civil e extração,Manutenção e reparação,Qualificado,Qualificado
+261615,Editor de Midia Eletronica,131,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
+374415,Finalizador de Video,129,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+766250,Impressor Tipografico,127,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+252710,Analista de Planejamento de Materiais,121,Logística e transporte,Administrativo e comercial,Superior,Superior
+622515,Trabalhador no Cultivo de Trepadeiras Frutiferas,117,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+766125,Montador de Fotolito (Analogico e Digital),116,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+391225,Escolhedor de Papel,115,Operação de linha e processo,"Engenharia, técnicos industriais e TI",Qualificado,Técnico
+768705,"Gravador, À Mao (Encadernacao)",112,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+623325,Sexador,110,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+766220,Impressor de Rotativa,107,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+623125,Trabalhador da Pecuaria (Equinos),103,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+622320,"Trabalhador na Olericultura (Talos, Folhas e Flores)",101,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+622410,Trabalhador no Cultivo de Flores em Vaso,99,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+415205,Carteiro,97,Logística e transporte,Administrativo e comercial,Qualificado,Qualificado
+519105,Ciclista Mensageiro,96,Logística e transporte,Serviços de apoio e outros,Qualificado,Qualificado
+760605,Supervisor das Artes Graficas  (Industria Editorial e Grafica),95,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+373145,Assistente de Operacoes Audiovisuais,94,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Qualificado,Técnico
+766115,Gravador de Matriz para Flexografia (Clicherista),91,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+622310,Trabalhador na Olericultura (Legumes),89,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+262505,Ator,88,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Superior
+325210,Técnico em Nutrição e Dietética,87,Serviços de apoio e outros,Alimentos e bebidas,Técnico,Técnico
+516205,Baba,86,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+519325,,85,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+724105,Assentador de Canalizacao (Edificacoes),85,Construção civil e extração,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
+915105,Tecnico em Manutencao de Instrumentos de Medicao e Precisao,76,Manutenção e reparação,Manutenção e reparação,Qualificado,Técnico
+781110,Condutor de Processos Robotizados de Soldagem,73,Operação de linha e processo,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
+766325,Preparador de Matrizes de Corte e Vinco,70,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+622620,Trabalhador da Cultura de Fumo,65,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+261815,Fotografo Retratista,63,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Superior
+318815,Modelista de Calcados,62,"Têxtil, confecção, couro e calçados","Engenharia, técnicos industriais e TI",Técnico,Técnico
+768625,Pintor de Letreiros,61,Serviços de apoio e outros,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+781310,Operador De Aeronaves Não Tripuladas,61,Serviços de apoio e outros,Operação de linha e processo,Qualificado,Qualificado
+766245,Impressor Tampografico,59,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+725030,Operador De Manutenção E Recarga De Extintor De Incêndio,56,Manutenção e reparação,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
+622405,Trabalhador no Cultivo de Flores e Folhagens de Corte,56,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+215105,Agente de Manobra e Docagem,55,Logística e transporte,"Engenharia, técnicos industriais e TI",Superior,Superior
+622305,Trabalhador na Olericultura (Frutos e Sementes),53,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+823245,Operador de Maquina Extrusora de Varetas e Tubos de Vidro,53,"Madeira, móveis, cerâmica e vidro",Operação de linha e processo,Qualificado,Qualificado
+766150,Operador de Processo de Tratamento de Imagem,52,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+766155,Programador Visual Grafico,52,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+783235,Trabalhador Portuario de Capatazia,52,Logística e transporte,Logística e transporte,Básico,Qualificado
+215315,Instrutor de Voo,50,Logística e transporte,"Engenharia, técnicos industriais e TI",Superior,Superior
+415215,Entregador de Publicacoes,50,Logística e transporte,Administrativo e comercial,Qualificado,Básico
+622810,Trabalhador da Cultura de Plantas Aromaticas e Medicinais,50,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+862160,Operador de Abastecimento de Combustivel de Aeronave,49,Logística e transporte,Operação de linha e processo,Qualificado,Qualificado
+373220,Supervisor Tecnico Operacional de Sistemas de Televisao e Produtoras de Video,49,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+215140,Oficial de Quarto de Navegacao da Marinha Mercante,48,Logística e transporte,"Engenharia, técnicos industriais e TI",Superior,Superior
+342205,Ajudante de Despachante Aduaneiro,46,Logística e transporte,Logística e transporte,Qualificado,Técnico
+766420,Auxiliar de Radiologia (Revelacao Fotografica),45,Serviços de apoio e outros,"Têxtil, confecção, couro e calçados",Qualificado,Básico
+511110,Comissario de Trem,45,Logística e transporte,Serviços de apoio e outros,Qualificado,Qualificado
+122205,"Diretor de Producao e Operacoes da Industria de Transformacao, Extracao Mineral e Utilidades",43,Operação de linha e processo,Manutenção e reparação,Superior,Superior
+514115,Sacristao,43,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+373135,Operador de Controle Mestre,42,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+262710,Musico Interprete Instrumentista,41,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Superior
+519115,Mototaxista,40,Logística e transporte,Serviços de apoio e outros,Qualificado,Qualificado
+781705,Mergulhador Profissional (Raso e Profundo),39,Serviços de apoio e outros,Operação de linha e processo,Qualificado,Qualificado
+514335,,39,Manutenção e reparação,Serviços de apoio e outros,Qualificado,Básico
+766105,Copiador de Chapa,39,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+623105,Trabalhador da Pecuaria (Asininos e Muares),38,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+322430,Auxiliar em Saúde Bucal da Estratégia de Saúde da Família,37,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+823220,Forneiro no Recozimento de Vidro,36,"Madeira, móveis, cerâmica e vidro",Operação de linha e processo,Qualificado,Qualificado
+622510,Trabalhador no Cultivo de Especies Frutiferas Rasteiras,36,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+324120,Técnólogo em Radiologia,36,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Técnico
+261130,Produtor de Texto,35,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
+623210,Trabalhador da Ovinocultura,35,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+823215,Forneiro na Fundicao de Vidro,34,"Madeira, móveis, cerâmica e vidro",Operação de linha e processo,Qualificado,Qualificado
+371310,Tecnico Grafico,34,Operação de linha e processo,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+820210,Supervisor de Fabricacao de Produtos de Vidro,33,"Madeira, móveis, cerâmica e vidro",Operação de linha e processo,Qualificado,Qualificado
+262810,Bailarino (Exceto Dancas Populares),32,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Superior
+717025,Vibradorista,31,Construção civil e extração,Construção civil e extração,Qualificado,Básico
+783230,Bloqueiro (Trabalhador Portuario),29,Logística e transporte,Logística e transporte,Básico,Qualificado
+373140,Coordenador de Programacao,29,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+261410,Interprete,29,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
+511220,"Bilheteiro (Estacoes de Metro, Ferroviarias e Assemelhadas)",28,Administrativo e comercial,Serviços de apoio e outros,Qualificado,Básico
+623120,Trabalhador da Pecuaria (Bubalinos),28,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+513305,Camareira de Teatro,28,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+271110,Tecnólogo em Gastronomia,27,Serviços de apoio e outros,Alimentos e bebidas,Superior,Superior
+322235,Auxiliar de Enfermagem do Trabalho,27,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+622110,Trabalhador da Cultura de Cana-De-Acucar,27,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+766405,Laboratorista Fotografico,26,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+711115,Destrocador de Pedra,26,Construção civil e extração,Construção civil e extração,Básico,Qualificado
+766130,Gravador de Matriz para Rotogravura (Eletromecanico e Quimico),26,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+374105,Tecnico em Gravacao de Audio,25,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+203305,Pesquisador de Clinica Medica,24,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
+820105,Mestre de Siderurgia,23,Operação de linha e processo,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
+632420,Trabalhador da Exploracao de Pupunha,23,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+412105,Datilografo,22,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
+314610,Tecnico em Caldeiraria,21,"Engenharia, técnicos industriais e TI",Metalmecânica e eletroeletrônica,Técnico,Técnico
+376110,Dancarino Popular,21,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+766140,Gravador de Matriz Serigrafica,21,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+314310,Tecnico Mecanico (Aeronaves),18,"Engenharia, técnicos industriais e TI",Manutenção e reparação,Técnico,Técnico
+311610,Tecnico Textil (Tratamentos Quimicos),17,"Engenharia, técnicos industriais e TI","Têxtil, confecção, couro e calçados",Técnico,Técnico
+371305,Tecnico em Programacao Visual,16,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+376205,Acrobata,16,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+622105,Trabalhador da Cultura de Arroz,15,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+513320,Camareiro de Embarcacoes,15,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+261115,Diretor de Redacao,14,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
+622605,Trabalhador da Cultura de Cacau,14,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+354805,Tecnico em Turismo,14,Serviços de apoio e outros,Administrativo e comercial,Técnico,Técnico
+524210,Jornaleiro (Em Banca de Jornal),14,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
+376305,Apresentador de Eventos,14,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+374130,Tecnico em Mixagem de Audio,13,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+262805,Assistente de Coreografia,12,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Superior
+375130,Profissional De Organização (Personal Organizer),12,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+214280,Tecnólogo em Construção Civil,12,"Engenharia, técnicos industriais e TI",Construção civil e extração,Superior,Superior
+261610,Editor de Livro,12,Serviços de apoio e outros,Administrativo e comercial,Superior,Superior
+211105,Atuario,12,Administrativo e comercial,"Engenharia, técnicos industriais e TI",Superior,Superior
+823250,Operador de Prensa de Moldar Vidro,12,"Madeira, móveis, cerâmica e vidro",Operação de linha e processo,Qualificado,Qualificado
+262705,Musico Interprete Cantor,12,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Superior
+376315,Apresentador de Programas de Radio,11,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+822120,Forneiro de Reaquecimento e Tratamento Termico na Metalurgia,11,Operação de linha e processo,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
+373230,Supervisor Tecnico (Midias Audiovisuais),11,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+377220,Arbitro de Futebol,10,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+377120,Atleta Profissional de Luta,10,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+820110,Mestre de Aciaria,10,Operação de linha e processo,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
+311625,Tecnico Textil de Tecelagem,9,"Engenharia, técnicos industriais e TI","Têxtil, confecção, couro e calçados",Técnico,Técnico
+142135,Oficial De Proteção De Dados Pessoais (Dpo),9,Administrativo e comercial,"Engenharia, técnicos industriais e TI",Superior,Superior
+516410,"Limpador de Roupas a Seco, À Mao",9,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+376105,Dancarino Tradicional,9,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+782815,Boiadeiro,8,Serviços de apoio e outros,Logística e transporte,Básico,Qualificado
+622215,Trabalhador da Cultura do Rami,8,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+524205,Feirante,8,Administrativo e comercial,Administrativo e comercial,Qualificado,Básico
+371405,Recreador de Acantonamento,8,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+374305,Operador de Projetor Cinematografico,8,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+354825,Cerimonialista,8,Serviços de apoio e outros,Administrativo e comercial,Técnico,Técnico
+622730,Trabalhador na Cultura de Soja,7,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+141120,Gerente de Producao e Operacoes Pesqueiras,7,Serviços de apoio e outros,Alimentos e bebidas,Superior,Superior
+517320,Vigia Florestal,7,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+632610,Carbonizador,7,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+519330,,7,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+377105,Atleta Profissional (Outras Modalidades),7,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+374120,Projetista de Som,7,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+374115,Tecnico em Masterizacao de Audio,7,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+517325,Vigia Portuario,6,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+341250,Auxiliar Tecnico de Sinalizacao Nautica,6,Logística e transporte,Logística e transporte,Qualificado,Técnico
+791145,Artesão Trançador,6,"Madeira, móveis, cerâmica e vidro",Serviços de apoio e outros,Qualificado,Qualificado
+203020,Pesquisador em Biologia Humana,6,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
+513310,Camareira de Televisao,6,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+377135,Piloto de Competicao Automobilistica,6,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+632605,Carvoeiro,6,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+821420,"Operador de Bobinadeira de Tiras a Quente, no Acabamento de Chapas e Metais",6,Operação de linha e processo,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
+341325,Condutor de Maquinas (Mecânico),6,Logística e transporte,Manutenção e reparação,Técnico,Técnico
+263110,Missionario,6,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Superior
+261810,Fotografo Publicitario,6,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Superior
+768605,Tipografo,6,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+823235,Operador de Banho Metalico de Vidro por Flutuacao,5,"Madeira, móveis, cerâmica e vidro",Operação de linha e processo,Qualificado,Qualificado
+325010,Aromista,5,"Engenharia, técnicos industriais e TI",Alimentos e bebidas,Técnico,Técnico
+242905,Oficial de Inteligencia,5,Administrativo e comercial,Serviços de apoio e outros,Superior,Superior
+740105,Supervisor da Mecanica de Precisao,5,Operação de linha e processo,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
+321205,Tecnico em Madeira,5,"Engenharia, técnicos industriais e TI","Madeira, móveis, cerâmica e vidro",Técnico,Técnico
+372210,Radiotelegrafista,5,"Engenharia, técnicos industriais e TI",Logística e transporte,Técnico,Técnico
+122505,Diretor de  Producao e Operacoes de Alimentacao,5,Serviços de apoio e outros,Alimentos e bebidas,Superior,Superior
+111120,Vereador,5,Administrativo e comercial,Serviços de apoio e outros,Superior,Superior
+324130,Tecnico em Espirometria,4,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+242910,Oficial Tecnico de Inteligencia,4,Administrativo e comercial,Serviços de apoio e outros,Superior,Superior
+242405,Defensor Publico,4,Administrativo e comercial,Serviços de apoio e outros,Superior,Superior
+766210,Impressor Calcografico,4,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+203520,Pesquisador em Historia,4,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
+203015,Pesquisador em Biologia de Microorganismos e Parasitas,4,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
+262825,Ensaiador de Danca,4,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Superior
+223420,Farmaceutico de Alimentos,4,"Engenharia, técnicos industriais e TI",Alimentos e bebidas,Superior,Superior
+374135,Projetista de Sistemas de Audio,4,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+262230,Diretor de Producao,4,Serviços de apoio e outros,Operação de linha e processo,Superior,Superior
+376320,Apresentador de Programas de Televisao,4,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+822105,Forneiro de Cubilo,3,Operação de linha e processo,Metalmecânica e eletroeletrônica,Qualificado,Qualificado
+322250,Auxiliar de Enfermagem da Estratégia de Saúde da Família,3,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+781305,Operador de Veiculos Subaquaticos Controlados Remotamente,3,Serviços de apoio e outros,Operação de linha e processo,Qualificado,Qualificado
+374145,Dj (Disc Jockey),3,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+203025,Pesquisador em Biologia Vegetal,3,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
+622115,Trabalhador da Cultura de Milho e Sorgo,3,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+241210,Procurador Autarquico,3,Administrativo e comercial,Serviços de apoio e outros,Superior,Superior
+632415,Trabalhador da Exploracao de Pinhao,3,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+311725,Tingidor de Couros e Peles,3,"Engenharia, técnicos industriais e TI","Têxtil, confecção, couro e calçados",Técnico,Técnico
+374310,Operador-Mantenedor de Projetor Cinematografico,3,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Qualificado,Técnico
+324140,,3,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Técnico,Técnico
+222215,Tecnólogo em Alimentos,3,"Engenharia, técnicos industriais e TI",Alimentos e bebidas,Superior,Superior
+377140,Profissional de Atletismo,3,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+376410,Modelo de Modas,2,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+622415,Trabalhador no Cultivo de Forracoes,2,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+352320,Agente Fiscal Textil,2,Administrativo e comercial,"Têxtil, confecção, couro e calçados",Técnico,Técnico
+376310,Apresentador de Festas Populares,2,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+113010,Lider de Comunidade Caicara,2,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Superior
+225285,Médico Urologista,2,Serviços de apoio e outros,Não classificado,Superior,Superior
+623410,Trabalhador na Apicultura,2,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+751005,Engastador (Joias),2,"Madeira, móveis, cerâmica e vidro",Metalmecânica e eletroeletrônica,Qualificado,Qualificado
+377115,Atleta Profissional de Golfe,2,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+742115,Confeccionador de Instrumentos de Corda,2,Operação de linha e processo,"Madeira, móveis, cerâmica e vidro",Qualificado,Qualificado
+622210,Trabalhador da Cultura de Sisal,2,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+214735,Engenheiro de Minas (Processo),2,"Engenharia, técnicos industriais e TI",Construção civil e extração,Superior,Superior
+111250,Prefeito,2,Administrativo e comercial,Não classificado,Superior,Superior
+516915,,2,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+376215,Artista de Circo (Outros),2,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+791120,Artesão Confeccionador de Biojóias e Ecojóias,2,"Madeira, móveis, cerâmica e vidro",Serviços de apoio e outros,Qualificado,Qualificado
+10315,Praca da Marinha,2,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+376235,Magico,2,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+632505,"Trabalhador da Exploracao de Arvores e Arbustos Produtores de Substancias Aromat., Medic. e Toxicas",2,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+201115,Geneticista,2,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
+622805,Trabalhador da Cultura de Especiarias,2,Serviços de apoio e outros,Serviços de apoio e outros,Básico,Qualificado
+203510,Pesquisador em Economia,2,Administrativo e comercial,"Engenharia, técnicos industriais e TI",Superior,Superior
+203505,Pesquisador em Ciencias Sociais e Humanas,2,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
+782805,Condutor de Veiculos de Tracao Animal (Ruas e Estradas),1,Logística e transporte,Logística e transporte,Qualificado,Básico
+203320,Pesquisador em Saude Coletiva,1,Serviços de apoio e outros,"Engenharia, técnicos industriais e TI",Superior,Superior
+768610,Linotipista,1,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+511515,,1,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+766410,"Revelador de Filmes Fotograficos, em Preto e Branco",1,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+376225,Domador de Animais (Circense),1,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+915110,Tecnico em Manutencao de Hidrometros,1,Manutenção e reparação,Manutenção e reparação,Qualificado,Técnico
+766415,"Revelador de Filmes Fotograficos, em Cores",1,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+376330,Mestre de Cerimonias,1,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+766240,Impressor Letterset,1,Operação de linha e processo,"Têxtil, confecção, couro e calçados",Qualificado,Qualificado
+322240,Auxiliar de Saude (Navegacao Maritima),1,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico
+516150,,1,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+782810,Tropeiro,1,Serviços de apoio e outros,Logística e transporte,Básico,Básico
+513325,Guarda-Roupeira de Cinema,1,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+516155,,1,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Básico
+215130,Inspetor de Terminal,1,Logística e transporte,"Engenharia, técnicos industriais e TI",Superior,Superior
+377215,Arbitro de Basquete,1,Serviços de apoio e outros,Serviços de apoio e outros,Qualificado,Técnico

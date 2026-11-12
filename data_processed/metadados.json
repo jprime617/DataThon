@@ -1,28 +1,30 @@
 {
-  "gerado_em": "2026-11-12T18:25:24-03:00",
+  "gerado_em": "2026-11-12T19:26:28-03:00",
   "periodo": {
     "inicio": "202509",
     "fim": "202608",
     "meses": 12
   },
-  "commit": "d801cc9",
+  "commit": "76b70fa",
   "linhas": {
     "brutas": 3397416,
     "excluidas_competencia": 6128,
     "apos_limpeza": 3391288,
     "movimentacoes_agregadas": 3391288,
     "movimentacoes_industria": 1139633,
-    "agregado": 262127,
-    "perfil": 17406
+    "agregado": 254719,
+    "perfil": 16650
   },
   "ia": {
-    "provedor": "ClienteGemini",
-    "modelo": "gemini-3.1-flash-lite",
-    "gerado_em": "2026-11-11T19:03:50-03:00",
-    "concordancia_familia": 0.9415231187669991,
-    "concordancia_nivel": 0.958295557570263,
-    "nota": "Reconstituído do log da execução de 11/11/2026 (LLM_PROVIDER=gemini, modelo padrão).",
-    "nao_classificado_ponderado": 0.00025801406427292524
+    "provedor": "ClienteArquivo",
+    "modelo": "claude-opus-5-5",
+    "gerado_em": "2026-11-12T19:26:04",
+    "concordancia_familia": 0.9138712601994561,
+    "concordancia_nivel": 0.9220308250226654,
+    "comparacao": "IA paga (chat) × classificação anterior (cbo_macrofamilias_gemini.csv)",
+    "cbos_comparados": 2206,
+    "nota": "classificação via chat; prompts e respostas em `ia_cbo/`",
+    "nao_classificado_ponderado": 4.2461743148915695e-05
   },
   "salario_valido": {
     "regra": "> 0 e ≤ 20 × mediana estadual dos salários positivos",

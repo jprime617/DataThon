@@ -9,15 +9,33 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 
 | Marco | Situação | Onde está | Último ciclo feito |
 |---|---|---|---|
-| M0 | C1 e C2 feitos; falta o C0 (organizadores) | `dashboard-v2` | M0.C2 |
+| M0 | **concluído** (C0 liberado pela equipe em 12/11) | `dashboard-v2` | M0.C0 |
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
-| M2 | C1–C2 feitos e **mergeados** (PR #1); C3 preparado; **H1 (respostas da IA paga) pendente** | `dashboard-v2` | M2.C2 (+ C3 preparado) |
+| M2 | C1–C3 e H1 em `dashboard-v2`; concordância com o Gemini 91,4% (família) e 92,2% (nível); C4 feito (20 divergências aceitas); M2 **concluído** (C5 só se M4/M5 trouxerem CBOs novos) | `dashboard-v2` | M2.C4 |
 | M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
-| M4 | C1–C4 feitos (dados prontos: `rais_estoque.parquet` e `desligamentos_descontados`); próximo: C5–C6 **[painel]**; **uso no pitch ainda depende do M0.C0** | `m4-rais` | M4.C3 |
-| M5 · M6 | bloqueados pelo M0.C0 | — | — |
+| M4 | C1–C4 feitos (`rais_estoque.parquet` e `desligamentos_descontados`); próximo: C5–C6 **[painel]** | `m4-rais` | M4.C3 |
+| M5 | C1–C4 feitos na branch (portão passou com MOV + FOR − EXC); próximo: C5 depois do merge do M4 | `m5-caged24` | M5.C4 |
+| M6 | falta o H2 (xlsx do PDET) | — | — |
 | M7 | não iniciado | — | — |
 
 Commits locais só sobem com autorização do João: confira `git log origin/dashboard-v2..` antes de supor que algo foi publicado.
+
+### Fila sem dependência humana (12/11, ~14h20)
+
+Tudo isto pode ser feito por quem estiver livre, ou pela IA, sem esperar ninguém. Faça nas branches dos marcos e **não mergeie** M4, M5 ou M6 antes do M0.C0.
+
+1. **M5.C1:** iniciar o download do CAGED de 24 meses em segundo plano (cerca de 1,3 GB) antes de qualquer outra coisa.
+2. **M4.C3** (branch `m4-rais`): gerar o estoque por recorte a partir de `data/interim/rais_sc_2025.parquet`. Quem não tem o parquet roda `python scripts/baixar_rais.py && python -m src.rais` (cerca de 15 min). Os cuidados estão no Estado do M4 *na branch `m4-rais`*: seção derivada da subclasse e transferências (30–34) fora dos desligados.
+3. **M4.C4:** coluna `desligamentos_descontados` no agregador, com código e testes. A reagregação precisa do `Dados/Novo_Caged_MOV_Limpo.csv` e fica para o M7.C1.
+4. **M5.C2:** INPC (SIDRA → `data_processed/inpc.csv`, deflator e teste).
+5. **M5.C3 e M6 (H2 + C1):** leitura do CAGED de 24 meses; baixar o xlsx do PDET e escrever `src/validacao.py`.
+
+**Depende de alguém:**
+- **M0.C0 (organizadores):** decide se M4, M5 e M6 entram no painel e no pitch.
+- **Dono do painel:** os ciclos [painel] (M4.C5–C6, M5.C6, M6.C2).
+- **M2.H1:** alguém roda os 23 prompts, ou a equipe decide que a IA da sessão (Claude) pode classificar a partir dos mesmos prompts. Se for a IA, registre isso na Metodologia.
+- **João:** liberar o M3.C5 (mapa), os merges e o deploy (M7).
+- **Arquivo `Dados/Novo_Caged_MOV_Limpo.csv`:** precisa estar na máquina que rodar o M5.C4 e o M7.C1.
 
 ---
 
@@ -81,7 +99,9 @@ Leia PLANO_RETA_FINAL.md, seção "Como trabalhar". Continue o marco <Mx> a part
 
 **Estado:** C1 feito (plano e `ia_cbo/` no Git, `/data/` ignorado). C2 feito (EXC com peso −1 no PLANEJAMENTO §5.1). Falta só o C0 (resposta dos organizadores) · Responsável: João
 
-- [ ] **M0.C0 (humano), bloqueia M4, M5 e M6.** Confirmar com os organizadores se dados públicos externos (FTP do MTE, RAIS, IBGE) são permitidos (PLANEJAMENTO §16). Registre a resposta aqui. Se for não, M4, M5 e M6 saem do plano.
+- [x] **M0.C0 (humano), bloqueia M4, M5 e M6.** Confirmar com os organizadores se dados públicos externos (FTP do MTE, RAIS, IBGE) são permitidos (PLANEJAMENTO §16). Registre a resposta aqui. Se for não, M4, M5 e M6 saem do plano.
+  - **Resposta (12/11, João):** liberado pela equipe. O Guia do Participante (`Instrucoes/`) não proíbe dados externos: o item 3 só lista o que a organização fornece; o item 2 pede "microdados públicos brutos" do Novo CAGED de SC, e o M5 é a mesma fonte, direto do MTE; a tabela de papéis pede "a filtragem das exclusões (MOV x EX)", que o M5 reconstrói; a RAIS (M4) é a única fonte do estoque, sem o qual não há rotatividade oficial, sinal de apagão citado no item 2.1. Cuidado de banca: o painel abre no bloco recente (os mesmos 12 meses da base fornecida) e a Metodologia cita as fontes externas como complemento.
+  - **Dono do painel:** João (ciclos [painel] de M3–M6).
 - [x] **M0.C1** Acrescentar `data/` ao `.gitignore`. Commitar este plano e a pasta `ia_cbo/`, e dar push em `dashboard-v2` para a equipe enxergar.
 - [x] **M0.C2** `PLANEJAMENTO.md` §5.1, passo 4: trocar "EXC com sinal invertido" por "cada linha do EXC entra com **peso −1** e mantém o tipo". Inverter o sinal acerta o saldo, mas conta uma admissão excluída como desligamento.
 
@@ -124,9 +144,9 @@ O que muda, e por quê:
 ## M2 · IA dos CBOs com a IA paga (via chat, substitui o Gemini)
 
 **Branch:** `m2-ia` · **Dono:** pessoa 4 · **Estimativa:** H1 de 1 a 1,5 h, código de cerca de 1 h
-**Estado:** C1–C2 (e o C3 preparado) **mergeados em `dashboard-v2`** pelo PR #1 (`8ba7695`); os próximos ciclos podem sair direto de `dashboard-v2`. Prompts prontos em `ia_cbo/prompts/` (23 lotes, 2.207 CBOs, ≤ 100 por lote). C1 feito (`LLM_PROVIDER=arquivo`, sem `LLM_API_KEY`; com lote faltando, o erro lista quais). Falta o **H1** (ninguém rodou os prompts ainda: `ia_cbo/respostas/` está vazia). C2 feito (`cbo_macrofamilias_gemini.csv` versionado; no modo arquivo a rodada 2 é esse CSV; a página de ocupações mostra o que foi comparado). C3 **preparado e não executado**: o README (Opção C), o `requirements.md` (R5.7, R5.9, R5.10 novo e R8.6) e o notebook (`PULAR_UPLOAD=1`) estão prontos; o comando está em `ia_cbo/COMO_USAR.md`, passo 5. O fluxo foi testado com respostas simuladas. **Próximo: H1** (rodar os 23 prompts na IA paga), depois o passo 5 (C3) e o passo 6 (C4) do COMO_USAR. C5 só se o M4/M5 trouxer CBOs novos. Obs.: houve 1 falha intermitente na suíte completa que não se repetiu em 3 execuções (provável teste instável que já existia)
+**Estado:** C1–C2 (e o C3 preparado) **mergeados em `dashboard-v2`** pelo PR #1 (`8ba7695`); os próximos ciclos podem sair direto de `dashboard-v2`. Prompts prontos em `ia_cbo/prompts/` (23 lotes, 2.207 CBOs, ≤ 100 por lote). C1 feito (`LLM_PROVIDER=arquivo`, sem `LLM_API_KEY`; com lote faltando, o erro lista quais). **H1 feito** na branch `m2-h1` (12/11): os 23 prompts foram respondidos pelo **Claude Opus 5.5 (`claude-opus-5-5`)**, a IA da sessão, a partir dos mesmos prompts, sem consultar o CSV do Gemini (a concordância continua válida). Conferência do COMO_USAR passo 4: 100 por lote, 7 no lote 23, **2.207 no total**; o `ClienteArquivo` carrega os 23 sem erro. Resultado: 623 códigos fogem da sugestão do prompt, todos com justificativa. Critérios que valem revisão no C4: CBO 766 (gráfica) em Operação de linha e processo, e não em Têxtil; ocupações elementares em Básico (125); auxiliares de saúde do grupo 3 em Qualificado; gerentes e diretores em Superior, na família da área dirigida. **Para o C3:** `LLM_MODELO_MANUAL=claude-opus-5-5` e registrar na Metodologia "classificação feita pelo Claude Opus 5.5 a partir dos mesmos prompts". C2 feito (`cbo_macrofamilias_gemini.csv` versionado; no modo arquivo a rodada 2 é esse CSV; a página de ocupações mostra o que foi comparado). C3 **preparado e não executado**: o README (Opção C), o `requirements.md` (R5.7, R5.9, R5.10 novo e R8.6) e o notebook (`PULAR_UPLOAD=1`) estão prontos; o comando está em `ia_cbo/COMO_USAR.md`, passo 5. O fluxo foi testado com respostas simuladas. **C3 feito** (12/11, com `LLM_MODELO_MANUAL=claude-opus-5-5`): o `meta.json` registra `ClienteArquivo`, 2.206 CBOs comparados, **concordância com o Gemini de 91,4% na família e 92,2% no nível**; `cbo_divergencias.csv` tem 348 linhas; agregado e perfil regenerados; `pytest -q` com 241 verdes. **C4 feito** (12/11): o João revisou as 20 divergências de maior volume e **aceitou todas como estão** (a classificação nova, r1, prevalece; nenhum JSON alterado). Destaques: frentista, vigia, porteiro e trabalhadores agrícolas/florestais em Básico (o Gemini dava Qualificado); encanador em Construção civil; técnico em segurança do trabalho em Engenharia/técnicos. M2 concluído; o C5 não é necessário (o M4 achou só 0,02% do estoque sem macrofamília). C5 só se o M4/M5 trouxer CBOs novos. Obs.: houve 1 falha intermitente na suíte completa que não se repetiu em 3 execuções (provável teste instável que já existia)
 
-- [ ] **H1 (humano)** Rodar os 23 prompts na IA paga e salvar em `ia_cbo/respostas/lote_NN.json`. O passo a passo, o formato e a conferência estão em `ia_cbo/COMO_USAR.md`.
+- [x] **H1 (humano)** Rodar os 23 prompts na IA paga e salvar em `ia_cbo/respostas/lote_NN.json`. O passo a passo, o formato e a conferência estão em `ia_cbo/COMO_USAR.md`.
 - [x] **M2.C1 `ClienteArquivo` em `src/cbo_ia.py`.**
   - Implementa `ClienteLLM`. No `__init__`, junta todos os `respostas/lote_*.json` com `_extrair_mapeamento`. `classificar()` devolve `json.dumps(dict_inteiro)`, porque `classificar_lote` já filtra os códigos do lote.
   - Se faltar a resposta de algum `prompts/lote_NN.txt`, levanta `ErroDeValidacao` listando os lotes faltantes.
@@ -136,10 +156,10 @@ O que muda, e por quê:
   - Copiar o `data_processed/cbo_macrofamilias.csv` atual para `cbo_macrofamilias_gemini.csv`.
   - Com o provedor `arquivo`, a rodada 2 compara com esse CSV, e não com a reexecução embaralhada (que daria 100% trivialmente). Usar `_registrar_concordancia`.
   - O `meta.json` registra o provedor, o modelo e a nota "classificação via chat; prompts e respostas em `ia_cbo/`".
-- [ ] **M2.C3 Reclassificar e reagregar** (depois do H1).
+- [x] **M2.C3 Reclassificar e reagregar** (depois do H1).
   - Rodar as etapas 5 e 6 do notebook com `LLM_PROVIDER=arquivo`.
   - No `requirements.md`, R5.7, R5.9 e R8.6 passam a valer só para os provedores por API, e entra um critério novo para o modo arquivo. README ganha uma seção "classificação via chat".
-- [ ] **M2.C4 Revisão humana** (parecer F4): revisar as 20 divergências de maior volume em `cbo_divergencias.csv`. Para corrigir, edite o `lote_NN.json`, com justificativa começando por "Revisão humana:", e rode o C3 de novo.
+- [x] **M2.C4 Revisão humana** (parecer F4): revisar as 20 divergências de maior volume em `cbo_divergencias.csv`. Para corrigir, edite o `lote_NN.json`, com justificativa começando por "Revisão humana:", e rode o C3 de novo.
 - [ ] **M2.C5 CBOs novos** (só se o M4 ou o M5 trouxer códigos sem classificação, acima de 1% do estoque ou das movimentações): gerar `lote_24+` com o mesmo script e voltar ao H1 só para eles.
 
 **Pronto quando:** o `cbo_macrofamilias.csv` vem da IA paga, a concordância Gemini × IA paga aparece na página Ocupações e `pytest -q` está verde.
