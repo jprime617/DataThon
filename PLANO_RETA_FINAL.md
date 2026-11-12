@@ -12,7 +12,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 | M0 | C1 e C2 feitos; falta o C0 (organizadores) | `dashboard-v2` | M0.C2 |
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
 | M2 | prompts prontos; código não iniciado | — | — |
-| M3 | C1–C4, C6, C7 feitos; **C5 (mapa) suspenso**; falta merge | `m3-painel` | M3.C7 |
+| M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
 | M4 · M5 · M6 | bloqueados pelo M0.C0 | — | — |
 | M7 | não iniciado | — | — |
 
@@ -148,7 +148,7 @@ O que muda, e por quê:
 ## M3 · Painel simplificado (anotações da equipe)
 
 **Branch:** `m3-painel`, criada **depois** do merge do M1 · **Dono:** pessoa 1 · **Estimativa:** 3 a 4 h
-**Estado:** C1–C4, C6 e C7 feitos em `m3-painel` (ainda **não mergeado**). **C5 (mapa) suspenso** a pedido do João: o R7.2 aparece se o usuário escolher "Saldo por 10 mil hab." + "Município", mas o mapa ainda abre em saída voluntária por microrregião. O R7.4 não existia e foi criado (dispersão salário médio de admissão × escolaridade ordinal média, em Por que acontece → Aprofundar). Menu renomeado (URLs iguais). `pytest -q`: 236 verdes. Próximo: decidir o C5 e mergear.
+**Estado:** C1–C4, C6 e C7 feitos em `m3-painel` (**mergeado** em `dashboard-v2`). **C5 (mapa) suspenso** a pedido do João: o R7.2 aparece se o usuário escolher "Saldo por 10 mil hab." + "Município", mas o mapa ainda abre em saída voluntária por microrregião. O R7.4 não existia e foi criado (dispersão salário médio de admissão × escolaridade ordinal média, em Por que acontece → Aprofundar). Menu renomeado (URLs iguais). `pytest -q`: 236 verdes. Pendente: só o C5, se o João liberar (fazer numa branch nova a partir de `dashboard-v2`).
 
 - [x] **M3.C1 Diagnóstico em cartões.** A tabela de 9 colunas vira cartões de semáforo: "onde · situação · por quê, numa frase · 2 números".
 - [x] **M3.C2 Matriz legível.** Só cor, sem os 4 símbolos. Eixos com palavras ("cresce pouco → cresce muito" / "segura a equipe → perde a equipe"), sem "z-score" na tela.
