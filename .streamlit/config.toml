@@ -3,22 +3,38 @@
 # permite trocar). Sem `base` aqui de propósito: ele travaria um dos modos.
 
 [theme]
-primaryColor = "#0F4C81"
+primaryColor = "#1F6E8C"
 font = "sans-serif"
-baseRadius = "medium"
+baseRadius = "small"
 showSidebarBorder = true
 
 [theme.light]
-primaryColor = "#0F4C81"
+primaryColor = "#1F6E8C"
 backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F3F6FA"
 textColor = "#1B2430"
 
+# Barra lateral institucional: azul-petróleo sólido, texto branco (5,7:1);
+# campos e item ativo um tom acima (#17809A, 4,6:1 com branco).
+[theme.light.sidebar]
+primaryColor = "#FFFFFF"
+backgroundColor = "#1F6E8C"
+secondaryBackgroundColor = "#17809A"
+textColor = "#FFFFFF"
+borderColor = "#3C8FAB"
+
 [theme.dark]
-primaryColor = "#6CA6E0"
+primaryColor = "#6FC3E3"
 backgroundColor = "#0F1720"
 secondaryBackgroundColor = "#1A2430"
 textColor = "#E6EDF3"
+
+[theme.dark.sidebar]
+primaryColor = "#FFFFFF"
+backgroundColor = "#164E63"
+secondaryBackgroundColor = "#1D6680"
+textColor = "#FFFFFF"
+borderColor = "#2B7590"
 
 [client]
 toolbarMode = "minimal"
