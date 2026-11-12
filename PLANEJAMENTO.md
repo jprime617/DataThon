@@ -130,7 +130,7 @@ As outras seções (comércio, serviços, agro) entram só como **referência** 
 1. **Download** de MOV, FOR e EXC de 202409 a 202608 do FTP (`src/download.py`), em `data/raw/` (fora do Git).
 2. **Extração** (`py7zr`; o 7-Zip serve de alternativa) e leitura com **Polars** (`;`, decimal `,`, encoding a confirmar).
 3. **Filtro** `uf == 42` logo na leitura, para não carregar o Brasil inteiro na memória.
-4. **Consolidação MOV + FOR − EXC:** registros do EXC entram com o **sinal invertido** em `saldomovimentação` e são somados de forma agregada (não há ID de pessoa).
+4. **Consolidação MOV + FOR − EXC:** cada linha do EXC entra com **peso −1** e **mantém o tipo** (admissão ou desligamento); MOV e FOR entram com peso +1. Admissões e desligamentos são a soma de `peso` por tipo, e o saldo é Σ `peso × saldomovimentação`, tudo de forma agregada (não há ID de pessoa). Inverter o sinal de `saldomovimentação` acertaria o saldo, mas contaria uma admissão excluída como desligamento.
 5. **Limpeza:**
    - remover colunas de índice (`Unnamed: 0`, `Unnamed: 0.1`) se aparecerem;
    - `idade` → inteiro; descartar idade < 14 ou > 80 nas análises de perfil;

@@ -65,18 +65,18 @@ Leia PLANO_RETA_FINAL.md, seção "Como trabalhar". Continue o marco <Mx> a part
 
 ## M0 · Preparação
 
-**Estado:** C1 feito (plano e `ia_cbo/` no Git, `/data/` ignorado). Faltam o C0 (resposta dos organizadores) e o C2 · Responsável: João
+**Estado:** C1 feito (plano e `ia_cbo/` no Git, `/data/` ignorado). C2 feito (EXC com peso −1 no PLANEJAMENTO §5.1). Falta só o C0 (resposta dos organizadores) · Responsável: João
 
 - [ ] **M0.C0 (humano), bloqueia M4, M5 e M6.** Confirmar com os organizadores se dados públicos externos (FTP do MTE, RAIS, IBGE) são permitidos (PLANEJAMENTO §16). Registre a resposta aqui. Se for não, M4, M5 e M6 saem do plano.
 - [x] **M0.C1** Acrescentar `data/` ao `.gitignore`. Commitar este plano e a pasta `ia_cbo/`, e dar push em `dashboard-v2` para a equipe enxergar.
-- [ ] **M0.C2** `PLANEJAMENTO.md` §5.1, passo 4: trocar "EXC com sinal invertido" por "cada linha do EXC entra com **peso −1** e mantém o tipo". Inverter o sinal acerta o saldo, mas conta uma admissão excluída como desligamento.
+- [x] **M0.C2** `PLANEJAMENTO.md` §5.1, passo 4: trocar "EXC com sinal invertido" por "cada linha do EXC entra com **peso −1** e mantém o tipo". Inverter o sinal acerta o saldo, mas conta uma admissão excluída como desligamento.
 
 ---
 
 ## M1 · Corrigir os 3 problemas de método (sem dado novo)
 
 **Branch:** `m1-metodo` · **Dono:** pessoa 1 · **Estimativa:** 1,5 a 2 h
-**Estado:** concluído em `m1-metodo` (C1–C5), aguardando merge em `dashboard-v2`. `pytest -q`: 227 verdes (os 7 a menos são os testes de turnover/aquecimento apagados). Notas: a regra de Automação virou "Básico ≥ 50% e saldo ≤ 0"; sem filtro, a sanfona não mostra delta; o `caged_agregado.parquet` atual ainda tem `turnover`/`indice_aquecimento` (o painel ignora), que somem na próxima reagregação (M7.C1).
+**Estado:** concluído (C1–C5) e mergeado em `dashboard-v2` (merge `1fe52aa`). `pytest -q`: 227 verdes (os 7 a menos são os testes de turnover/aquecimento apagados). Notas: a regra de Automação virou "Básico ≥ 50% e saldo ≤ 0"; sem filtro, a sanfona não mostra delta; o `caged_agregado.parquet` atual ainda tem `turnover`/`indice_aquecimento` (o painel ignora), que somem na próxima reagregação (M7.C1).
 
 O que muda, e por quê:
 - **Giro:** hoje é `min(adm, desl) / max(adm, desl)`, que é função exata do saldo relativo (indústria: 0,9954 = (1−|s|)/(1+|s|)). Sai de tudo. A rotatividade oficial volta no M4.
