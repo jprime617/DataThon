@@ -280,20 +280,26 @@ Cada recomendação nasce de uma **regra** que liga o diagnóstico (§7) a uma *
 
 ## 10. Dashboard (Streamlit + Plotly)
 
-**Filtros globais:** período (12m / 24m / comparação) · visão CNAE (V1/V2/V3 + setor C) · nível territorial (meso/micro/município) · macrofamília · nível de qualificação.
+**Princípio de design (anotações da equipe, 12/11):** a primeira versão ficou "científica" demais. Tinha muitos gráficos, símbolos e legendas confusas, e a tela de diagnóstico era a pior. Por isso o painel foi refeito para leigos e para a banca (M3 do `PLANO_RETA_FINAL.md`), com estas regras:
+- **Linguagem simples:** nada de "z-score" nem razões técnicas na tela. "Gap 0,94" vira "paga 6% abaixo de quem saiu", e o menu não usa jargão.
+- **Pouca coisa à vista:** no máximo 4 indicadores principais e 2 gráficos por página. O resto fica nos expanders "Aprofundar" ou na Metodologia.
+- **Visual inspirado no IBGE Cidades, sem a marca do IBGE:** barra lateral azul-petróleo, indicadores agrupados por tema em sanfona e cartão de destaque com régua de ranking.
 
-| Aba | Conteúdo | Pergunta que responde |
+**Filtros globais (barra lateral):** escopo (indústria B–F ou toda a economia) · período (set/24–ago/26, abre no bloco recente set/25–ago/26) · nível territorial (meso/micro/município) e território · setor · macrofamília (IA) · nível de qualificação (IA) · "Limpar filtros".
+
+| Página (menu) | Conteúdo | Pergunta que responde |
 |---|---|---|
-| **1. Panorama** | Cartões de KPI (saldo, variação relativa, rotatividade SC × Brasil, saída voluntária, gap de reposição) · mapa coroplético com métrica selecionável · série 2020–2026 | *Onde está o problema?* |
-| **2. Diagnóstico** | Matriz Dinamismo × Tensão (bolhas = região × setor, tamanho = estoque) · ranking de alertas · comparação entre blocos | *Quem precisa de atenção urgente?* |
-| **3. Causa raiz** | Salários de admitidos × desligados × estoque por escolaridade e macrofamília (com intervalo de confiança) · gap de escolaridade · desligamento precoce · dispersões territoriais (PIB, IDHM) | *Por quê: salário, qualificação ou estrutura?* |
-| **4. Ocupações (IA)** | Treemap macrofamília × nível · tabela CBO → macrofamília · metodologia e concordância da IA | *Que tipo de profissional falta?* |
-| **5. Recomendações** | Ficha por mesorregião · tabela de recomendações filtrável | *O que fazer?* |
+| **1. Panorama** | Manchete calculada · indicadores em sanfona por tema (Movimentação, Renda, Escolaridade, Tensão). Ficam abertos os 4 principais: saldo, saldo por 10 mil hab., saída voluntária e gap salarial. · cartão de destaque com ranking e mapa coroplético (métrica e nível selecionáveis; o clique abre a ficha) · principais achados com "Ver evidência" · ranking de seções por saldo, com rotatividade descontada e saída voluntária (R7.3) · série mensal | *Onde está o problema?* |
+| **2. Quem precisa de atenção** | Matriz Dinamismo × Tensão só com cor, eixos em palavras ("cresce pouco → cresce muito") e bolha do tamanho das movimentações · cartões de semáforo (onde · situação · por quê, numa frase · 2 números) · tabela completa e sensibilidade dos pesos em expanders | *Quem precisa de atenção urgente?* |
+| **3. Por que acontece** | Salário de quem entra × quem sai, por escolaridade e macrofamília · selo de causa por unidade · em "Aprofundar": gap de escolaridade, retenção, salário × escolaridade ordinal (R7.4), dispersões com IDHM e PIB per capita | *Por quê: salário, qualificação ou estrutura?* |
+| **4. Que profissional falta** | Treemap macrofamília × nível · explorador de ocupações (busca por CBO) · auditoria da IA (concordância com o Gemini, regras A–D, prompt exato) | *Que tipo de profissional falta?* |
+| **5. O que fazer** | Prioridades · todas as recomendações · ficha da mesorregião · custo da saída voluntária | *O que fazer?* |
+| **6. Ficha do território** | Meso, micro ou município (escolhido ali ou no mapa): indicadores, territórios de porte parecido, mix setorial e série mensal | *Como está este lugar?* |
+| **7. Metodologia e sistema** | Arquitetura · procedência dos dados (funil) · definições em português simples · índice · tabela "requisito → onde conferir" (R1–R9) · premissas e limites · qualidade do código · próximos passos | *De onde vêm os números?* |
 
-- **Modo narrativa:** botão "Apresentar", que percorre 4 telas espelhando o pitch.
-- **Metodologia** em expansores (fontes, validações, limites).
-- **Publicação:** Streamlit Community Cloud, com link no README e no slide final.
-- **Desempenho:** só lê `data/processed/`; usa `st.cache_data`.
+- **Modo apresentação:** fica fora do menu e abre só pela URL `/apresentacao` (com chave opcional). São 5 passos do pitch (gancho → onde → quem → por quê → o que fazer), cada um com uma frase calculada e um gráfico, sempre com os filtros padrão.
+- **Publicação:** Azure App Service (https://datathon-caged-sc-br.azurewebsites.net). Os artefatos vêm do Blob Storage, e a pasta `data_processed/` serve de cópia local de reserva. O painel só lê agregados e usa `st.cache_data`.
+- **Pendente:** o mapa (M3.C5) ainda abre em saída voluntária por microrregião. O R7.2 (saldo por 10 mil hab., por município) só aparece se o usuário escolher essas opções no seletor (ver §17).
 
 ---
 
@@ -383,10 +389,10 @@ Cada frente pode ter um responsável. As dependências indicam o que bloqueia o 
 - [ ] (Opcional) custo da rotatividade
 
 ### F7 — Dashboard *(layout já pode começar; dados reais dependem de F5)*
-- [ ] Esqueleto com as 5 abas e filtros globais (dados fictícios)
-- [ ] Integração com `data/processed/`
-- [ ] Modo narrativa + metodologia
-- [ ] Deploy no Streamlit Cloud
+- [x] 7 páginas com filtros globais e dados reais (Blob Storage, com `data_processed/` de reserva)
+- [x] Modo apresentação e Metodologia
+- [x] Simplificação para leigos (M3: C1–C4, C6 e C7). Falta o mapa (M3.C5), que está suspenso.
+- [x] Deploy no Azure App Service (M7.C3)
 
 ### F8 — Documentação e pitch *(roteiro já pode começar)*
 - [ ] README (reprodução, premissas, limites)
