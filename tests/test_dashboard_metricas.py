@@ -149,6 +149,18 @@ def test_matriz_aponta_o_motor_da_tensao():
     assert m.iloc[0]["motor"] == "saída voluntária alta"
 
 
+def test_tensao_usa_so_sintomas_e_ignora_a_compressao_salarial():
+    """M1.C1: a compressão é causa (selo Salarial), não entra na tensão."""
+    df = _df(_celula(setor="comprimido", admissoes=100, desligamentos=100, desligamentos_a_pedido=30,
+                     **_salarios(1000, 2000)),
+             _celula(setor="pede_conta", admissoes=100, desligamentos=100, desligamentos_a_pedido=60,
+                     **_salarios(2000, 2000)))
+    m = c.matriz_diagnostico(df, ["regiao", "setor"])
+    assert m.iloc[0]["setor"] == "pede_conta"
+    assert "z_compressao" not in m.columns
+    assert m["tensao"].tolist() == pytest.approx(m[f"z_{c.M_SAIDA_VOL}"].tolist())
+
+
 # --- Regras de recomendação -----------------------------------------------------------
 
 

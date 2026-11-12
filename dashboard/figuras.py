@@ -210,7 +210,7 @@ def construir_matriz(matriz: pd.DataFrame, rotulo: pd.Series) -> go.Figure:
                               yanchor="top" if y else "bottom", font={"size": 14, "color": c.CORES_QUADRANTE[texto]})
     return _layout(figura, "Quem precisa de atenção: dinamismo × tensão", 560,
                    xaxis_title="Dinamismo (z: saldo relativo e aceleração) →",
-                   yaxis_title="Tensão (z: giro, saída voluntária, compressão) →",
+                   yaxis_title="Tensão (z: saída voluntária) →",
                    legend={"orientation": "h", "y": -0.18})
 
 

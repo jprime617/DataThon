@@ -76,14 +76,14 @@ Leia PLANO_RETA_FINAL.md, seção "Como trabalhar". Continue o marco <Mx> a part
 ## M1 · Corrigir os 3 problemas de método (sem dado novo)
 
 **Branch:** `m1-metodo` · **Dono:** pessoa 1 · **Estimativa:** 1,5 a 2 h
-**Estado:** não iniciado
+**Estado:** C1 feito. Próximo: C2 (giro fora).
 
 O que muda, e por quê:
 - **Giro:** hoje é `min(adm, desl) / max(adm, desl)`, que é função exata do saldo relativo (indústria: 0,9954 = (1−|s|)/(1+|s|)). Sai de tudo. A rotatividade oficial volta no M4.
 - **Tensão:** hoje soma giro, saída voluntária e compressão salarial, e depois a compressão aparece também como "causa". Passa a usar **só sintomas**: por ora só a saída voluntária, e o M4 traz os outros dois.
 - **Aceleração:** hoje compara set–fev com mar–ago, o que mede calendário (+4,3 p.p. na indústria). Sai. Volta calculada por blocos de 12 meses no M5.
 
-- [ ] **M1.C1 Tensão só com sintomas.**
+- [x] **M1.C1 Tensão só com sintomas.**
   - Em `dashboard/comum.py`: `PESOS_TENSAO_PADRAO = {M_SAIDA_VOL: 1.0}`. Tirar `"compressao"` dos componentes e dos motivos.
   - A compressão continua só como causa (`causas()`, Salarial).
   - Em `diagnostico.py`, esconder o expander de sensibilidade enquanto houver um único componente; ele volta no M4.C6.

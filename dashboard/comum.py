@@ -604,13 +604,14 @@ Q_PRESSAO = "Expansão sob pressão"
 Q_ESTAGNACAO = "Estagnação"
 Q_APAGAO = "Apagão (rotatividade crônica)"
 
-PESOS_TENSAO_PADRAO = {M_GIRO: 1.0, M_SAIDA_VOL: 1.0, "compressao": 1.0}
+# Tensão = só sintomas. A compressão salarial é causa (ver `causas`), não sintoma;
+# rotatividade descontada e desligamento precoce entram com a RAIS (M4).
+PESOS_TENSAO_PADRAO = {M_SAIDA_VOL: 1.0}
 PESOS_DINAMISMO_PADRAO = {M_SALDO_REL: 1.0, M_ACEL: 1.0}
 
 ROTULO_COMPONENTE = {
     M_GIRO: "giro alto",
     M_SAIDA_VOL: "saída voluntária alta",
-    "compressao": "compressão salarial",
     M_SALDO_REL: "saldo relativo",
     M_ACEL: "aceleração",
 }
@@ -672,7 +673,6 @@ def matriz_diagnostico(
         {
             M_GIRO: zscore(m[M_GIRO]),
             M_SAIDA_VOL: zscore(m[M_SAIDA_VOL]),
-            "compressao": zscore(1 - m[M_GAP_SAL]),
             M_SALDO_REL: zscore(m[M_SALDO_REL]),
             M_ACEL: zscore(m[M_ACEL]),
         },

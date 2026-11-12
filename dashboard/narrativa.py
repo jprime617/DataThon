@@ -116,6 +116,7 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
                 f"entre semestres, n = {c.fmt_int(e[c.M_MOV])}.",
                 _filtro_unidade(e[c.COLUNA_REGIAO], e[c.COLUNA_SETOR]), float(e["dinamismo"]),
             ))
+        z_comp = c.zscore(1 - m[c.M_GAP_SAL])
         comp = m.dropna(subset=[c.M_GAP_SAL]).sort_values(c.M_GAP_SAL)
         if not comp.empty and comp.iloc[0][c.M_GAP_SAL] < c.LIMIAR_COMPRESSAO:
             k = comp.iloc[0]
@@ -124,7 +125,7 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
                 f"**{k[c.COLUNA_SETOR]}** em **{k[c.COLUNA_REGIAO]}**: quem entra ganha "
                 f"{c.fmt_pct(k[c.M_GAP_SAL], 0)} do salário de quem sai "
                 f"({c.fmt_brl(k[c.M_SAL_ADM])} vs {c.fmt_brl(k[c.M_SAL_DESL])}), n = {c.fmt_int(k[c.M_MOV])}.",
-                _filtro_unidade(k[c.COLUNA_REGIAO], k[c.COLUNA_SETOR]), float(abs(k["z_compressao"])),
+                _filtro_unidade(k[c.COLUNA_REGIAO], k[c.COLUNA_SETOR]), float(abs(z_comp[k.name])),
             ))
     macros = c.agregar_metricas(df, [c.COLUNA_MACROFAMILIA_CBO])
     piso = max(c.MIN_MOVIMENTACOES, FRACAO_RELEVANCIA * float(macros[c.M_MOV].sum()))
