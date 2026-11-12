@@ -1,11 +1,11 @@
 {
-  "gerado_em": "2026-11-12T19:26:28-03:00",
+  "gerado_em": "2026-11-12T19:32:23-03:00",
   "periodo": {
     "inicio": "202509",
     "fim": "202608",
     "meses": 12
   },
-  "commit": "76b70fa",
+  "commit": "cb9f026",
   "linhas": {
     "brutas": 3397416,
     "excluidas_competencia": 6128,
