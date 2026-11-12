@@ -248,7 +248,8 @@ class ClienteGemini:
 
 
 # Pasta com os prompts gerados e as respostas coladas da IA paga (via chat).
-PASTA_IA_CBO = "ia_cbo"
+# Ancorada na raiz do projeto: o notebook roda com o diretório em `notebooks/`.
+PASTA_IA_CBO = Path(__file__).resolve().parent.parent / "ia_cbo"
 
 # Nome do modelo usado no chat, só para o registro em `.meta.json`.
 VAR_MODELO_MANUAL = "LLM_MODELO_MANUAL"
@@ -268,8 +269,8 @@ class ClienteArquivo:
             (lista os lotes faltantes) ou se uma resposta não tiver JSON válido.
     """
 
-    def __init__(self, pasta: str | os.PathLike = PASTA_IA_CBO, modelo: str | None = None) -> None:
-        raiz = Path(pasta)
+    def __init__(self, pasta: str | os.PathLike | None = None, modelo: str | None = None) -> None:
+        raiz = Path(pasta) if pasta is not None else PASTA_IA_CBO
         prompts = sorted((raiz / "prompts").glob("lote_*.txt"))
         respostas = raiz / "respostas"
         faltantes = [p.stem for p in prompts if not (respostas / f"{p.stem}.json").is_file()]

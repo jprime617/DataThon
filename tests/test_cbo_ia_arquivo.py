@@ -51,7 +51,8 @@ def test_provedor_arquivo_nao_exige_chave(tmp_path, monkeypatch):
     (tmp_path / "ia_cbo").mkdir()
     _pasta(tmp_path / "ia_cbo", {"lote_01": json.dumps({"1": {"macrofamilia": "a"}}),
                                  "lote_02": json.dumps({"2": {"macrofamilia": "b"}})})
-    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr("src.cbo_ia.PASTA_IA_CBO", tmp_path / "ia_cbo")
+    monkeypatch.chdir(tmp_path.parent)  # o caminho não depende do diretório de trabalho
     cliente = criar_cliente_llm(env={"LLM_PROVIDER": "arquivo", "LLM_MODELO_MANUAL": "chat-pago"})
     assert isinstance(cliente, ClienteArquivo) and cliente._modelo == "chat-pago"
 

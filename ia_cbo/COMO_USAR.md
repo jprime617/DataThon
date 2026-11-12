@@ -33,3 +33,24 @@ Um objeto JSON por lote, com a chave igual ao código CBO (6 dígitos, como text
 
 O sistema tolera texto ou bloco ```json em volta, mas o arquivo precisa ter um único objeto JSON completo.
 A ordem dos lotes não importa, porque o sistema junta todos pelo código.
+
+## Depois de salvar as 23 respostas (M2.C3 e M2.C4)
+
+5. Rode a classificação a partir dos arquivos (não precisa de chave de API) e regenere os artefatos sem publicar no Azure:
+
+   ```bash
+   export LLM_PROVIDER=arquivo LLM_MODELO_MANUAL="<nome do modelo usado no chat>" RECLASSIFICAR_CBO=1 PULAR_UPLOAD=1
+   .venv/bin/jupyter nbconvert --to notebook --execute --inplace notebooks/01_pipeline.ipynb
+   ```
+
+   - Se faltar algum lote, o erro lista quais. Se um arquivo estiver sem JSON válido, o erro diz qual.
+   - A concordância compara a IA paga com a classificação anterior do Gemini (`data_processed/cbo_macrofamilias_gemini.csv`). A página "Que profissional falta" mostra o resultado.
+   - Confira em `data_processed/cbo_macrofamilias.csv.meta.json`: `provedor` = `ClienteArquivo`, o modelo informado e `cbos_comparados` perto de 2.206.
+
+6. **Revisão humana (M2.C4):** abra `data_processed/cbo_divergencias.csv`, que já vem ordenado por volume, e revise as 20 primeiras linhas.
+   - Para corrigir um código, edite o `respostas/lote_NN.json` que o contém. Mude `macrofamilia` e/ou `nivel` e escreva uma `justificativa` começando com `Revisão humana:`.
+   - Depois, rode o passo 5 de novo.
+
+7. Faça commit de `ia_cbo/respostas/`, `data_processed/` e do notebook. Atualize o Estado do M2 no `PLANO_RETA_FINAL.md`.
+
+> Testado em 12/11 com respostas simuladas a partir do mapeamento do Gemini: os 23 lotes foram lidos e todos os 2.206 CBOs casaram com os prompts (inclusive os de 5 dígitos, como `10105`).
