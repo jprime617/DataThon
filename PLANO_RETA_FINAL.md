@@ -12,7 +12,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 | M0 | **concluído** (C0 liberado pela equipe em 12/11) | `dashboard-v2` | M0.C0 |
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
 | M2 | C1–C3 e H1 em `dashboard-v2`; concordância com o Gemini 91,4% (família) e 92,2% (nível); C4 feito (20 divergências aceitas); M2 **concluído** (C5 só se M4/M5 trouxerem CBOs novos) | `dashboard-v2` | M2.C4 |
-| M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
+| M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso**; regras de design e anotações da equipe registradas na seção M3 | `dashboard-v2` | M3.C7 |
 | M4 | **concluído e mergeado** (C1–C6; C7 opcional) | `dashboard-v2` | M4.C6 |
 | M5 | **concluído e mergeado** (C1–C6) | `dashboard-v2` | M5.C6 |
 | M6 | falta o H2 (xlsx do PDET) | — | — |
@@ -169,7 +169,24 @@ O que muda, e por quê:
 ## M3 · Painel simplificado (anotações da equipe)
 
 **Branch:** `m3-painel`, criada **depois** do merge do M1 · **Dono:** pessoa 1 · **Estimativa:** 3 a 4 h
-**Estado:** C1–C4, C6 e C7 feitos em `m3-painel` (**mergeado** em `dashboard-v2`). **C5 (mapa) suspenso** a pedido do João: o R7.2 aparece se o usuário escolher "Saldo por 10 mil hab." + "Município", mas o mapa ainda abre em saída voluntária por microrregião. O R7.4 não existia e foi criado (dispersão salário médio de admissão × escolaridade ordinal média, em Por que acontece → Aprofundar). Menu renomeado (URLs iguais). `pytest -q`: 236 verdes. Pendente: só o C5, se o João liberar (fazer numa branch nova a partir de `dashboard-v2`).
+**Estado:** C1–C4, C6 e C7 feitos em `m3-painel` (**mergeado** em `dashboard-v2`). **C5 (mapa) suspenso** a pedido do João: o R7.2 aparece se o usuário escolher "Saldo por 10 mil hab." + "Município", mas o mapa ainda abre em saída voluntária por microrregião. O R7.4 não existia e foi criado (dispersão salário médio de admissão × escolaridade ordinal média, em Por que acontece → Aprofundar). Menu renomeado (URLs iguais). `pytest -q`: 236 verdes. Pendente: só o C5, se o João liberar (fazer numa branch nova a partir de `dashboard-v2`). O design simplificado está descrito no `PLANEJAMENTO.md` (§10 e F7, commit `8f0952c`).
+
+**Por que este marco existe:** a equipe achou o painel "científico" demais, com muitos gráficos, símbolos e legendas confusos, e a tela de diagnóstico era a pior. A meta passou a ser um painel que um leigo e a banca entendam sem explicação. As regras que valem para qualquer mudança no painel:
+- **Linguagem simples:** sem "z-score" nem razões técnicas na tela, e sem jargão no menu.
+- **Pouca coisa à vista:** no máximo 4 indicadores principais e 2 gráficos por página. O resto vai para "Aprofundar" ou para a Metodologia.
+- **Mapa:** no máximo duas camadas (a cor mostra a métrica e a bolha mostra o volume).
+
+**Visual (feito antes do M3, na manhã de 12/11, já em `dashboard-v2`):** linguagem do IBGE Cidades, sem a marca do IBGE. A barra lateral é azul-petróleo e o menu é plano. Os indicadores ficam agrupados por tema em sanfona, e o cartão de destaque traz a régua de ranking. O mapa usa classes em degraus com contorno magenta. Commits `0f4aaa9`, `0fd2199` e `8babb57`, com o CSS concentrado em `dashboard/comum.py`.
+
+| Anotação da equipe | Onde foi tratada |
+|---|---|
+| Tabela e tela de diagnóstico confusas, muitos símbolos, legendas confusas | C1, C2 |
+| Muito científico; simplificar ou cortar indicadores para leigos | C3 |
+| Muitos gráficos poluindo o sistema | C4 |
+| Separar a informação de forma mais fluida | Sanfona por tema (visual) e "Aprofundar" (C3) |
+| Um único mapa com várias informações e cores destacadas; mapa que muda de tamanho | C5 (**suspenso**); as classes em degraus já entraram no visual |
+| Cumprir o `requirements.md` e conseguir apresentar à banca | C6, C7 |
+| Deixar o planejamento a par | `PLANEJAMENTO.md` §10 e F7 (`8f0952c`) |
 
 - [x] **M3.C1 Diagnóstico em cartões.** A tabela de 9 colunas vira cartões de semáforo: "onde · situação · por quê, numa frase · 2 números".
 - [x] **M3.C2 Matriz legível.** Só cor, sem os 4 símbolos. Eixos com palavras ("cresce pouco → cresce muito" / "segura a equipe → perde a equipe"), sem "z-score" na tela.
