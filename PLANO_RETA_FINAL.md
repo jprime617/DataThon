@@ -14,7 +14,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 | M2 | C1–C3 e H1 em `dashboard-v2`; concordância com o Gemini 91,4% (família) e 92,2% (nível); C4 feito (20 divergências aceitas); M2 **concluído** (C5 só se M4/M5 trouxerem CBOs novos) | `dashboard-v2` | M2.C4 |
 | M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
 | M4 | **concluído e mergeado** (C1–C6; C7 opcional) | `dashboard-v2` | M4.C6 |
-| M5 | **C1–C6 feitos; pronto para merge** | `m5-caged24` | M5.C6 |
+| M5 | **concluído e mergeado** (C1–C6) | `dashboard-v2` | M5.C6 |
 | M6 | falta o H2 (xlsx do PDET) | — | — |
 | M7 | não iniciado | — | — |
 
