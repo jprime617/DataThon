@@ -15,7 +15,9 @@ digraph {
   rankdir=TB; bgcolor="transparent"; nodesep=0.4; ranksep=0.35;
   node [shape=box, style="rounded,filled", fillcolor="#E8F0F8", color="#0F4C81", fontname="Helvetica", fontsize=15, width=3];
   edge [color="#555555"];
-  csv [label="Novo CAGED SC\\n(CSV, 12 meses)"];
+  csv [label="Novo CAGED SC\\n(FTP do MTE, 24 meses:\\nMOV + FOR − EXC)"];
+  rais [label="RAIS 2025\\n(estoque em 31/12)"];
+  inpc [label="INPC (IBGE)\\ndeflator"];
   mun [label="Municípios SC\\n(IBGE)"];
   limpeza [label="Limpeza e\\ndecodificação"];
   juncao [label="Junção por\\nmunicípio"];
@@ -25,25 +27,26 @@ digraph {
   app [label="Azure App Service\\n(este painel)", fillcolor="#E0F0FF"];
   csv -> limpeza -> juncao -> ia -> agreg -> blob -> app;
   mun -> juncao;
+  inpc -> limpeza;
+  rais -> agreg;
   agreg -> app [style=dashed, label="cópia local\\n(fallback)", fontsize=11];
 }
 """
 
 LIMITES = """
-- **12 meses de dados** (set/25–ago/26): sem um bloco anterior de 12 meses, não há aceleração sem sazonalidade, então ela fica fora do índice.
+- **24 meses de dados** (set/24–ago/26), reconstruídos do FTP do MTE como MOV + FOR − EXC e conferidos contra a base fornecida no bloco recente (diferença de +0,02% nas admissões e +0,005% nos desligamentos). O painel abre nos **últimos 12 meses** (o mesmo período da base fornecida); o bloco anterior só alimenta a aceleração.
 - **O CAGED mede fluxos, não estoque, e não tem vagas abertas.** "Apagão" é inferido por sinais de tensão (rotatividade descontada, saída voluntária e desligamento precoce; a compressão salarial entra como causa), não observado.
 - **Estoque de 31/12/2025 como aproximação do estoque médio.** A rotatividade descontada do MTE divide pelo estoque médio do período; usamos o estoque CLT de SC em 31/12/2025 (RAIS 2025, fonte pública do MTE), que cai no meio da janela set/25–ago/26. Resultado: SC 34,8% contra 33,6% na taxa oficial de out/25–set/26. Células sem movimentação no período ficam fora (≈ 1% do estoque). O antigo "giro" (mín ÷ máx) saiu porque era função exata do saldo relativo.
 - **A RAIS só tem o vínculo CLT** (tipos 10–25 e 60–75): aprendizes, temporários e estatutários ficam fora; transferências (motivos 30–34) não contam como desligamento.
-- **Salários são declarados pelo empregador** e não deflacionados; as medianas do perfil, ao juntar células, são aproximadas pela mediana ponderada.
+- **Salários são declarados pelo empregador** e estão **deflacionados pelo INPC a preços de ago/2026**; as medianas do perfil, ao juntar células, são aproximadas pela mediana ponderada.
 - **IDHM é de 2010**; PIB per capita de 2023; população estimada 2026. Correlações territoriais não implicam causalidade.
 - **A classificação por IA é uma interpretação**, mitigada por regras explícitas (A–D), conjunto fechado e uma 2ª rodada com a ordem embaralhada.
 - **Emprego formal CLT apenas**: informalidade, autônomos e PJ ficam fora.
 """
 
 PROXIMOS = """
-- **Janela de 24 meses** (MOV + FOR − EXC do FTP do MTE) para a aceleração por blocos de 12 meses, sem sazonalidade.
 - **SC × Brasil** por seção (Tabelas 6.1 e 10 do CAGED) para separar o que é estrutural do que é local.
-- Salários deflacionados pelo INPC e intervalos de confiança por bootstrap.
+- Intervalos de confiança por bootstrap; RAIS 2024 e estoque mensal rolado.
 """
 
 # Para a banca: cada requisito (.kiro/specs/.../requirements.md) e onde conferi-lo.
@@ -123,7 +126,9 @@ def render(ctx: c.Contexto) -> None:
 
     st.subheader("Índice: Tensão = sintomas; causas ficam no diagnóstico")
     st.markdown(
-        "- **Dinamismo** = z-score da variação do emprego (saldo ÷ estoque de 31/12/2025) entre as unidades com amostra.\n"
+        "- **Dinamismo** = média dos z-scores da **variação do emprego** (saldo ÷ estoque de 31/12/2025) e da **aceleração** "
+        "(saldo de set/25–ago/26 menos o de set/24–ago/25, ÷ estoque), entre as unidades com amostra. Blocos de 12 "
+        "meses comparam o mesmo calendário, sem sazonalidade.\n"
         "- **Tensão** = média dos z-scores dos três **sintomas** de dificuldade de reter gente, com pesos iguais: "
         "**rotatividade descontada**, **saída voluntária** e **desligamento precoce** (< 12 meses de casa). "
         "Em Quem precisa de atenção, um expander mostra se o top 10 muda com outros pesos.\n"
@@ -131,7 +136,7 @@ def render(ctx: c.Contexto) -> None:
         "viram selos em Quem precisa de atenção e regras em O que fazer. Somá-las à tensão e depois usá-las para explicá-la "
         "seria contar a mesma coisa duas vezes.\n"
         "- **Saíram:** o giro (função exata do saldo relativo) e a aceleração entre semestres (media o calendário: "
-        "dezembro concentra desligamentos)."
+        "dezembro concentra desligamentos); ela voltou na forma de blocos de 12 meses."
     )
 
     st.subheader("Requisitos do desafio: onde conferir")

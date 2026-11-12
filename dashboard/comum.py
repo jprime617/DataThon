@@ -250,7 +250,7 @@ def carregar_artefatos(
                 estoque = pd.read_parquet(pasta / NOME_BLOB_ESTOQUE)
             except Exception:  # noqa: BLE001
                 estoque = None
-            agregado = anexar_estoque(agregado, estoque, avisos)
+            agregado = anexar_blocos(anexar_estoque(agregado, estoque, avisos))
         return agregado, perfil, meta
 
     credencial = (ambiente.get(VAR_CREDENCIAL_AZURE) or "").strip()
@@ -262,7 +262,7 @@ def carregar_artefatos(
             perfil = ler_parquet_enxuto(io.BytesIO(baixar(credencial, NOME_BLOB_PERFIL)))
             meta = json.loads(baixar(credencial, NOME_BLOB_METADADOS).decode("utf-8"))
             estoque = pd.read_parquet(io.BytesIO(baixar(credencial, NOME_BLOB_ESTOQUE)))
-            agregado = anexar_estoque(agregado, estoque, avisos)
+            agregado = anexar_blocos(anexar_estoque(agregado, estoque, avisos))
             return Artefatos(preparar_tipos(agregado), perfil, meta, "blob", tuple(avisos))
         except Exception as exc:  # noqa: BLE001
             avisos.append(f"Azure Blob não usado: {exc}. Exibindo a cópia local.")
@@ -289,6 +289,41 @@ def anexar_estoque(agregado: pd.DataFrame, estoque: pd.DataFrame | None, avisos:
         avisos.append("Estoque da RAIS indisponível: rotatividade e desligamento precoce ficam em branco.")
         return agregado
     return agregado.merge(estoque[CHAVES_ESTOQUE + COLUNAS_ESTOQUE], on=CHAVES_ESTOQUE, how="left")
+
+
+# Blocos de 12 meses da janela de 24 (M5.C6): a aceleração compara os dois.
+BLOCO_ANTERIOR = ("202409", "202508")
+BLOCO_RECENTE = ("202509", "202608")
+COLUNA_SALDO_ANTERIOR = "saldo_bloco_anterior"
+COLUNA_SALDO_RECENTE = "saldo_bloco_recente"
+COLUNAS_BLOCO = [COLUNA_SALDO_ANTERIOR, COLUNA_SALDO_RECENTE]
+
+
+def anexar_blocos(agregado: pd.DataFrame) -> pd.DataFrame:
+    """Anexa a cada linha o saldo da sua célula em cada bloco de 12 meses.
+
+    Como o estoque, é atributo da célula (somado uma vez por célula em
+    `agregar_metricas`), por isso a aceleração sai certa com qualquer filtro de
+    período. Sem meses do bloco anterior (base de 12 meses), não anexa nada.
+    """
+    if not set(CHAVES_ESTOQUE) <= set(agregado.columns):
+        return agregado
+    mes = agregado[COLUNA_MES].astype(str)
+    if not mes.between(*BLOCO_ANTERIOR).any():
+        return agregado
+    saldo = agregado[COLUNA_ADMISSOES] - agregado[COLUNA_DESLIGAMENTOS]
+    blocos = pd.DataFrame({
+        COLUNA_SALDO_ANTERIOR: saldo.where(mes.between(*BLOCO_ANTERIOR), 0),
+        COLUNA_SALDO_RECENTE: saldo.where(mes.between(*BLOCO_RECENTE), 0),
+    })
+    chave = [agregado[c] for c in CHAVES_ESTOQUE]
+    por_celula = blocos.groupby(chave, dropna=False).transform("sum")
+    return agregado.assign(**{c: por_celula[c] for c in COLUNAS_BLOCO})
+
+
+def periodo_padrao(meses: list[str]) -> tuple[str, str]:
+    """O painel abre nos últimos 12 meses (o bloco recente, como a base fornecida)."""
+    return meses[max(0, len(meses) - 12)], meses[-1]
 
 
 def preparar_tipos(df: pd.DataFrame) -> pd.DataFrame:
@@ -434,6 +469,7 @@ M_ESTOQUE = "estoque"
 M_ROT_DESC = "rotatividade_desc"
 M_VAR_REL = "variacao_rel"
 M_PRECOCE = "precoce"
+M_ACEL = "aceleracao"
 M_AMOSTRA_OK = "amostra_ok"
 M_SALARIO_OK = "salario_ok"
 
@@ -483,6 +519,13 @@ DEFINICOES: dict[str, Definicao] = {
         "pct",
     ),
     M_VAR_REL: Definicao("Variação do emprego", "saldo ÷ estoque em 31/12/2025 (RAIS)", "pct"),
+    M_ACEL: Definicao(
+        "Aceleração",
+        "(saldo set/25–ago/26 − saldo set/24–ago/25) ÷ estoque em 31/12/2025: quanto o emprego cresceu a "
+        "mais (ou a menos) que no ano anterior. Compara blocos de 12 meses, sem efeito de calendário; "
+        "não depende do filtro de período.",
+        "pp",
+    ),
     M_PRECOCE: Definicao(
         "Desligamento precoce",
         "desligados com menos de 12 meses de casa ÷ desligados em 2025 (RAIS, sem transferências)",
@@ -542,11 +585,13 @@ def agregar_metricas(df: pd.DataFrame, por: list[str] | None = None) -> pd.DataF
     else:
         populacao = pd.Series(float("nan"), index=somas.index)
 
-    # Estoque: uma vez por célula RAIS distinta do grupo (nunca por linha mensal).
-    if set(COLUNAS_ESTOQUE) <= set(base.columns):
+    # Estoque e saldos por bloco: uma vez por célula distinta do grupo (nunca
+    # por linha mensal).
+    da_celula = [c for c in (*COLUNAS_ESTOQUE, *COLUNAS_BLOCO) if c in base.columns]
+    if da_celula and set(CHAVES_ESTOQUE) <= set(base.columns):
         celulas = base.drop_duplicates([*chave, *CHAVES_ESTOQUE])
         estoque = (
-            celulas.groupby(chave, observed=True, dropna=False)[COLUNAS_ESTOQUE]
+            celulas.groupby(chave, observed=True, dropna=False)[da_celula]
             .sum(min_count=1)
             .reindex(somas.index)
         )
@@ -583,6 +628,10 @@ def _derivar(somas: pd.DataFrame, populacao) -> pd.DataFrame:
     desl_desc = r[COLUNA_DESLIGAMENTOS_DESCONTADOS].astype("float64")
     r[M_ROT_DESC] = _divisao(pd.concat([adm, desl_desc], axis=1).min(axis=1), r[M_ESTOQUE])
     r[M_VAR_REL] = _divisao(r[M_SALDO], r[M_ESTOQUE])
+    r[M_ACEL] = (
+        _divisao(r[COLUNA_SALDO_RECENTE] - r[COLUNA_SALDO_ANTERIOR], r[M_ESTOQUE]) * 100  # p.p.
+        if COLUNA_SALDO_RECENTE in r else sem
+    )
     r[M_PRECOCE] = (_divisao(r["desligados_precoce"], r["desligados_rais"])
                     if "desligados_rais" in r else sem)
     r[M_AMOSTRA_OK] = r[M_MOV] >= MIN_MOVIMENTACOES
@@ -623,13 +672,14 @@ Q_APAGAO = "Apagão (rotatividade crônica)"
 PESOS_TENSAO_PADRAO = {M_ROT_DESC: 1.0, M_SAIDA_VOL: 1.0, M_PRECOCE: 1.0}
 # Dinamismo = variação do emprego (saldo ÷ estoque); sem estoque, saldo relativo.
 # A aceleração por blocos de 12 meses volta no M5.C6.
-PESOS_DINAMISMO_PADRAO = {M_VAR_REL: 1.0}
+PESOS_DINAMISMO_PADRAO = {M_VAR_REL: 1.0, M_ACEL: 1.0}
 
 ROTULO_COMPONENTE = {
     M_ROT_DESC: "rotatividade alta",
     M_SAIDA_VOL: "saída voluntária alta",
     M_PRECOCE: "desligamento precoce alto",
     M_VAR_REL: "variação do emprego",
+    M_ACEL: "aceleração",
 }
 
 # Rotatividade descontada oficial, out/25–set/26 (MTE; PLANEJAMENTO §6).
@@ -695,6 +745,7 @@ def matriz_diagnostico(
             M_SAIDA_VOL: zscore(m[M_SAIDA_VOL]),
             M_PRECOCE: zscore(m[M_PRECOCE]),
             M_VAR_REL: zscore(variacao),
+            M_ACEL: zscore(m[M_ACEL]),
         },
         index=m.index,
     )
@@ -1118,7 +1169,7 @@ def _meses(df: pd.DataFrame) -> list[str]:
 
 
 def limpar_filtros(df: pd.DataFrame | None = None) -> None:
-    """Volta todos os filtros ao padrão (indústria, período inteiro)."""
+    """Volta todos os filtros ao padrão (indústria, últimos 12 meses)."""
     import streamlit as st
 
     for chave in _CHAVES_FILTRO:
@@ -1136,10 +1187,10 @@ def barra_lateral(df: pd.DataFrame) -> Filtros:
     meses = _meses(df)
     estado = st.session_state
     estado.setdefault("f_escopo", ESCOPO_INDUSTRIA)
-    estado.setdefault("f_meses", (meses[0], meses[-1]))
+    estado.setdefault("f_meses", periodo_padrao(meses))
     estado.setdefault("f_nivel", NIVEL_MESO)
     if tuple(estado["f_meses"])[0] not in meses or tuple(estado["f_meses"])[1] not in meses:
-        estado["f_meses"] = (meses[0], meses[-1])
+        estado["f_meses"] = periodo_padrao(meses)
 
     lateral = st.sidebar
     lateral.markdown("### Filtros")
@@ -1202,7 +1253,7 @@ def montar_contexto_cache(art: Artefatos, filtros: Filtros) -> Contexto:
 
 def contexto_padrao(art: Artefatos) -> Contexto:
     """Contexto com os filtros padrão (usado no modo apresentação)."""
-    return montar_contexto(art, Filtros(meses=tuple(_meses(art.agregado)[i] for i in (0, -1))))
+    return montar_contexto(art, Filtros(meses=periodo_padrao(_meses(art.agregado))))
 
 
 # Tokens do visual institucional; o tema vem de `st.context.theme` (segue o
@@ -1353,7 +1404,7 @@ METRICAS_INVERSAS = {M_SAIDA_VOL, M_ROT_DESC, M_PRECOCE}
 
 # Temas da coluna de indicadores (sanfona do Panorama): título, ícone e métricas.
 TEMAS_KPI = [
-    ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K, M_VAR_REL]),
+    ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K, M_VAR_REL, M_ACEL]),
     ("Renda", ":material/payments:", [M_GAP_SAL, M_SAL_ADM, M_SAL_DESL]),
     ("Escolaridade", ":material/school:", [M_GAP_ESC]),
     ("Tensão", ":material/crisis_alert:", [M_ROT_DESC, M_SAIDA_VOL, M_PRECOCE]),
@@ -1369,6 +1420,7 @@ UNIDADES = {
     M_SAIDA_VOL: "dos desligamentos, a pedido",
     M_ROT_DESC: "oficial (MTE): SC 33,6% · Brasil 34,2% · Transformação 27,6%",
     M_VAR_REL: "do estoque de 31/12/2025",
+    M_ACEL: "vs o ano anterior (blocos de 12 meses)",
     M_PRECOCE: "dos desligados, com < 12 meses de casa",
     M_GAP_SAL: "do salário de quem saiu",
     M_SAL_ADM: "por mês",

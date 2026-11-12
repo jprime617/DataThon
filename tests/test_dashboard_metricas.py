@@ -97,10 +97,22 @@ def test_recorte_vazio_tem_contagens_zero_e_razoes_nan():
     assert rotulos["Saldo"] == 0.0
 
 
-def test_aceleracao_semestral_saiu_das_metricas():
-    """M1.C3: comparar semestres media calendário; volta por blocos 12 × 12 (M5.C6)."""
-    assert not hasattr(c, "M_ACEL") and not hasattr(c, "corte_semestral")
-    assert "aceleracao" not in c.total(_df(_celula(admissoes=200))).index
+def test_aceleracao_por_blocos_de_12_meses_independe_do_filtro_de_periodo():
+    """M5.C6: a aceleração semestral (M1.C3) não volta; volta por blocos 12 × 12."""
+    assert not hasattr(c, "corte_semestral")
+    df = c.anexar_blocos(_df(
+        _com_estoque(mes="202410", admissoes=100, desligamentos=90),   # anterior: +10
+        _com_estoque(mes="202510", admissoes=100, desligamentos=60),   # recente: +40
+    ))
+    so_recente = df[df["mes"].astype(str).between(*c.BLOCO_RECENTE)]
+    for recorte in (df, so_recente):
+        t = c.total(recorte)
+        assert t[c.M_ACEL] == pytest.approx((40 - 10) / 1000 * 100)  # +3 p.p.
+    # Base de 12 meses: sem bloco anterior, nada é anexado e a aceleração fica vazia.
+    so12 = _df(_com_estoque(mes="202510", admissoes=10))
+    assert c.anexar_blocos(so12) is so12 and math.isnan(c.total(so12)[c.M_ACEL])
+    assert c.periodo_padrao([f"2024{m:02d}" for m in range(9, 13)] + [f"2025{m:02d}" for m in range(1, 13)]
+                            + [f"2026{m:02d}" for m in range(1, 9)]) == ("202509", "202608")
 
 
 # --- Guarda de amostra -----------------------------------------------------------
