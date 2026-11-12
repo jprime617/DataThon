@@ -11,7 +11,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 |---|---|---|---|
 | M0 | C1 e C2 feitos; falta o C0 (organizadores) | `dashboard-v2` | M0.C2 |
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
-| M2 | prompts prontos; código não iniciado | — | — |
+| M2 | C1–C2 feitos, C3 preparado; **H1 (respostas da IA paga) pendente** | `m2-ia` | M2.C2 (+ C3 preparado) |
 | M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
 | M4 · M5 · M6 | bloqueados pelo M0.C0 | — | — |
 | M7 | não iniciado | — | — |
