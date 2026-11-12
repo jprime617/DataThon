@@ -1,11 +1,11 @@
 {
-  "gerado_em": "2026-11-11T20:22:47-03:00",
+  "gerado_em": "2026-11-12T18:25:24-03:00",
   "periodo": {
     "inicio": "202509",
     "fim": "202608",
     "meses": 12
   },
-  "commit": "9681406",
+  "commit": "d801cc9",
   "linhas": {
     "brutas": 3397416,
     "excluidas_competencia": 6128,
@@ -28,5 +28,5 @@
     "regra": "> 0 e ≤ 20 × mediana estadual dos salários positivos",
     "teto": 43124.6
   },
-  "testes": 226
+  "testes": null
 }

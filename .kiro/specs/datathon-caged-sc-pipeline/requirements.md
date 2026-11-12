@@ -131,6 +131,7 @@ O escopo cobre o pipeline completo (ingestão → limpeza → cruzamento relacio
 5. THE Agregador SHALL incluir nas tabelas agregadas o Saldo_Liquido, o Saldo_por_10k, a rotatividade descontada *(pendente de RAIS — M4)*, o salário médio de admissão, o salário médio de desligamento e a escolaridade média dos admitidos, com valores numéricos arredondados a 2 casas decimais.
 6. THE Agregador SHALL associar a cada recorte municipal os indicadores de população estimada 2026, IDHM 2010 e PIB per capita 2023.
 7. WHERE um indicador municipal está ausente para um município, THE Agregador SHALL registrar o valor como ausente (NaN) sem interromper a agregação.
+8. *(M4.C4.)* THE Agregador SHALL incluir a contagem aditiva `desligamentos_descontados`: os desligamentos menos os códigos 40 (a pedido), 50 (aposentadoria), 60 (morte) e 80 (transferência), numerador da rotatividade descontada (PLANEJAMENTO §6).
 
 ### Requirement 7: Dashboard interativo com no mínimo três KPIs
 

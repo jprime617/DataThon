@@ -13,7 +13,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
 | M2 | C1–C2 feitos e **mergeados** (PR #1); C3 preparado; **H1 (respostas da IA paga) pendente** | `dashboard-v2` | M2.C2 (+ C3 preparado) |
 | M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
-| M4 | C1–C2 feitos (download, layout, leitura SC+CLT); próximo: C3; **uso no pitch ainda depende do M0.C0** | `m4-rais` | M4.C2 |
+| M4 | C1–C2 e C4 feitos (download, leitura SC+CLT, `desligamentos_descontados`); próximo: C3; **uso no pitch ainda depende do M0.C0** | `m4-rais` | M4.C4 |
 | M5 · M6 | bloqueados pelo M0.C0 | — | — |
 | M7 | não iniciado | — | — |
 
@@ -166,7 +166,7 @@ O que muda, e por quê:
 ## M4 · RAIS 2025: estoque, rotatividade oficial e desligamento precoce
 
 **Branch:** `m4-rais` · **Dono:** pessoa 2 (C1–C4) e pessoa 1 nos ciclos [painel] · **Estimativa:** 3 a 4 h · **Exige M0.C0**
-**Estado:** C1 feito na branch `m4-rais` (`python scripts/baixar_rais.py`, retomável; cerca de 12 min a 1 MB/s; extrai com `7z` ou, se não houver, com `bsdtar`). C2 feito: `python -m src.rais` grava `data/interim/rais_sc_2025.parquet` (cerca de 95 s, 51 MB): **4.290.964 vínculos CLT de SC, 295 municípios, 2.565.458 ativos em 31/12, 1.725.506 desligados no ano** (68,5% com menos de 12 meses de casa). **Próximo: C3.** Cuidados para o C3:
+**Estado:** C1 feito na branch `m4-rais` (`python scripts/baixar_rais.py`, retomável; cerca de 12 min a 1 MB/s; extrai com `7z` ou, se não houver, com `bsdtar`). C2 feito: `python -m src.rais` grava `data/interim/rais_sc_2025.parquet` (cerca de 95 s, 51 MB): **4.290.964 vínculos CLT de SC, 295 municípios, 2.565.458 ativos em 31/12, 1.725.506 desligados no ano** (68,5% com menos de 12 meses de casa). C4 feito e **já reagregado** (o `Dados/Novo_Caged_MOV_Limpo.csv` estava na máquina do João): SC tem 1.674.947 desligamentos, dos quais 881.889 descontados; min(adm, desl_desc) ÷ estoque RAIS ≈ 34,4% (oficial 33,6%). O agregado e o perfil foram regenerados (somem `turnover`/`indice_aquecimento`). **Próximo: C3.** Cuidados para o C3:
   - a RAIS **não tem a letra da seção**, só a subclasse CNAE de 7 dígitos: a seção sai da subclasse (divisão = 2 primeiros dígitos → seção CNAE);
   - os desligamentos da RAIS incluem **31 = transferência sem ônus (165 mil)**, que não é desligamento de verdade; decida se `desligados_rais` exclui os códigos 30–34 (recomendado) e registre na Metodologia. O código 90 (16 mil) não aparece no layout;
   - a escolaridade "médio completo ou mais" é `escolaridade >= 7` (−1 = ignorado, fora do denominador).
@@ -190,7 +190,7 @@ O que muda, e por quê:
   - Colunas: `estoque_31dez`, `estoque_medio_ou_mais` (médio completo ou mais), `desligados_rais` e `desligados_precoce` (menos de 12 meses de casa).
   - Reaproveitar o mapeamento subclasse → seção/setor do `agregador.py` e o `aplicar_mapeamento` dos CBOs.
   - Registrar a % do estoque em CBOs sem macrofamília; se passar de 1%, acionar o M2.C5.
-- [ ] **M4.C4 Desligamentos descontados no CAGED.**
+- [x] **M4.C4 Desligamentos descontados no CAGED.**
   - Nova coluna aditiva `desligamentos_descontados` em `src/agregador.py` (`COLUNAS_ADITIVAS` e `preparar_base`): desligamentos menos os códigos 40, 50, 60 e 80 (PLANEJAMENTO §6).
   - Atualizar a checagem de schema e reagregar.
   - ⚠️ O M5.C3 mexe na mesma função. Quem mergear por último faz o rebase.
