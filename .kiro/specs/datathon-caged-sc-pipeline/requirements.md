@@ -54,6 +54,8 @@ O escopo cobre o pipeline completo (ingestão → limpeza → cruzamento relacio
 10. IF um arquivo de origem está ausente, inacessível ou ilegível, THEN THE Ingestor SHALL registrar um erro identificando o arquivo e interromper o processamento sem persistir.
 11. *(M4 — depende do M0.C0.)* WHEN a RAIS 2025 de vínculos é carregada (`src/rais.py`), THE Ingestor SHALL lê-la em blocos com separador `,` e encoding Latin-1, manter só os vínculos de municípios de SC (chave de 6 dígitos começando com `42`) e de `Tipo Vínculo` CLT (10, 15, 20, 25, 60, 65, 70 e 75, conforme o layout oficial), persistir o resultado em `data/interim/rais_sc_2025.parquet` e, se faltar alguma coluna esperada ou o arquivo, levantar um erro que identifica o arquivo e as colunas ausentes.
 
+12. *(M4.C3 — depende do M0.C0.)* WHEN o estoque da RAIS é gerado (`estoque_rais`), THE Agregador SHALL gravar `data_processed/rais_estoque.parquet` com uma linha por município × seção × setor × macrofamília × nível (as chaves do agregado, sem `mes`; a seção sai da divisão CNAE da subclasse) e as colunas `estoque_31dez`, `estoque_escolaridade_informada`, `estoque_medio_ou_mais` (escolaridade ≥ 7), `desligados_rais` (sem as transferências, motivos 30–34) e `desligados_precoce` (desligados com menos de 12 meses de casa), e SHALL registrar a fração do estoque em CBOs sem macrofamília.
+
 ### Requirement 2: Limpeza, conversão de tipos e decodificação de domínios
 
 **User Story:** Como engenheiro de dados, quero tratar tipos, valores ausentes e códigos de domínio, para que as análises usem dados consistentes e legíveis.

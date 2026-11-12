@@ -65,3 +65,32 @@ def test_coluna_faltando(tmp_path):
     caminho.write_bytes('"Município - Código","Tipo Vínculo - Código"\n420540,10\n'.encode("latin-1"))
     with pytest.raises(ErroDeValidacao, match="Escolaridade"):
         ler_rais_sc(caminho, None)
+
+
+def test_estoque_rais_por_recorte(tmp_path):
+    from src.rais import estoque_rais
+
+    cbo = tmp_path / "cbo.csv"
+    cbo.write_text(
+        "cbo2002ocupação,descricao,macrofamilia,nivel_qualificacao,lideranca,justificativa\n"
+        "784205,Alimentador,Produção industrial,Básico,False,\n"
+    )
+    v = pd.DataFrame({
+        "chave_municipal": ["420540"] * 5,
+        "ativo_31dez": [1, 1, 0, 0, 1],
+        "escolaridade": [7, -1, 5, 9, 3],
+        "motivo_desligamento": [0, 0, 11, 31, 0],   # 31 = transferência → fora
+        "tempo_emprego_meses": [30.0, 2.0, 5.2, 3.0, 1.0],
+        "cbo": ["784205", "784205", "784205", "784205", "999999"],
+        "subclasse": ["2512800", "2512800", "2512800", "2512800", "4771701"],
+    })
+    e = estoque_rais(v, destino=tmp_path / "e.parquet", caminho_cbo=str(cbo))
+    met = e[e.secao_industrial == "Indústrias de Transformação"].iloc[0]
+    assert met.setor == "Metalurgia e produtos de metal"
+    assert met.macrofamilia_cbo == "Produção industrial"
+    assert (met.estoque_31dez, met.estoque_escolaridade_informada, met.estoque_medio_ou_mais) == (2, 1, 1)
+    assert (met.desligados_rais, met.desligados_precoce) == (1, 1)
+    com = e[e.secao_industrial.str.startswith("Comércio")].iloc[0]
+    assert pd.isna(com.macrofamilia_cbo) and com.nivel_qualificacao == "Não informado"
+    assert com.setor == com.secao_industrial and com.estoque_31dez == 1
+    assert (tmp_path / "e.parquet").exists()

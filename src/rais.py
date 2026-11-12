@@ -25,6 +25,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from src import mapeamentos
+from src.agregador import NIVEL_NAO_INFORMADO
+from src.cbo_ia import CAMINHO_CSV_PADRAO, COLUNA_CBO as COLUNA_CBO_CAGED, COLUNA_MACROFAMILIA, COLUNA_NIVEL, aplicar_mapeamento
 from src.erros import ErroDeValidacao
 from src.logging_pipeline import log_etapa
 from src.metricas import COLUNA_CHAVE_MUNICIPAL
@@ -32,6 +35,7 @@ from src.metricas import COLUNA_CHAVE_MUNICIPAL
 RAIZ = Path(__file__).resolve().parent.parent
 CAMINHO_PADRAO = RAIZ / "data" / "raw" / "rais" / "2025" / "RAIS_VINC_PUB_SUL.COMT"
 DESTINO_PADRAO = RAIZ / "data" / "interim" / "rais_sc_2025.parquet"
+ESTOQUE_PADRAO = RAIZ / "data_processed" / "rais_estoque.parquet"
 
 SEPARADOR = ","
 ENCODING = "latin-1"
@@ -163,5 +167,98 @@ def ler_rais_sc(
     return df
 
 
+# Divisão CNAE (2 primeiros dígitos da subclasse) → letra da seção, CNAE 2.0.
+# A RAIS não traz a letra; conferido contra seção × subclasse do CAGED.
+_SECAO_POR_DIVISAO = {
+    d: letra
+    for letra, (ini, fim) in {
+        "A": (1, 3), "B": (5, 9), "C": (10, 33), "D": (35, 35), "E": (36, 39),
+        "F": (41, 43), "G": (45, 47), "H": (49, 53), "I": (55, 56), "J": (58, 63),
+        "K": (64, 66), "L": (68, 68), "M": (69, 75), "N": (77, 82), "O": (84, 84),
+        "P": (85, 85), "Q": (86, 88), "R": (90, 93), "S": (94, 96), "T": (97, 97),
+        "U": (99, 99),
+    }.items()
+    for d in range(ini, fim + 1)
+}
+
+# Motivos de desligamento 30–34 são transferências, não desligamentos de
+# verdade (RAIS ≠ CAGED; ver PLANO_RETA_FINAL, M4 → Estado).
+MOTIVOS_TRANSFERENCIA = range(30, 35)
+ESCOLARIDADE_MEDIO_COMPLETO = 7  # RAIS 1–11; −1 = ignorado
+MESES_PRECOCE = 12
+
+# Mesmas dimensões do agregado do CAGED, sem `mes`.
+CHAVES_ESTOQUE = ["municipio", "secao_industrial", "setor", "macrofamilia_cbo", "nivel_qualificacao"]
+COLUNAS_ESTOQUE = [
+    "estoque_31dez",
+    "estoque_escolaridade_informada",
+    "estoque_medio_ou_mais",
+    "desligados_rais",
+    "desligados_precoce",
+]
+
+
+def estoque_rais(
+    vinculos: pd.DataFrame,
+    destino: str | os.PathLike[str] | None = ESTOQUE_PADRAO,
+    *,
+    caminho_cbo: str = CAMINHO_CSV_PADRAO,
+) -> pd.DataFrame:
+    """Estoque de 31/12 e desligados da RAIS por recorte do agregado (M4.C3).
+
+    Colunas aditivas por (município × seção × setor × macrofamília × nível):
+    `estoque_31dez`, `estoque_escolaridade_informada` (denominador da
+    escolaridade: o estoque sem os ignorados), `estoque_medio_ou_mais`,
+    `desligados_rais` (sem as transferências 30–34) e `desligados_precoce`
+    (desligados com menos de 12 meses de casa).
+    """
+    divisao = pd.to_numeric(vinculos[COLUNA_SUBCLASSE], errors="coerce") // 100_000
+    letra = divisao.map(_SECAO_POR_DIVISAO).fillna("Z")
+    secao = letra.map(lambda l: mapeamentos.SECAO_CNAE.get(l, l))
+    setor = divisao.map(mapeamentos.SETOR_POR_DIVISAO_TRANSFORMACAO).where(letra == "C")
+
+    cbos = aplicar_mapeamento(vinculos[[COLUNA_CBO]].rename(columns={COLUNA_CBO: COLUNA_CBO_CAGED}), caminho_cbo)
+
+    ativo = vinculos[COLUNA_ATIVO_31DEZ] == 1
+    esc = vinculos[COLUNA_ESCOLARIDADE]
+    motivo = vinculos[COLUNA_MOTIVO_DESLIGAMENTO]
+    desligado = (motivo > 0) & ~motivo.isin(MOTIVOS_TRANSFERENCIA)
+
+    base = pd.DataFrame({
+        "municipio": vinculos[COLUNA_CHAVE_MUNICIPAL].values,
+        "secao_industrial": secao.values,
+        "setor": setor.fillna(secao).values,
+        "macrofamilia_cbo": cbos[COLUNA_MACROFAMILIA].values,
+        "nivel_qualificacao": cbos[COLUNA_NIVEL].fillna(NIVEL_NAO_INFORMADO).values,
+        "estoque_31dez": ativo.values,
+        "estoque_escolaridade_informada": (ativo & (esc > 0)).values,
+        "estoque_medio_ou_mais": (ativo & (esc >= ESCOLARIDADE_MEDIO_COMPLETO)).values,
+        "desligados_rais": desligado.values,
+        "desligados_precoce": (desligado & (vinculos[COLUNA_TEMPO_EMPREGO] < MESES_PRECOCE)).values,
+    })
+    estoque = (
+        base.groupby(CHAVES_ESTOQUE, dropna=False)[COLUNAS_ESTOQUE].sum().astype("int64").reset_index()
+    )
+
+    sem_macro = estoque.loc[estoque["macrofamilia_cbo"].isna(), "estoque_31dez"].sum()
+    pct = sem_macro / max(estoque["estoque_31dez"].sum(), 1)
+    if destino is not None:
+        destino = Path(destino)
+        destino.parent.mkdir(parents=True, exist_ok=True)
+        estoque.to_parquet(destino, index=False)
+    log_etapa(
+        "rais",
+        f"estoque 31/12: {estoque['estoque_31dez'].sum():,}; desligados: "
+        f"{estoque['desligados_rais'].sum():,}; {pct:.2%} do estoque sem macrofamília"
+        + (" (acima de 1%: acionar M2.C5)" if pct > 0.01 else ""),
+    )
+    return estoque
+
+
 if __name__ == "__main__":
-    ler_rais_sc()
+    import sys
+
+    if "--estoque" in sys.argv:
+        estoque_rais(pd.read_parquet(DESTINO_PADRAO))
+    else:
+        ler_rais_sc()
