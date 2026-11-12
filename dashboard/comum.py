@@ -398,7 +398,6 @@ LIMIAR_COMPRESSAO = 0.95
 M_MOV = "movimentacoes"
 M_SALDO = "saldo"
 M_SALDO_10K = "saldo_10k"
-M_GIRO = "giro"
 M_SAIDA_VOL = "saida_voluntaria"
 M_SAL_ADM = "salario_admissao"
 M_SAL_DESL = "salario_desligamento"
@@ -429,13 +428,6 @@ DEFINICOES: dict[str, Definicao] = {
         "Saldo por 10 mil hab.",
         "saldo ÷ população 2026 dos municípios distintos da seleção × 10.000",
         "num1",
-    ),
-    M_GIRO: Definicao(
-        "Giro (reposição)",
-        "mín(adm, desl) ÷ máx(adm, desl): quanto das contratações só repõe saídas. "
-        "100% = só reposição; 0% = só expansão ou só retração. Não é a taxa de "
-        "rotatividade do MTE (o CAGED não traz estoque de vínculos).",
-        "pct",
     ),
     M_SAIDA_VOL: Definicao(
         "Saída voluntária", "desligamentos a pedido (tipo 40) ÷ desligamentos", "pct"
@@ -559,8 +551,6 @@ def _derivar(somas: pd.DataFrame, populacao, aceleracao) -> pd.DataFrame:
     r[M_SALDO] = adm - desl
     r[M_POP] = pd.Series(populacao, index=r.index, dtype="float64")
     r[M_SALDO_10K] = _divisao(r[M_SALDO], r[M_POP]) * 10_000
-    r[M_GIRO] = _divisao(pd.concat([adm, desl], axis=1).min(axis=1),
-                         pd.concat([adm, desl], axis=1).max(axis=1))
     r[M_SAIDA_VOL] = _divisao(r[COLUNA_DESLIGAMENTOS_A_PEDIDO], desl)
     r[M_SAL_ADM] = _divisao(r["soma_salario_admissao"], r["n_salario_admissao"])
     r[M_SAL_DESL] = _divisao(r["soma_salario_desligamento"], r["n_salario_desligamento"])
@@ -592,7 +582,7 @@ def calcular_kpis(df: pd.DataFrame) -> list[tuple[str, float]]:
     return [(DEFINICOES[m].rotulo, float(t[m])) for m in KPIS_PADRAO]
 
 
-KPIS_PADRAO = [M_SALDO, M_SALDO_10K, M_GIRO, M_SAIDA_VOL, M_GAP_SAL, M_GAP_ESC]
+KPIS_PADRAO = [M_MOV, M_SALDO, M_SALDO_10K, M_SAIDA_VOL, M_GAP_SAL, M_GAP_ESC]
 
 
 # ---------------------------------------------------------------------------
@@ -610,7 +600,6 @@ PESOS_TENSAO_PADRAO = {M_SAIDA_VOL: 1.0}
 PESOS_DINAMISMO_PADRAO = {M_SALDO_REL: 1.0, M_ACEL: 1.0}
 
 ROTULO_COMPONENTE = {
-    M_GIRO: "giro alto",
     M_SAIDA_VOL: "saída voluntária alta",
     M_SALDO_REL: "saldo relativo",
     M_ACEL: "aceleração",
@@ -671,7 +660,6 @@ def matriz_diagnostico(
         return m
     comp = pd.DataFrame(
         {
-            M_GIRO: zscore(m[M_GIRO]),
             M_SAIDA_VOL: zscore(m[M_SAIDA_VOL]),
             M_SALDO_REL: zscore(m[M_SALDO_REL]),
             M_ACEL: zscore(m[M_ACEL]),
@@ -772,7 +760,7 @@ def gerar_recomendacoes(
         return []
     mediana_regional = mediana_regional or {}
     ref = total(df)
-    saida_ref, giro_ref = ref[M_SAIDA_VOL], ref[M_GIRO]
+    saida_ref = ref[M_SAIDA_VOL]
     por = [COLUNA_REGIAO, COLUNA_MACROFAMILIA_CBO]
     m = matriz_diagnostico(df, por)
     if m.empty:
@@ -790,7 +778,7 @@ def gerar_recomendacoes(
         regiao, macro = str(chave[0]), str(chave[1])
         nivel = nivel_dominante.get(chave, "—")
         mov = float(u[M_MOV])
-        saida, gap, giro = u[M_SAIDA_VOL], u[M_GAP_SAL], u[M_GIRO]
+        saida, gap = u[M_SAIDA_VOL], u[M_GAP_SAL]
 
         def add(alavanca, regra, evidencia, severidade, alvo=nivel, **extras):
             recs.append(Recomendacao(regiao, macro, alavanca, regra, evidencia, alvo,
@@ -818,13 +806,13 @@ def gerar_recomendacoes(
                     f"saldo {fmt_int(u[M_SALDO])} aqui; {origem} com saldo {fmt_int(retracao[origem])} na mesma macrofamília",
                     float(u[M_SALDO_REL]), origem=origem)
         f_bas = float(frac_basico.get(chave, 0.0))
-        # O giro agregado fica perto de 100% (quase toda contratação repõe uma
-        # saída), então "alto" aqui é estar acima da referência do recorte.
-        if f_bas >= 0.5 and pd.notna(giro) and giro >= giro_ref and u[M_SALDO] <= 0:
+        # Sem a taxa de reposição (função exata do saldo relativo, M1.C2), a
+        # regra fica com o que ela media: mão de obra básica sem expansão.
+        if f_bas >= 0.5 and u[M_SALDO] <= 0:
             add(ALAVANCA_AUTOMACAO,
-                "nível Básico ≥ 50%, giro acima da referência do recorte e saldo ≤ 0",
-                f"{fmt_pct(f_bas)} em nível Básico; giro {fmt_pct(giro)} vs {fmt_pct(giro_ref)}; saldo {fmt_int(u[M_SALDO])}",
-                f_bas - 0.5 + (giro - giro_ref), alvo="Básico")
+                "nível Básico ≥ 50% e saldo ≤ 0",
+                f"{fmt_pct(f_bas)} em nível Básico; saldo {fmt_int(u[M_SALDO])}",
+                f_bas - 0.5, alvo="Básico")
         if pd.notna(saida) and saida >= saida_ref + 0.05 and pd.notna(gap) and gap >= 1:
             add(ALAVANCA_RETENCAO,
                 "saída voluntária ≥ referência + 5 p.p. com gap de reposição ≥ 1 (salário não explica)",
@@ -1308,7 +1296,7 @@ def delta_texto(nome: str, valor: float, referencia: float, sufixo: str) -> str 
 
 
 # Métricas em que subir é ruim (delta em vermelho quando sobe).
-METRICAS_INVERSAS = {M_GIRO, M_SAIDA_VOL}
+METRICAS_INVERSAS = {M_SAIDA_VOL}
 
 
 # Temas da coluna de indicadores (sanfona do Panorama): título, ícone e métricas.
@@ -1316,7 +1304,7 @@ TEMAS_KPI = [
     ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K, M_ACEL]),
     ("Renda", ":material/payments:", [M_GAP_SAL, M_SAL_ADM, M_SAL_DESL]),
     ("Escolaridade", ":material/school:", [M_GAP_ESC]),
-    ("Tensão", ":material/crisis_alert:", [M_GIRO, M_SAIDA_VOL]),
+    ("Tensão", ":material/crisis_alert:", [M_SAIDA_VOL]),
 ]
 METRICAS_TEMAS = [m for _, _, ms in TEMAS_KPI for m in ms]
 
@@ -1327,7 +1315,6 @@ UNIDADES = {
     M_SALDO_10K: "vagas por 10 mil hab.",
     M_SALDO_REL: "do total movimentado",
     M_ACEL: "2º − 1º semestre",
-    M_GIRO: "das contratações repõem saídas",
     M_SAIDA_VOL: "dos desligamentos, a pedido",
     M_GAP_SAL: "admissão ÷ desligamento",
     M_SAL_ADM: "por mês",

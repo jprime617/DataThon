@@ -51,23 +51,22 @@ def resposta_principal(df: pd.DataFrame, escopo: str = c.ESCOPO_INDUSTRIA) -> st
     """A pergunta de negócio respondida em Markdown: uma manchete e 4 tópicos.
 
     A manchete interpretativa ("o apagão é de retenção") só aparece quando os
-    números a sustentam: quase toda contratação repõe saídas (giro ≥ 90%) e ao
-    menos 40% dos desligamentos são a pedido.
+    números a sustentam: o saldo é pequeno diante do volume (|saldo| ≤ 5% das
+    movimentações) e ao menos 40% dos desligamentos são a pedido.
     """
     if df is None or df.empty:
         return "Nenhuma movimentação na seleção atual — ajuste ou limpe os filtros."
     t = c.total(df)
     nome = "A indústria catarinense" if escopo == c.ESCOPO_INDUSTRIA else "A economia catarinense"
-    if t[c.M_GIRO] >= 0.9 and t[c.M_SAIDA_VOL] >= 0.4:
-        manchete = (f"{nome} ({periodo(df)}) gira muito e cresce pouco: "
+    if abs(t[c.M_SALDO_REL]) <= 0.05 and t[c.M_SAIDA_VOL] >= 0.4:
+        manchete = (f"{nome} ({periodo(df)}) movimenta muito e cresce pouco: "
                     "o apagão é de retenção, não de falta de contratação.")
     else:
         manchete = f"{nome} ({periodo(df)}) em quatro números."
     topicos = [
         f"**{c.fmt_int(t[c.M_MOV])} movimentações** deixaram saldo de {c.fmt_int(t[c.M_SALDO])} vagas "
         f"({c.fmt_pct(t[c.M_SALDO_REL])} do total).",
-        f"**{c.fmt_pct(t[c.M_GIRO])}** das contratações só repõem saídas, e **{c.fmt_pct(t[c.M_SAIDA_VOL])}** "
-        "dos desligamentos são a pedido do trabalhador.",
+        f"**{c.fmt_pct(t[c.M_SAIDA_VOL])}** dos desligamentos são a pedido do trabalhador.",
     ]
     m = unidades(df, relevantes=True)
     if not m.empty:
@@ -178,7 +177,7 @@ def legenda_mapa(metricas: pd.DataFrame, metrica: str, rotulo: str) -> str:
     validas = metricas[metricas[c.M_AMOSTRA_OK]].dropna(subset=[metrica])
     if validas.empty:
         return "Nenhuma unidade com amostra suficiente (≥ 100 movimentações)."
-    tensao = metrica in (c.M_SAIDA_VOL, c.M_GIRO)
+    tensao = metrica == c.M_SAIDA_VOL
     extremo = validas.loc[validas[metrica].idxmax() if tensao or metrica != c.M_GAP_SAL else validas[metrica].idxmin()]
     definicao = c.DEFINICOES[metrica]
     return (f"{'Maior' if tensao or metrica != c.M_GAP_SAL else 'Menor'} {definicao.rotulo.lower()}: "

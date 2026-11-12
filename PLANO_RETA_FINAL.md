@@ -76,7 +76,7 @@ Leia PLANO_RETA_FINAL.md, seção "Como trabalhar". Continue o marco <Mx> a part
 ## M1 · Corrigir os 3 problemas de método (sem dado novo)
 
 **Branch:** `m1-metodo` · **Dono:** pessoa 1 · **Estimativa:** 1,5 a 2 h
-**Estado:** C1 feito. Próximo: C2 (giro fora).
+**Estado:** C1–C2 feitos. A regra de Automação ficou "Básico ≥ 50% e saldo ≤ 0" (sem o giro). Próximo: C3.
 
 O que muda, e por quê:
 - **Giro:** hoje é `min(adm, desl) / max(adm, desl)`, que é função exata do saldo relativo (indústria: 0,9954 = (1−|s|)/(1+|s|)). Sai de tudo. A rotatividade oficial volta no M4.
@@ -88,7 +88,7 @@ O que muda, e por quê:
   - A compressão continua só como causa (`causas()`, Salarial).
   - Em `diagnostico.py`, esconder o expander de sensibilidade enquanto houver um único componente; ele volta no M4.C6.
   - Testes: `test_dashboard_metricas.py`.
-- [ ] **M1.C2 Giro fora.**
+- [x] **M1.C2 Giro fora.**
   - Apagar `M_GIRO` de `comum.py`: definição, `KPIS_PADRAO`, grupos de indicadores, `METRICAS_INVERSAS` e as regras de recomendação que o usam.
   - Apagar também de `narrativa.py`, `figuras.py`, `paginas/` (panorama, diagnóstico, causa raiz, recomendações, apresentação, metodologia) e dos testes.
   - Conferir com `grep -rn "M_GIRO\|giro" dashboard tests`, que deve voltar vazio.

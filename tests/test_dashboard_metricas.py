@@ -76,10 +76,9 @@ def test_agregar_por_dimensao_preserva_o_total():
 # --- Casos de borda ------------------------------------------------------------
 
 
-def test_zero_desligamentos_deixa_saida_voluntaria_indefinida_e_giro_zero():
+def test_zero_desligamentos_deixa_saida_voluntaria_indefinida():
     t = c.total(_df(_celula(admissoes=200)))
     assert math.isnan(t[c.M_SAIDA_VOL])
-    assert t[c.M_GIRO] == 0.0
     assert t[c.M_SALDO] == 200
 
 
@@ -93,7 +92,7 @@ def test_recorte_vazio_tem_contagens_zero_e_razoes_nan():
     vazio = _df(_celula()).iloc[0:0]
     t = c.total(vazio)
     assert t[c.M_MOV] == 0 and t[c.M_SALDO] == 0
-    assert math.isnan(t[c.M_GIRO]) and math.isnan(t[c.M_SAIDA_VOL])
+    assert math.isnan(t[c.M_SAIDA_VOL])
     rotulos = dict(c.calcular_kpis(vazio))
     assert rotulos["Saldo"] == 0.0
 
@@ -208,7 +207,7 @@ def test_regra_mobilidade_expansao_sob_pressao_e_retracao_noutra_regiao():
     assert recs[0].extras["origem"] == "Sul Catarinense"
 
 
-def test_regra_automacao_basico_giro_alto_e_saldo_nao_positivo():
+def test_regra_automacao_basico_e_saldo_nao_positivo():
     df = _df(
         _celula(regiao="Serrana", municipio="420300", macrofamilia_cbo="Referência",
                 admissoes=1000, desligamentos=700, desligamentos_a_pedido=200, **_salarios(2000, 2000)),

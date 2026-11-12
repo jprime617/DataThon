@@ -47,7 +47,7 @@ def ficha_mesorregiao(ctx: c.Contexto, regiao: str, recs: list[c.Recomendacao]) 
         f"({c.fmt_metrica(c.M_SALDO_10K, t[c.M_SALDO_10K])} por 10 mil hab.).",
         f"- Saída voluntária {c.fmt_pct(t[c.M_SAIDA_VOL])} (estado: {c.fmt_pct(ref[c.M_SAIDA_VOL])}); "
         f"gap salarial de reposição {c.fmt_razao(t[c.M_GAP_SAL])} (estado: {c.fmt_razao(ref[c.M_GAP_SAL])}).",
-        f"- Gap de escolaridade {c.fmt_metrica(c.M_GAP_ESC, t[c.M_GAP_ESC])} nível(is); giro {c.fmt_pct(t[c.M_GIRO])}.",
+        f"- Gap de escolaridade {c.fmt_metrica(c.M_GAP_ESC, t[c.M_GAP_ESC])} nível(is).",
     ]
     if not m.empty:
         tensa = (relevantes if not relevantes.empty else m).iloc[0]
@@ -77,7 +77,7 @@ def render(ctx: c.Contexto) -> None:
     ref = c.total(ctx.df)
     st.markdown(
         f"Cinco regras ligam o diagnóstico de cada **mesorregião × macrofamília (IA)** a uma alavanca da empresa. "
-        f"Referência do recorte: saída voluntária {c.fmt_pct(ref[c.M_SAIDA_VOL])}, giro {c.fmt_pct(ref[c.M_GIRO])}. "
+        f"Referência do recorte: saída voluntária {c.fmt_pct(ref[c.M_SAIDA_VOL])}. "
         f"**{len(recs)} recomendações** disparadas."
     )
     if not recs:

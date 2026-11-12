@@ -43,7 +43,6 @@ ESCALAS_MAPA = {
     c.M_GAP_SAL: ("divergente", 1.0),
     c.M_GAP_ESC: ("divergente", 0.0),
     c.M_SAIDA_VOL: ("tensao", None),
-    c.M_GIRO: ("tensao", None),
 }
 PERCENTIL_LIMITE_ESCALA = 98
 COR_SEM_DADO = "#D9D9D9"
