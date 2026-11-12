@@ -37,6 +37,9 @@ COLUNA_COMPETENCIA = "competênciamov"
 # Nome da coluna de saldo líquido produzida por `saldo_liquido` (R4.1).
 COLUNA_SALDO_LIQUIDO = "saldo_liquido"
 
+# +1 para MOV/FOR e −1 para EXC no consolidado de 24 meses (ausente = +1).
+COLUNA_PESO = "peso"
+
 # Nome da coluna de saldo normalizado produzida por `saldo_por_10k` (R4.2).
 COLUNA_SALDO_POR_10K = "saldo_por_10k"
 
@@ -98,11 +101,16 @@ def saldo_liquido(df: pd.DataFrame, por: list[str]) -> pd.DataFrame:
         # Sem registros, não há recorte com saldo a reportar (R4.10).
         return pd.DataFrame(columns=[*por, COLUNA_SALDO_LIQUIDO])
 
+    # Com o consolidado de 24 meses, a linha EXC tem `peso` −1 e anula a
+    # declaração que exclui (M5.C3): saldo = Σ peso × saldomovimentação.
+    saldo = pd.to_numeric(df[COLUNA_SALDO_MOVIMENTACAO], errors="coerce")
+    if COLUNA_PESO in df.columns:
+        saldo = saldo * df[COLUNA_PESO]
     agregado = (
-        df.groupby(por, dropna=False)[COLUNA_SALDO_MOVIMENTACAO]
+        saldo.groupby([df[c] for c in por], dropna=False)
         .sum()
+        .rename(COLUNA_SALDO_LIQUIDO)
         .reset_index()
-        .rename(columns={COLUNA_SALDO_MOVIMENTACAO: COLUNA_SALDO_LIQUIDO})
     )
     return agregado
 

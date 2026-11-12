@@ -1,19 +1,19 @@
 {
-  "gerado_em": "2026-11-12T19:32:23-03:00",
+  "gerado_em": "2026-11-12T20:05:34-03:00",
   "periodo": {
-    "inicio": "202509",
+    "inicio": "202409",
     "fim": "202608",
-    "meses": 12
+    "meses": 24
   },
-  "commit": "cb9f026",
+  "commit": "b57d29c",
   "linhas": {
-    "brutas": 3397416,
-    "excluidas_competencia": 6128,
-    "apos_limpeza": 3391288,
-    "movimentacoes_agregadas": 3391288,
-    "movimentacoes_industria": 1139633,
-    "agregado": 254719,
-    "perfil": 16650
+    "brutas": 6782144,
+    "excluidas_competencia": 0,
+    "apos_limpeza": 6782144,
+    "movimentacoes_agregadas": 6771692,
+    "movimentacoes_industria": 2282348,
+    "agregado": 511621,
+    "perfil": 18730
   },
   "ia": {
     "provedor": "ClienteArquivo",
@@ -24,11 +24,11 @@
     "comparacao": "IA paga (chat) × classificação anterior (cbo_macrofamilias_gemini.csv)",
     "cbos_comparados": 2206,
     "nota": "classificação via chat; prompts e respostas em `ia_cbo/`",
-    "nao_classificado_ponderado": 4.2461743148915695e-05
+    "nao_classificado_ponderado": 0.00010100872868996405
   },
   "salario_valido": {
     "regra": "> 0 e ≤ 20 × mediana estadual dos salários positivos",
-    "teto": 43124.6
+    "teto": 43376.40766808095
   },
   "testes": null
 }

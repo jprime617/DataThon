@@ -42,6 +42,7 @@ from dataclasses import dataclass, field
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from src.logging_pipeline import log_etapa
@@ -177,7 +178,7 @@ def limpar_moeda(
         e ``falhas`` é a lista de ``RegistroFalhaMoeda`` (uma entrada por
         combinação coluna × competência com pelo menos uma falha).
     """
-    resultado = df.copy()
+    resultado = df.copy(deep=False)
     falhas: list[RegistroFalhaMoeda] = []
 
     tem_competencia = "competênciamov" in resultado.columns
@@ -310,7 +311,7 @@ def decodificar_dominios(
         ``nao_mapeados`` é a lista de ``CodigoNaoMapeado`` (uma entrada por
         combinação coluna × código sem rótulo, com a contagem de ocorrências).
     """
-    resultado = df.copy()
+    resultado = df.copy(deep=False)
     nao_mapeados: list[CodigoNaoMapeado] = []
 
     for coluna, mapa in mapas.items():
@@ -342,7 +343,22 @@ def decodificar_dominios(
             )
             return valor
 
-        resultado[coluna] = serie.map(_decodificar)
+        # Decodifica uma vez por valor distinto (poucos por coluna) e espalha
+        # pelos códigos de categoria: chamar `_decodificar` célula a célula
+        # estourava a memória com os 6,8 mi de linhas de 24 meses (M5.C5).
+        categorias = serie.astype("category")
+        unicos = list(categorias.cat.categories)
+        frequencia = categorias.cat.codes.value_counts()
+        rotulos = [_decodificar(valor) for valor in unicos]
+        # `_decodificar` contou 1 por valor distinto; vale a frequência dele.
+        contagem_nao_mapeada.clear()
+        for i, (valor, rotulo) in enumerate(zip(unicos, rotulos)):
+            if rotulo is valor:  # não mapeado: o valor original volta intacto
+                codigo = _normalizar_codigo_categorico(valor)
+                contagem_nao_mapeada[codigo] = contagem_nao_mapeada.get(codigo, 0) + int(frequencia.get(i, 0))
+        codigos = categorias.cat.codes.to_numpy()
+        decodificado = np.array([*rotulos, math.nan], dtype=object)[codigos]  # −1 → NaN
+        resultado[coluna] = pd.Series(decodificado, index=serie.index, name=coluna)
 
         for codigo, quantidade in contagem_nao_mapeada.items():
             nao_mapeados.append(
@@ -379,7 +395,7 @@ def derivar_escolaridade_ordinal(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         Uma cópia de ``df`` com a coluna ``escolaridade_ordinal`` (``float``).
     """
-    resultado = df.copy()
+    resultado = df.copy(deep=False)
     if COLUNA_GRAU_INSTRUCAO not in resultado.columns:
         return resultado
 
@@ -576,7 +592,7 @@ def deflacionar_salario(df: pd.DataFrame, caminho_inpc: Path = CAMINHO_INPC) -> 
     if "salário" not in df.columns:
         return df
     fator = pd.read_csv(caminho_inpc).set_index("competencia")["fator_ago2026"]
-    saida = df.copy()
+    saida = df.copy(deep=False)
     competencia = pd.to_numeric(saida[COLUNA_COMPETENCIA], errors="coerce")
     saida["salário"] = saida["salário"] * competencia.map(fator).fillna(1.0)
     return saida
@@ -619,15 +635,15 @@ def limpar(
     # CAGED: moeda → escolaridade ordinal → domínios → filtro de competência → deflação INPC (M5.C2).
     # O ordinal é derivado **antes** da decodificação porque lê o código cru de
     # `graudeinstrução`, que a decodificação substitui pelo rótulo (R4.7).
-    caged_moeda, falhas_moeda = limpar_moeda(df_caged)
-    caged_ordinal = derivar_escolaridade_ordinal(caged_moeda)
-    caged_dominios, codigos_nao_mapeados = decodificar_dominios(
-        caged_ordinal, mapas
-    )
-    caged_limpo, excluidos_competencia = filtrar_competencia(
-        caged_dominios, inicio=inicio, fim=fim
-    )
-    caged_limpo = deflacionar_salario(caged_limpo)
+    # Uma variável só: cada intermediário é liberado assim que o seguinte existe
+    # (com 24 meses, ~2 GB por cópia; M5.C5). As cópias internas são rasas
+    # (copy-on-write do pandas 3: só a coluna alterada é copiada).
+    caged, falhas_moeda = limpar_moeda(df_caged)
+    caged = derivar_escolaridade_ordinal(caged)
+    caged, codigos_nao_mapeados = decodificar_dominios(caged, mapas)
+    caged, excluidos_competencia = filtrar_competencia(caged, inicio=inicio, fim=fim)
+    caged_limpo = deflacionar_salario(caged)
+    del caged
 
     # Base_de_Municipios: indicadores BR → float; "-" → NaN (R2.3/R2.4).
     municipios_limpo, falhas_indicadores = limpar_indicadores_municipios(

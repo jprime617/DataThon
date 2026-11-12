@@ -67,6 +67,7 @@ from src.metricas import (
     COLUNA_SALDO_MOVIMENTACAO,
     COLUNA_SALARIO,
     COLUNA_ESCOLARIDADE_ORDINAL,
+    COLUNA_PESO,
     COLUNA_SECAO,
     MOVIMENTACAO_ADMISSAO,
     MOVIMENTACAO_DESLIGAMENTO,
@@ -255,7 +256,7 @@ def preparar_base(df: pd.DataFrame, teto: float | None = None) -> pd.DataFrame:
     usadas = [
         COLUNA_CHAVE_MUNICIPAL, COLUNA_SECAO, COLUNA_SUBCLASSE, COLUNA_MACROFAMILIA,
         COLUNA_NIVEL, COLUNA_COMPETENCIA, COLUNA_SALDO_MOVIMENTACAO,
-        COLUNA_TIPO_MOVIMENTACAO, COLUNA_SALARIO, COLUNA_ESCOLARIDADE_ORDINAL,
+        COLUNA_TIPO_MOVIMENTACAO, COLUNA_SALARIO, COLUNA_ESCOLARIDADE_ORDINAL, COLUNA_PESO,
     ]
     base = df[[c for c in usadas if c in df.columns]].copy()
     secao = base[COLUNA_SECAO]
@@ -290,10 +291,17 @@ def preparar_base(df: pd.DataFrame, teto: float | None = None) -> pd.DataFrame:
     else:
         a_pedido = pd.Series(False, index=base.index)
         nao_descontado = a_pedido
-    base[COLUNA_ADMISSOES] = adm.astype("int64")
-    base[COLUNA_DESLIGAMENTOS] = desl.astype("int64")
-    base[COLUNA_DESLIGAMENTOS_A_PEDIDO] = (desl & a_pedido).astype("int64")
-    base[COLUNA_DESLIGAMENTOS_DESCONTADOS] = (desl & ~nao_descontado).astype("int64")
+    # Peso do consolidado de 24 meses: a linha EXC (−1) desconta a declaração
+    # que exclui em todas as contagens e somas (M5.C5); sem a coluna, +1.
+    peso = (
+        base[COLUNA_PESO].astype("int64")
+        if COLUNA_PESO in base.columns
+        else pd.Series(1, index=base.index, dtype="int64")
+    )
+    base[COLUNA_ADMISSOES] = adm.astype("int64") * peso
+    base[COLUNA_DESLIGAMENTOS] = desl.astype("int64") * peso
+    base[COLUNA_DESLIGAMENTOS_A_PEDIDO] = (desl & a_pedido).astype("int64") * peso
+    base[COLUNA_DESLIGAMENTOS_DESCONTADOS] = (desl & ~nao_descontado).astype("int64") * peso
 
     for origem, nome in ((COLUNA_SALARIO, "salario"), (COLUNA_ESCOLARIDADE_ORDINAL, "escolaridade")):
         valor = (
@@ -305,8 +313,8 @@ def preparar_base(df: pd.DataFrame, teto: float | None = None) -> pd.DataFrame:
             valor = valor.where((valor > 0) & (valor <= teto))
         for mascara, sufixo in ((adm, "admissao"), (desl, "desligamento")):
             valido = mascara & valor.notna()
-            base[f"soma_{nome}_{sufixo}"] = valor.where(valido, 0.0)
-            base[f"n_{nome}_{sufixo}"] = valido.astype("int64")
+            base[f"soma_{nome}_{sufixo}"] = valor.where(valido, 0.0) * peso
+            base[f"n_{nome}_{sufixo}"] = valido.astype("int64") * peso
     return base
 
 

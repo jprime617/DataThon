@@ -105,3 +105,18 @@ def test_perfil_tem_medianas_por_faixa_e_contagens_aditivas():
     por_faixa = construcao.set_index("faixa_escolaridade")["mediana_salario_desligamento"]
     assert por_faixa["Até fundamental incompleto"] == 1500
     assert por_faixa["Fundamental completo"] == 1700
+
+
+def test_peso_exc_desconta_contagens_e_saldo():
+    from src.metricas import saldo_liquido
+
+    df = _base()
+    # A última linha vira uma exclusão (EXC) de um desligamento: peso −1.
+    df["peso"] = [1, 1, 1, 1, 1, -1]
+    base = preparar_base(df)
+    assert base["desligamentos"].sum() == 4 - 2  # 4 desligamentos, um deles excluído (−1)
+    assert base["n_salario_desligamento"].sum() == 4 - 2
+    assert math.isclose(base["soma_salario_desligamento"].sum(), 3000 + 4000 + 1500 - 1700)
+    assert saldo_liquido(df, ["chave_municipal"])["saldo_liquido"].sum() == (2 - 4) + 2
+    agregado = agregar(df, _municipios())
+    assert (agregado["admissoes"] - agregado["desligamentos"]).sum() == agregado["saldo_liquido"].sum()

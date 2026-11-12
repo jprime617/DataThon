@@ -37,6 +37,12 @@ COLUNAS_OBRIGATORIAS_CAGED = [
 ]
 
 
+# Colunas lidas do consolidado de 24 meses: as obrigatórias + UF, tipo e peso.
+COLUNAS_LIDAS_24M = [
+    *COLUNAS_OBRIGATORIAS_CAGED, "uf", "tipomovimentação", "peso", "tipo_arquivo",
+]
+
+
 def _ler_csv_identificando_arquivo(caminho: str, **kwargs) -> pd.DataFrame:
     """Lê um CSV repassando `kwargs` ao pandas; em falha de I/O levanta
     `ErroDeValidacao` identificando o arquivo (R1.10).
@@ -70,13 +76,26 @@ def ler_caged(caminho: str) -> pd.DataFrame:
     Em caso de arquivo ausente, inacessível ou ilegível, levanta
     `ErroDeValidacao` identificando o arquivo (R1.10).
     """
-    df = _ler_csv_identificando_arquivo(
-        caminho,
-        sep=";",
-        decimal=",",
-        encoding="utf-8",
-        dtype=str,
-    )
+    if str(caminho).endswith(".parquet"):
+        # Consolidado de 24 meses (M5.C3): mesmas colunas de texto + `peso`.
+        # Só as colunas que o pipeline usa: com 6,8 mi de linhas, as 31 colunas
+        # estouravam a memória da limpeza (M5.C5).
+        try:
+            df = pd.read_parquet(caminho, columns=COLUNAS_LIDAS_24M)
+            # Texto repetitivo vira categoria (o valor guardado uma vez, o código por
+            # linha): sem isso a limpeza e a junção passam de 7 GB.
+            for coluna in df.columns.difference(["salário", "valorsaláriofixo", "peso"]):
+                df[coluna] = df[coluna].astype("category")
+        except Exception as exc:  # noqa: BLE001
+            raise ErroDeValidacao(f"Arquivo de origem ilegível: {caminho!r} ({exc})") from exc
+    else:
+        df = _ler_csv_identificando_arquivo(
+            caminho,
+            sep=";",
+            decimal=",",
+            encoding="utf-8",
+            dtype=str,
+        )
     # Descarta as colunas de índice espúrias quando presentes (R1.3).
     colunas_para_remover = [c for c in _COLUNAS_INDICE_DESCARTAR if c in df.columns]
     if colunas_para_remover:

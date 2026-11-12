@@ -249,7 +249,7 @@ def juntar(df_caged: pd.DataFrame, df_municipios: pd.DataFrame) -> JoinResult:
     # `object` em ambas as bases para que uma base vazia ou totalmente malformada
     # — cujo `map` produz uma coluna só de NaN inferida como float64 — não quebre
     # o `merge` por incompatibilidade de tipos entre as colunas de chave.
-    caged = df_caged.copy()
+    caged = df_caged.copy(deep=False)
     # Total lido, antes de qualquer exclusão: é o que R3.4 manda registrar e o
     # denominador da proporção do alerta de R3.5. Usar o total pós-exclusão
     # encolheria o denominador e dispararia o alerta mais facilmente.

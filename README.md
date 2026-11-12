@@ -304,9 +304,9 @@ O painel fica em `https://<APP>.azurewebsites.net`. A legenda abaixo do título 
 
 Estas premissas são relevantes para a interpretação correta dos resultados e para a auditoria do pipeline:
 
-### (a) Exclusões já aplicadas na origem
+### (a) Exclusões: MOV + FOR − EXC reconstruído e validado
 
-As colunas de controle de exclusão `indicadordeexclusão` e `competênciaexc` **não estão presentes** no arquivo `Novo_Caged_MOV_Limpo.csv`. As exclusões correspondentes já foram aplicadas na origem dos dados; portanto, o pipeline parte de uma base em que esse tratamento já foi realizado e não o repete. *(R2.10, R8.3a)*
+O pipeline usa, por padrão, o **Novo CAGED de 24 meses** (set/2024–ago/2026) baixado do FTP do MTE (`python -m src.download && python -m src.caged24`). As declarações no prazo (MOV) e fora do prazo (FOR) entram com `peso` +1 e as exclusões (EXC, com `indicadordeexclusão` e `competênciaexc`) com `peso` −1; toda contagem, soma e saldo é Σ `peso`. No bloco recente, o resultado confere com a base fornecida `Novo_Caged_MOV_Limpo.csv` (+0,02% nas admissões, +0,005% nos desligamentos; `data_processed/validacao_base_fornecida.csv`), que já traz as exclusões aplicadas na origem e não tem essas colunas. Com `FONTE_CAGED=fornecida`, o pipeline volta a usar só a base fornecida (12 meses). *(R2.10, R8.3a)*
 
 ### (b) IDHM referente a 2010 e desatualizado
 

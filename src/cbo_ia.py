@@ -865,7 +865,7 @@ def aplicar_mapeamento(
     mapa = pd.read_csv(caminho_csv, dtype={COLUNA_CBO: str})
     mapa[COLUNA_CBO] = mapa[COLUNA_CBO].map(_normalizar_cbo)
     chave = df[COLUNA_CBO].map(_normalizar_cbo)
-    resultado = df.copy()
+    resultado = df.copy(deep=False)
     for coluna in (COLUNA_MACROFAMILIA, COLUNA_NIVEL):
         resultado[coluna] = chave.map(dict(zip(mapa[COLUNA_CBO], mapa[coluna])))
     return resultado
@@ -967,7 +967,7 @@ def classificar_cbos(
     # 5. Merge da macrofamília na base pelo código `cbo2002ocupação` (R5.5).
     # Os códigos da base são normalizados da mesma forma que em `extrair_cbos`
     # para casar com as chaves do mapeamento (texto, sem sufixo decimal nulo).
-    df_enriquecido = df.copy()
+    df_enriquecido = df.copy(deep=False)
     chave_normalizada = df_enriquecido[COLUNA_CBO].map(_normalizar_cbo)
     df_enriquecido[COLUNA_MACROFAMILIA] = chave_normalizada.map(mapeamento)
     df_enriquecido[COLUNA_NIVEL] = chave_normalizada.map(
