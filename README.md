@@ -261,7 +261,7 @@ az webapp config set --name "$APP" --resource-group "$RG" --web-sockets-enabled 
 
 ```bash
 zip -r deploy.zip . \
-  -x '.venv/*' -x '.git/*' -x 'Dados/*' -x '*__pycache__/*' \
+  -x '.venv/*' -x '.git/*' -x 'Dados/*' -x 'data/*' -x '*__pycache__/*' \
   -x '.pytest_cache/*' -x '.hypothesis/*' -x 'data_processed/caged_bruto.parquet' \
   -x '.env' -x '*.env' -x 'notebooks/*'
 unzip -l deploy.zip | grep -E '\.env$' && echo 'ERRO: .env no pacote' || echo 'ok: sem .env'
@@ -271,13 +271,13 @@ az webapp deploy \
   --src-path deploy.zip --type zip
 ```
 
-O pacote inclui `.streamlit/` (tema), `data_processed/caged_agregado.parquet`, `caged_perfil.parquet`, `metadados.json` e os arquivos da IA de propósito: são o *fallback* local que mantém o painel de pé se o Blob ficar indisponível durante a apresentação (R9.6). O `.env` fica de fora — as credenciais vão nas *app settings*.
+O pacote inclui `.streamlit/` (tema), `data_processed/caged_agregado.parquet`, `caged_perfil.parquet`, `rais_estoque.parquet`, `metadados.json` e os arquivos da IA de propósito: são o *fallback* local que mantém o painel de pé se o Blob ficar indisponível durante a apresentação (R9.6). O `.env` fica de fora — as credenciais vão nas *app settings*.
 
-Para atualizar só os dados (sem novo deploy), envie os três artefatos ao Blob:
+Para atualizar só os dados (sem novo deploy), envie os quatro artefatos ao Blob, **juntos** (o painel recusa schema misturado). A pasta `data/` (RAIS e CAGED brutos, ~6 GB) nunca entra no pacote:
 
 ```bash
 set -a; source .env; set +a
-.venv/bin/python -c "from src.azure_upload import upload_tabelas; print(upload_tabelas(['data_processed/caged_agregado.parquet', 'data_processed/caged_perfil.parquet', 'data_processed/metadados.json'], '$AZURE_BLOB_CONTAINER'))"
+.venv/bin/python -c "from src.azure_upload import upload_tabelas; print(upload_tabelas(['data_processed/caged_agregado.parquet', 'data_processed/caged_perfil.parquet', 'data_processed/metadados.json', 'data_processed/rais_estoque.parquet'], '$AZURE_BLOB_CONTAINER'))"
 ```
 
 O painel valida o schema do que leu no Blob: se a cópia estiver desatualizada (sem as colunas v2), ele usa a cópia local e diz isso na tela.
