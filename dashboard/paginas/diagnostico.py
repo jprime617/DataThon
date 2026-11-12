@@ -121,7 +121,6 @@ def render(ctx: c.Contexto) -> None:
                        "menos escolarizada numa área técnica; Retenção = saída a pedido 5 p.p. acima do estado sem que o "
                        "salário de entrada seja menor.")
 
-    # Com um só componente de tensão não há peso para variar; volta no M4.C6.
     if len(c.PESOS_TENSAO_PADRAO) > 1:
         with st.expander("Sensibilidade: o top 10 muda com outros pesos?"):
             st.caption("Pesos iniciais iguais (PLANEJAMENTO §7.1). Mude-os e veja quantas unidades permanecem "

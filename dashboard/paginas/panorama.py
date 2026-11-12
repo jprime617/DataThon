@@ -25,16 +25,13 @@ def metricas_mapa(df: pd.DataFrame, nivel: str) -> pd.DataFrame:
 
 
 def ranking_secoes(df: pd.DataFrame) -> pd.DataFrame:
-    """R7.3: seções por saldo (decrescente), com a saída voluntária ao lado.
-
-    Ponytail: a saída voluntária ocupa o lugar da rotatividade descontada até
-    a RAIS entrar (M4); aí basta trocar a coluna.
-    """
+    """R7.3: seções por saldo (decrescente), com a rotatividade descontada ao lado."""
     por = c.agregar_metricas(df, [c.COLUNA_SECAO_INDUSTRIAL])
     por = por[por[c.M_MOV] > 0].sort_values(c.M_SALDO, ascending=False, kind="stable")
     return pd.DataFrame({
         "Seção (CNAE)": por[c.COLUNA_SECAO_INDUSTRIAL].astype(str).values,
         "Saldo de vagas": por[c.M_SALDO].astype("int64").values,
+        "Rotatividade descontada": por[c.M_ROT_DESC].where(por[c.M_AMOSTRA_OK]).values,
         "Saída voluntária": por[c.M_SAIDA_VOL].where(por[c.M_AMOSTRA_OK]).values,
         "Movimentações": por[c.M_MOV].astype("int64").values,
     })
@@ -117,12 +114,16 @@ def render(ctx: c.Contexto) -> None:
     st.dataframe(ranking_secoes(ctx.df), hide_index=True, width="stretch", column_config={
         "Saldo de vagas": st.column_config.NumberColumn(format="localized"),
         "Movimentações": st.column_config.NumberColumn(format="localized"),
+        "Rotatividade descontada": st.column_config.ProgressColumn(
+            format="percent", min_value=0.0, max_value=1.0,
+            help="min(admissões, desligamentos descontados) ÷ estoque de 31/12/2025 (RAIS). "
+                 "Oficial (MTE): SC 33,6%, Brasil 34,2%."),
         "Saída voluntária": st.column_config.ProgressColumn(
             format="percent", min_value=0.0, max_value=1.0,
             help="Desligamentos a pedido ÷ desligamentos. Vazio = menos de 100 movimentações."),
     })
-    st.caption("Da seção que mais criou vagas para a que mais perdeu. A saída voluntária fica no lugar da "
-               "rotatividade oficial, que exige o estoque de vínculos da RAIS.")
+    st.caption("Da seção que mais criou vagas para a que mais perdeu. Rotatividade descontada na definição do "
+               "MTE, com o estoque da RAIS 2025; vazio = menos de 100 movimentações.")
 
     mensal = c.agregar_metricas(ctx.df, [c.COLUNA_MES])
     st.plotly_chart(fig.construir_serie_mensal(mensal), width="stretch")

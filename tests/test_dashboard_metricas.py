@@ -310,3 +310,24 @@ def test_anexar_estoque_casa_pela_celula():
     junto = c.anexar_estoque(agregado, estoque, avisos)
     assert list(junto["estoque_31dez"]) == [1000, 1000] and not avisos
     assert c.anexar_estoque(agregado, None, avisos) is agregado and avisos
+
+
+def test_tensao_tem_os_tres_sintomas_e_dinamismo_usa_o_estoque():
+    assert set(c.PESOS_TENSAO_PADRAO) == {c.M_ROT_DESC, c.M_SAIDA_VOL, c.M_PRECOCE}
+    comum = dict(admissoes=100, desligamentos=100, desligamentos_a_pedido=40)
+    df = _df(
+        _com_estoque(setor="calmo", desligamentos_descontados=20, desligados_precoce=40, **comum),
+        _com_estoque(setor="medio", desligamentos_descontados=50, desligados_precoce=100, **comum),
+        _com_estoque(setor="tenso", desligamentos_descontados=90, desligados_precoce=180, **comum),
+    )
+    m = c.matriz_diagnostico(df, [c.COLUNA_SETOR]).set_index(c.COLUNA_SETOR)
+    # Saída voluntária igual: quem ordena é rotatividade + precoce.
+    assert list(m.index) == ["tenso", "medio", "calmo"]
+    assert m.loc["tenso", "motor"] in {"rotatividade alta", "desligamento precoce alto"}
+
+
+def test_dinamismo_cai_para_o_saldo_relativo_sem_estoque():
+    df = _df(_celula(setor="a", admissoes=200, desligamentos=100),
+             _celula(setor="b", admissoes=100, desligamentos=200))
+    m = c.matriz_diagnostico(df, [c.COLUNA_SETOR]).set_index(c.COLUNA_SETOR)
+    assert m.loc["a", "dinamismo"] > 0 > m.loc["b", "dinamismo"]

@@ -617,16 +617,23 @@ Q_PRESSAO = "Expansão sob pressão"
 Q_ESTAGNACAO = "Estagnação"
 Q_APAGAO = "Apagão (rotatividade crônica)"
 
-# Tensão = só sintomas. A compressão salarial é causa (ver `causas`), não sintoma;
-# rotatividade descontada e desligamento precoce entram com a RAIS (M4).
-PESOS_TENSAO_PADRAO = {M_SAIDA_VOL: 1.0}
-# A aceleração semestral media calendário; volta por blocos de 12 meses (M5.C6).
-PESOS_DINAMISMO_PADRAO = {M_SALDO_REL: 1.0}
+# Tensão = só sintomas, com pesos iguais (M4.C6). A compressão salarial é causa
+# (ver `causas`), não sintoma. Sem o estoque da RAIS, os dois sintomas dela ficam
+# ausentes e a média usa só a saída voluntária.
+PESOS_TENSAO_PADRAO = {M_ROT_DESC: 1.0, M_SAIDA_VOL: 1.0, M_PRECOCE: 1.0}
+# Dinamismo = variação do emprego (saldo ÷ estoque); sem estoque, saldo relativo.
+# A aceleração por blocos de 12 meses volta no M5.C6.
+PESOS_DINAMISMO_PADRAO = {M_VAR_REL: 1.0}
 
 ROTULO_COMPONENTE = {
+    M_ROT_DESC: "rotatividade alta",
     M_SAIDA_VOL: "saída voluntária alta",
-    M_SALDO_REL: "saldo relativo",
+    M_PRECOCE: "desligamento precoce alto",
+    M_VAR_REL: "variação do emprego",
 }
+
+# Rotatividade descontada oficial, out/25–set/26 (MTE; PLANEJAMENTO §6).
+ROTATIVIDADE_OFICIAL = {"SC": 0.336, "Brasil": 0.342, "Transformação (Brasil)": 0.276}
 
 
 def zscore(serie: pd.Series) -> pd.Series:
@@ -681,10 +688,13 @@ def matriz_diagnostico(
         for c in ("dinamismo", "tensao", "quadrante", "motor"):
             m[c] = pd.Series(dtype="object")
         return m
+    variacao = m[M_VAR_REL] if m[M_VAR_REL].notna().any() else m[M_SALDO_REL]
     comp = pd.DataFrame(
         {
+            M_ROT_DESC: zscore(m[M_ROT_DESC]),
             M_SAIDA_VOL: zscore(m[M_SAIDA_VOL]),
-            M_SALDO_REL: zscore(m[M_SALDO_REL]),
+            M_PRECOCE: zscore(m[M_PRECOCE]),
+            M_VAR_REL: zscore(variacao),
         },
         index=m.index,
     )
@@ -1338,15 +1348,15 @@ def delta_texto(nome: str, valor: float, referencia: float, sufixo: str) -> str 
 
 
 # Métricas em que subir é ruim (delta em vermelho quando sobe).
-METRICAS_INVERSAS = {M_SAIDA_VOL}
+METRICAS_INVERSAS = {M_SAIDA_VOL, M_ROT_DESC, M_PRECOCE}
 
 
 # Temas da coluna de indicadores (sanfona do Panorama): título, ícone e métricas.
 TEMAS_KPI = [
-    ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K]),
+    ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K, M_VAR_REL]),
     ("Renda", ":material/payments:", [M_GAP_SAL, M_SAL_ADM, M_SAL_DESL]),
     ("Escolaridade", ":material/school:", [M_GAP_ESC]),
-    ("Tensão", ":material/crisis_alert:", [M_SAIDA_VOL]),
+    ("Tensão", ":material/crisis_alert:", [M_ROT_DESC, M_SAIDA_VOL, M_PRECOCE]),
 ]
 METRICAS_TEMAS = [m for _, _, ms in TEMAS_KPI for m in ms]
 
@@ -1357,6 +1367,9 @@ UNIDADES = {
     M_SALDO_10K: "vagas por 10 mil hab.",
     M_SALDO_REL: "do total movimentado",
     M_SAIDA_VOL: "dos desligamentos, a pedido",
+    M_ROT_DESC: "oficial (MTE): SC 33,6% · Brasil 34,2% · Transformação 27,6%",
+    M_VAR_REL: "do estoque de 31/12/2025",
+    M_PRECOCE: "dos desligados, com < 12 meses de casa",
     M_GAP_SAL: "do salário de quem saiu",
     M_SAL_ADM: "por mês",
     M_SAL_DESL: "por mês",
