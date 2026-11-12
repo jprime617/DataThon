@@ -101,8 +101,8 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
         achados.append(Achado(
             "Maior tensão",
             f"**{u[c.COLUNA_SETOR]}** em **{u[c.COLUNA_REGIAO]}**: saída voluntária "
-            f"{c.fmt_pct(u[c.M_SAIDA_VOL])} (estado: {c.fmt_pct(ref[c.M_SAIDA_VOL])}), gap salarial "
-            f"{c.fmt_razao(u[c.M_GAP_SAL])}, n = {c.fmt_int(u[c.M_MOV])}. Motor: {u['motor']}.",
+            f"{c.fmt_pct(u[c.M_SAIDA_VOL])} (estado: {c.fmt_pct(ref[c.M_SAIDA_VOL])}), quem entra ganha "
+            f"{c.fmt_gap(u[c.M_GAP_SAL])} de quem saiu, n = {c.fmt_int(u[c.M_MOV])}.",
             _filtro_unidade(u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), float(u["tensao"]),
         ))
         exp = m[m[c.M_SALDO] > 0].sort_values("dinamismo", ascending=False)

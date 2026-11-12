@@ -136,9 +136,9 @@ O escopo cobre o pipeline completo (ingestão → limpeza → cruzamento relacio
 
 #### Acceptance Criteria
 
-1. WHEN o Dashboard é carregado, THE Dashboard SHALL apresentar no mínimo 3 KPIs derivados das métricas de negócio, cada um exibindo rótulo e valor numérico.
+1. WHEN o Dashboard é carregado, THE Dashboard SHALL apresentar no mínimo 3 KPIs derivados das métricas de negócio, cada um exibindo rótulo e valor numérico. *(M3.C3: no máximo 4 KPIs principais em destaque, em linguagem leiga — ex.: o gap salarial aparece como "6% abaixo do salário de quem saiu"; os demais ficam recolhidos em "Aprofundar".)*
 2. WHEN o Dashboard é carregado, THE Dashboard SHALL apresentar um mapa coroplético de Santa Catarina colorindo cada município pelo Saldo_por_10k, com escala de cores divergente em que valores negativos e positivos são visualmente distinguíveis e com legenda indicando os limites mínimo e máximo da escala.
-3. WHEN o Dashboard é carregado, THE Dashboard SHALL apresentar um ranking de Secao_Industrial ordenado de forma decrescente por Saldo_Liquido, exibindo para cada seção os valores de Saldo_Liquido e Turnover.
+3. WHEN o Dashboard é carregado, THE Dashboard SHALL apresentar um ranking de Secao_Industrial ordenado de forma decrescente por Saldo_Liquido, exibindo para cada seção os valores de Saldo_Liquido e da saída voluntária (desligamentos a pedido ÷ desligamentos). *(M3.C6: a saída voluntária substitui o Turnover, removido no M1.C4; quando a RAIS entrar (M4), a coluna passa a ser a rotatividade descontada. Fica no Panorama, como tabela.)*
 4. WHEN o Dashboard é carregado, THE Dashboard SHALL apresentar uma visualização que relaciona o salário médio de admissão e o grau de instrução — representado pelo nível ordinal médio dos admitidos, de modo a permitir um eixo contínuo —, segmentada por Secao_Industrial ou Macrofamilia_CBO.
 5. WHEN o usuário aplica um filtro de período, região, Secao_Industrial ou Macrofamilia_CBO, THE Dashboard SHALL atualizar os KPIs e todas as visualizações para refletir apenas os registros correspondentes ao filtro selecionado.
 6. IF o filtro selecionado não corresponde a nenhum registro, THEN THE Dashboard SHALL exibir cada KPI com valor zero e apresentar em cada visualização uma indicação de ausência de dados, sem encerrar a aplicação.

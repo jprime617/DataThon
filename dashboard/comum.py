@@ -432,15 +432,16 @@ DEFINICOES: dict[str, Definicao] = {
         "Saída voluntária", "desligamentos a pedido (tipo 40) ÷ desligamentos", "pct"
     ),
     M_GAP_SAL: Definicao(
-        "Gap salarial de reposição",
-        "salário médio de admissão ÷ salário médio de desligamento "
+        "Salário de quem entra vs quem saiu",
+        "quanto o salário médio de quem é contratado fica abaixo (ou acima) do de quem saiu. "
+        "Cálculo: salário médio de admissão ÷ salário médio de desligamento "
         f"(< {str(LIMIAR_COMPRESSAO).replace('.', ',')} = compressão). "
         f"Exige ≥ {MIN_SALARIOS} salários em cada lado. Salário válido: > 0 e ≤ 20× a "
         "mediana estadual (exclui zeros e valores de rescisão/digitação).",
-        "razao",
+        "gap",
     ),
     M_GAP_ESC: Definicao(
-        "Gap de escolaridade",
+        "Escolaridade de quem entra vs quem saiu",
         "escolaridade média dos admitidos − dos desligados (escala ordinal 1–11; "
         "< 0 = contratando menos escolarizados)",
         "num2",
@@ -448,6 +449,8 @@ DEFINICOES: dict[str, Definicao] = {
     M_SALDO_REL: Definicao("Saldo relativo", "saldo ÷ movimentações", "pct"),
     M_SAL_ADM: Definicao("Salário médio de admissão", "soma dos salários ÷ admissões com salário", "brl"),
     M_SAL_DESL: Definicao("Salário médio de desligamento", "soma dos salários ÷ desligamentos com salário", "brl"),
+    M_ESC_ADM: Definicao("Escolaridade média de quem entra",
+                         "nível ordinal médio dos admitidos (1 = analfabeto … 11 = doutorado)", "num2"),
     COLUNA_IDHM_2010: Definicao("IDHM 2010", "Índice de Desenvolvimento Humano Municipal (PNUD, 2010)", "num2"),
     COLUNA_PIB_PER_CAPITA_2023: Definicao("PIB per capita 2023", "PIB municipal ÷ população (IBGE, 2023)", "brl"),
 }
@@ -543,7 +546,8 @@ def calcular_kpis(df: pd.DataFrame) -> list[tuple[str, float]]:
     return [(DEFINICOES[m].rotulo, float(t[m])) for m in KPIS_PADRAO]
 
 
-KPIS_PADRAO = [M_MOV, M_SALDO, M_SALDO_10K, M_SAIDA_VOL, M_GAP_SAL, M_GAP_ESC]
+# Os 4 indicadores principais (M3.C3); o resto fica em "Aprofundar".
+KPIS_PADRAO = [M_SALDO, M_SALDO_10K, M_SAIDA_VOL, M_GAP_SAL]
 
 
 # ---------------------------------------------------------------------------
@@ -748,8 +752,8 @@ def gerar_recomendacoes(
             ref_sal = mediana_regional.get(chave)
             texto_ref = f"; mediana regional de admissão {fmt_brl(ref_sal)}" if ref_sal else ""
             add(ALAVANCA_SALARIO,
-                f"gap de reposição < {fmt_razao(LIMIAR_COMPRESSAO)} e saída voluntária ≥ referência + 5 p.p.",
-                f"gap {fmt_razao(gap)}; saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)} no recorte{texto_ref}",
+                f"salário de entrada mais de {fmt_gap(LIMIAR_COMPRESSAO).split()[0]} abaixo do de saída e saída voluntária ≥ referência + 5 p.p.",
+                f"quem entra ganha {fmt_gap(gap)} de quem saiu; saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)} no recorte{texto_ref}",
                 (LIMIAR_COMPRESSAO - gap) / LIMIAR_COMPRESSAO + (saida - saida_ref))
         f_tec = float(frac_tecnica.get(chave, 0.0))
         if pd.notna(u[M_GAP_ESC]) and u[M_GAP_ESC] <= LIMIAR_GAP_ESCOLARIDADE and f_tec >= 0.5:
@@ -776,7 +780,7 @@ def gerar_recomendacoes(
         if pd.notna(saida) and saida >= saida_ref + 0.05 and pd.notna(gap) and gap >= 1:
             add(ALAVANCA_RETENCAO,
                 "saída voluntária ≥ referência + 5 p.p. com gap de reposição ≥ 1 (salário não explica)",
-                f"saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)}; gap {fmt_razao(gap)}",
+                f"saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)}; quem entra ganha {fmt_gap(gap)} de quem saiu",
                 saida - saida_ref)
     for r in recs:
         r.prioridade = r.severidade * r.movimentacoes
@@ -869,6 +873,16 @@ def fmt_razao(valor, casas: int = 2) -> str:
     return fmt_num(valor, casas)
 
 
+def fmt_gap(valor) -> str:
+    """Razão admissão ÷ desligamento em palavras: 0,94 → "6% abaixo"; 1,03 → "3% acima"."""
+    if _vazio(valor):
+        return "—"
+    pct = round((float(valor) - 1) * 100)
+    if pct == 0:
+        return "±0%"
+    return f"{abs(pct)}% {'abaixo' if pct < 0 else 'acima'}"
+
+
 def fmt_metrica(nome: str, valor) -> str:
     """Formata `valor` segundo o formato da métrica em `DEFINICOES`."""
     formato = DEFINICOES[nome].formato if nome in DEFINICOES else "num1"
@@ -876,6 +890,7 @@ def fmt_metrica(nome: str, valor) -> str:
         "int": fmt_int,
         "pct": fmt_pct,
         "razao": fmt_razao,
+        "gap": fmt_gap,
         "brl": fmt_brl,
         "num1": lambda v: fmt_num(v, 1).replace("-", "−"),
         "num2": lambda v: fmt_num(v, 2).replace("-", "−"),
@@ -905,7 +920,6 @@ CORES_QUADRANTE = {
     Q_ESTAGNACAO: COR_NEUTRA,
     Q_APAGAO: COR_TENSAO,
 }
-SIMBOLOS_QUADRANTE = {Q_SAUDAVEL: "circle", Q_PRESSAO: "diamond", Q_ESTAGNACAO: "square", Q_APAGAO: "x"}
 PALETA_CATEGORICA = ["#0072B2", "#E69F00", "#009E73", "#CC79A7", "#56B4E9", "#D55E00", "#F0E442", "#000000", "#999999", "#882255", "#44AA99", "#117733"]
 ESCALA_DIVERGENTE = [[0.0, COR_TENSAO], [0.5, "#F2F2F2"], [1.0, COR_EXPANSAO]]
 ESCALA_TENSAO = [[0.0, "#FBE3D6"], [1.0, COR_TENSAO]]
@@ -1207,6 +1221,15 @@ _CSS = """
 .rx-marca em {position: absolute; top: 19px; left: 50%; transform: translateX(-50%);
   font-style: normal; font-weight: 700; font-size: .85rem; color: var(--rx-laranja-texto);}
 .rx-d-nota {color: var(--rx-suave); font-size: .85rem; margin: 0;}
+
+/* Cartões de alerta do Diagnóstico: faixa à esquerda na cor do quadrante + rótulo (nunca só cor) */
+[class*="st-key-rx-alerta-"] {border-left: 6px solid var(--rx-suave) !important;}
+[class*="st-key-rx-alerta-apagao"] {border-left-color: #D55E00 !important;}
+[class*="st-key-rx-alerta-pressao"] {border-left-color: #E69F00 !important;}
+.rx-semaforo {display: inline-flex; align-items: center; gap: .4rem; font-weight: 700; font-size: .9rem; color: var(--rx-texto);}
+.rx-semaforo::before {content: ""; width: .8rem; height: .8rem; border-radius: 50%; background: currentColor;}
+.rx-semaforo.rx-apagao::before {background: #D55E00;}
+.rx-semaforo.rx-pressao::before {background: #E69F00;}
 """
 
 
@@ -1245,6 +1268,8 @@ def delta_texto(nome: str, valor: float, referencia: float, sufixo: str) -> str 
         texto = fmt_num(abs(diff), 0)
     elif formato == "razao":
         texto = fmt_num(abs(diff), 2)
+    elif formato == "gap":
+        texto = f"{fmt_num(abs(diff) * 100, 0)} p.p."
     elif formato == "brl":
         texto = f"R$ {fmt_num(abs(diff), 0)}"
     elif formato == "pp":
@@ -1274,10 +1299,10 @@ UNIDADES = {
     M_SALDO_10K: "vagas por 10 mil hab.",
     M_SALDO_REL: "do total movimentado",
     M_SAIDA_VOL: "dos desligamentos, a pedido",
-    M_GAP_SAL: "admissão ÷ desligamento",
+    M_GAP_SAL: "do salário de quem saiu",
     M_SAL_ADM: "por mês",
     M_SAL_DESL: "por mês",
-    M_GAP_ESC: "níveis, admitidos − desligados",
+    M_GAP_ESC: "níveis (negativo = entra gente menos escolarizada)",
 }
 
 
@@ -1315,13 +1340,19 @@ def cartoes_kpi(ctx: Contexto, metricas: list[str] | None = None) -> None:
                 f'<span class="rx-valor"><b>{html.escape(fmt_metrica(nome, atual[nome]))}</b> '
                 f'<small>{html.escape(UNIDADES.get(nome, ""))}</small>{extra}</span></div>')
 
-    restantes = [m for m in metricas if m not in METRICAS_TEMAS]
-    temas = [(t, i, [m for m in ms if m in metricas]) for t, i, ms in TEMAS_KPI]
-    temas += [("Outros", ":material/more_horiz:", restantes)] if restantes else []
+    # No máximo 4 principais abertos; o resto, por tema, fica recolhido em "Aprofundar" (M3.C3).
+    principais = [m for m in KPIS_PADRAO if m in metricas]
+    restantes = [m for m in metricas if m not in METRICAS_TEMAS and m not in principais]
+    temas = [(f"Aprofundar: {t.lower()}", i, [m for m in ms if m in metricas and m not in principais])
+             for t, i, ms in TEMAS_KPI]
+    temas += [("Aprofundar: outros", ":material/more_horiz:", restantes)] if restantes else []
     with st.container(key="rx-indicadores"):
+        if principais:
+            with st.expander("Principais", expanded=True, icon=":material/star:"):
+                st.html("".join(_linha(n) for n in principais))
         for titulo, icone, nomes in temas:
             if nomes:
-                with st.expander(titulo, expanded=True, icon=icone):
+                with st.expander(titulo, expanded=False, icon=icone):
                     st.html("".join(_linha(n) for n in nomes))
 
 

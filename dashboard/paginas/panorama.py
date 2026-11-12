@@ -24,6 +24,22 @@ def metricas_mapa(df: pd.DataFrame, nivel: str) -> pd.DataFrame:
     return mapa
 
 
+def ranking_secoes(df: pd.DataFrame) -> pd.DataFrame:
+    """R7.3: seções por saldo (decrescente), com a saída voluntária ao lado.
+
+    Ponytail: a saída voluntária ocupa o lugar da rotatividade descontada até
+    a RAIS entrar (M4); aí basta trocar a coluna.
+    """
+    por = c.agregar_metricas(df, [c.COLUNA_SECAO_INDUSTRIAL])
+    por = por[por[c.M_MOV] > 0].sort_values(c.M_SALDO, ascending=False, kind="stable")
+    return pd.DataFrame({
+        "Seção (CNAE)": por[c.COLUNA_SECAO_INDUSTRIAL].astype(str).values,
+        "Saldo de vagas": por[c.M_SALDO].astype("int64").values,
+        "Saída voluntária": por[c.M_SAIDA_VOL].where(por[c.M_AMOSTRA_OK]).values,
+        "Movimentações": por[c.M_MOV].astype("int64").values,
+    })
+
+
 def aplicar_achado(filtros: dict) -> None:
     """Aplica os filtros que provam um achado (callback de botão)."""
     for chave in _CHAVES_ACHADO:
@@ -96,6 +112,17 @@ def render(ctx: c.Contexto) -> None:
             else:
                 botao.button("Ver evidência", key=f"achado_{i}", on_click=aplicar_achado, args=(achado.filtros,),
                              icon=":material/filter_alt:", width="stretch")
+
+    st.subheader("Seções: onde se cria e onde se perde vaga")
+    st.dataframe(ranking_secoes(ctx.df), hide_index=True, width="stretch", column_config={
+        "Saldo de vagas": st.column_config.NumberColumn(format="localized"),
+        "Movimentações": st.column_config.NumberColumn(format="localized"),
+        "Saída voluntária": st.column_config.ProgressColumn(
+            format="percent", min_value=0.0, max_value=1.0,
+            help="Desligamentos a pedido ÷ desligamentos. Vazio = menos de 100 movimentações."),
+    })
+    st.caption("Da seção que mais criou vagas para a que mais perdeu. A saída voluntária fica no lugar da "
+               "rotatividade oficial, que exige o estoque de vínculos da RAIS.")
 
     mensal = c.agregar_metricas(ctx.df, [c.COLUNA_MES])
     st.plotly_chart(fig.construir_serie_mensal(mensal), width="stretch")
