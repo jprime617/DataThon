@@ -28,11 +28,11 @@
 | D1 | Período | **Set/2024 a Ago/2026 (24 meses)**, em dois blocos: **anterior** (set/24 a ago/25) e **recente** (set/25 a ago/26, a mesma janela da base fornecida) |
 | D2 | Escopo industrial | **Seções CNAE B, C, D, E, F** (critério IBGE/CNI), em **3 visões** + abertura da seção C em setores (ver §4.2) |
 | D3 | Território | **Mesorregiões IBGE (6)** como visão principal, **microrregiões (20)** e **municípios (295)** para aprofundar |
-| D4 | IA nos CBOs | Sem API: a classificação é feita **via Claude Code/chat**, com prompt versionado e resultado salvo em CSV. **Todos os 2.207 CBOs** presentes nos dados |
+| D4 | IA nos CBOs | **Dois caminhos, mesmo prompt versionado:** por API (`LLM_PROVIDER=gemini` ou `anthropic`) ou por arquivo (`LLM_PROVIDER=arquivo`: os 23 lotes respondidos num chat e salvos em `ia_cbo/respostas/`). **Entregue pelo modo arquivo**, com o Claude Opus 5.5; a classificação anterior do Gemini serve de 2ª rodada (concordância de 91,4% na família e 92,2% no nível; 20 maiores divergências revisadas e aceitas). **Todos os 2.207 CBOs** |
 | D5 | Exclusões | Reconstruir a base pela regra oficial **MOV + FOR − EXC** a partir do FTP do MTE e **validar** contra a base fornecida e a série oficial |
-| D6 | Estoque / RAIS | Puxar **RAIS 2024 e RAIS 2025** (vínculos, região Sul → SC) para obter o estoque por município × setor × CBO |
+| D6 | Estoque / RAIS | **Só a RAIS 2025** (vínculos CLT de SC): o estoque de 31/12/2025, no meio da janela, aproxima o estoque médio por município × seção × setor × macrofamília × nível. RAIS 2024 e estoque mensal rolado ficaram para os próximos passos |
 | D7 | Rotatividade | Usar a **definição oficial do MTE** (taxa descontada, ver §6) para comparar com as tabelas oficiais |
-| D8 | Dashboard | **Streamlit + Plotly**, publicado no Streamlit Community Cloud |
+| D8 | Dashboard | **Streamlit + Plotly no Azure App Service** (B1, Brazil South), lendo os artefatos do **Azure Blob Storage**, com a cópia local no pacote como *fallback*: https://datathon-caged-sc-br.azurewebsites.net |
 | D9 | Recomendações | Voltadas a **ações das empresas** (salário, retenção, recrutamento, formação interna, automação), não centradas em uma instituição de ensino |
 
 ---
@@ -412,9 +412,9 @@ Cada frente pode ter um responsável. As dependências indicam o que bloqueia o 
 
 1. **O CAGED não mede vagas abertas.** O "apagão" é **inferido** por sinais de tensão (rotatividade, saída voluntária, desligamento precoce, gaps).
 2. Cobre só o **emprego formal CLT**. Informalidade, autônomos e PJ ficam fora.
-3. **O estoque industrial é estimado** (RAIS + saldos do CAGED). O erro acumulado de jan a ago/26 é medido contra o estoque oficial municipal.
-4. Os salários são **declarados** pelo empregador. Usamos medianas, deflacionadas pelo INPC, sem intermitentes.
-5. O desligamento precoce só existe para 2024 e 2025 (a RAIS é anual, e a RAIS 2026 ainda não existe).
+3. **O estoque é o de 31/12/2025 (RAIS 2025)**, usado como aproximação do estoque médio da janela. Rotatividade descontada de SC: 34,8% contra 33,6% na taxa oficial.
+4. Os salários são **declarados** pelo empregador e estão **deflacionados pelo INPC** a preços de ago/2026 (médias e medianas, com teto de 20× a mediana estadual).
+5. O desligamento precoce vem só da RAIS 2025 (a RAIS é anual, e a de 2026 ainda não existe).
 6. Correlações com dados municipais **não implicam causalidade**.
 7. A classificação dos CBOs por IA é uma interpretação. É mitigada pela taxonomia fechada, pela dupla rodada e pela revisão humana.
 8. A população usada é a **estimativa IBGE 2026**. O IDHM é de 2010 (último disponível) e falta para 2 municípios criados depois.
@@ -423,7 +423,17 @@ Cada frente pode ter um responsável. As dependências indicam o que bloqueia o 
 
 ## 16. Pendências
 
-- [ ] Aprovar a taxonomia de macrofamílias (§8.2)
-- [ ] Dividir as frentes (§13) entre os integrantes
-- [ ] Confirmar com os organizadores: uso de dados públicos externos (RAIS, FTP, IBGE) liberado? Horário-limite do formulário de entrega?
+- [x] Aprovar a taxonomia de macrofamílias (§8.2): implementada como está, com as regras A–D.
+- [x] Dividir as frentes (§13) entre os integrantes: feito pelos marcos do `PLANO_RETA_FINAL.md`.
+- [x] Dados públicos externos (RAIS, FTP, IBGE): **liberados pela equipe** em 12/11, porque o Guia do Participante não os proíbe (M0.C0 do `PLANO_RETA_FINAL.md`). O horário-limite do formulário segue o Guia: 13/11, até o fim do evento.
 - [x] Organizar `docs/`: pasta única `docs/docs_admissao/` (xlsx oficial + CSVs exportados dele)
+
+---
+
+## 17. Próximos passos (fora da entrega de 13/11)
+
+- **RAIS 2024 e estoque mensal rolado** (estoque de cada mês = RAIS + saldos do CAGED), no lugar da aproximação pelo estoque de 31/12/2025.
+- **Validação contra as tabelas oficiais do Novo CAGED** (M6: Tabelas 7.1 e 8.1), que depende do xlsx do PDET; e **SC × Brasil por seção** (Tabelas 6.1 e 10) para separar o estrutural do local.
+- **Robustez estatística:** intervalos de confiança por *bootstrap* e teste de Mann-Whitney nos gaps salariais.
+- **Clusters de municípios** e os **6 notebooks** temáticos previstos no §12 (hoje há um notebook único de pipeline).
+- **Mapa** (M3.C5), que ficou suspenso no corte das 18h.
