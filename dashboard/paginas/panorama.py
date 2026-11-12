@@ -43,19 +43,23 @@ def render(ctx: c.Contexto) -> None:
         st.markdown(f"#### {manchete}")
         if topicos:
             st.markdown(topicos)
-    c.cartoes_kpi(ctx)
+    indicadores, painel = st.columns([5, 7], gap="large")
+    with indicadores:
+        c.cartoes_kpi(ctx, c.METRICAS_TEMAS)
 
-    st.subheader("Mapa")
-    col1, col2 = st.columns([2, 1])
-    metrica = col1.selectbox("Métrica do mapa", METRICAS_MAPA, format_func=lambda m: c.DEFINICOES[m].rotulo,
-                             key="mapa_metrica")
-    nivel = col2.segmented_control("Pintar por", [c.NIVEL_MESO, c.NIVEL_MICRO, c.NIVEL_MUNICIPIO],
-                                   default=c.NIVEL_MICRO, key="mapa_nivel") or c.NIVEL_MICRO
-    dados_mapa = metricas_mapa(ctx.df, nivel)
-    evento = st.plotly_chart(fig.construir_mapa(dados_mapa, c.geojson_cache(), metrica, rotulo_territorio="rotulo"),
-                             width="stretch", on_select="rerun", selection_mode="points", key="mapa")
-    st.caption(nar.legenda_mapa(dados_mapa.drop_duplicates("rotulo"), metrica, "rotulo")
-               + " Clique num território para abrir a ficha.")
+    with painel, st.container(border=True, key="rx-destaque"):
+        metrica = st.selectbox("Indicador em destaque", METRICAS_MAPA,
+                               format_func=lambda m: c.DEFINICOES[m].rotulo, key="mapa_metrica")
+        nivel = st.segmented_control("Pintar o mapa por", [c.NIVEL_MESO, c.NIVEL_MICRO, c.NIVEL_MUNICIPIO],
+                                     default=c.NIVEL_MICRO, key="mapa_nivel") or c.NIVEL_MICRO
+        c.cartao_destaque(ctx, metrica)
+        dados_mapa = metricas_mapa(ctx.df, nivel)
+        destaque = ctx.filtros.territorios if ctx.filtros.nivel_territorial == nivel else ()
+        evento = st.plotly_chart(fig.construir_mapa(dados_mapa, c.geojson_cache(), metrica, rotulo_territorio="rotulo",
+                                                    destaque=destaque),
+                                 width="stretch", on_select="rerun", selection_mode="points", key="mapa")
+        st.caption(nar.legenda_mapa(dados_mapa.drop_duplicates("rotulo"), metrica, "rotulo")
+                   + " Clique num território para abrir a ficha.")
     pontos = getattr(getattr(evento, "selection", None), "points", None) or []
     if pontos:
         alvo = pontos[0].get("customdata")
@@ -64,6 +68,7 @@ def render(ctx: c.Contexto) -> None:
             st.session_state["ficha_alvo"] = (nivel, str(alvo))
             st.switch_page(st.session_state["_paginas"]["ficha"])
 
+    st.divider()
     st.subheader("Principais achados")
     achados = nar.principais_achados(ctx.df)
     if not achados:
