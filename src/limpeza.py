@@ -40,6 +40,8 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
+from pathlib import Path
+
 import pandas as pd
 
 from src.logging_pipeline import log_etapa
@@ -562,6 +564,24 @@ class LimpezaResult:
     excluidos_competencia: int = 0
 
 
+# INPC versionado (M5.C2): fator que leva o salário a preços de ago/2026.
+CAMINHO_INPC = Path(__file__).resolve().parent.parent / "data_processed" / "inpc.csv"
+
+
+def deflacionar_salario(df: pd.DataFrame, caminho_inpc: Path = CAMINHO_INPC) -> pd.DataFrame:
+    """Multiplica `salário` pelo fator INPC da competência (preços de ago/2026).
+
+    Competência sem fator mantém o valor nominal. Devolve uma cópia.
+    """
+    if "salário" not in df.columns:
+        return df
+    fator = pd.read_csv(caminho_inpc).set_index("competencia")["fator_ago2026"]
+    saida = df.copy()
+    competencia = pd.to_numeric(saida[COLUNA_COMPETENCIA], errors="coerce")
+    saida["salário"] = saida["salário"] * competencia.map(fator).fillna(1.0)
+    return saida
+
+
 def limpar(
     df_caged: pd.DataFrame,
     df_municipios: pd.DataFrame,
@@ -596,7 +616,7 @@ def limpar(
     Returns:
         Um ``LimpezaResult`` com as bases limpas e os logs coletados.
     """
-    # CAGED: moeda → escolaridade ordinal → domínios → filtro de competência.
+    # CAGED: moeda → escolaridade ordinal → domínios → filtro de competência → deflação INPC (M5.C2).
     # O ordinal é derivado **antes** da decodificação porque lê o código cru de
     # `graudeinstrução`, que a decodificação substitui pelo rótulo (R4.7).
     caged_moeda, falhas_moeda = limpar_moeda(df_caged)
@@ -607,6 +627,7 @@ def limpar(
     caged_limpo, excluidos_competencia = filtrar_competencia(
         caged_dominios, inicio=inicio, fim=fim
     )
+    caged_limpo = deflacionar_salario(caged_limpo)
 
     # Base_de_Municipios: indicadores BR → float; "-" → NaN (R2.3/R2.4).
     municipios_limpo, falhas_indicadores = limpar_indicadores_municipios(
@@ -654,5 +675,6 @@ __all__ = [
     "decodificar_dominios",
     "filtrar_competencia",
     "limpar_indicadores_municipios",
+    "deflacionar_salario",
     "limpar",
 ]

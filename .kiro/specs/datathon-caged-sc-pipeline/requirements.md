@@ -69,6 +69,7 @@ O escopo cobre o pipeline completo (ingestão → limpeza → cruzamento relacio
 8. WHEN a coluna `competênciamov` (formato AAAAMM) é processada, THE Limpador SHALL manter apenas os registros cuja competência esteja no intervalo de 202509 (setembro de 2025) a 202608 (agosto de 2026), inclusive os limites.
 9. IF um registro possui competência fora do intervalo de 202509 a 202608, THEN THE Limpador SHALL excluir o registro e registrar a quantidade total de registros excluídos pelo filtro de competência.
 10. THE Limpador SHALL documentar que as exclusões (colunas `indicadordeexclusão` e `competênciaexc`) já foram aplicadas na origem e não estão presentes no arquivo.
+11. *(M5.C2.)* WHEN o CAGED é limpo, THE Limpador SHALL deflacionar o `salário` para preços de ago/2026 multiplicando-o pelo fator INPC da competência (`data_processed/inpc.csv`, SIDRA tabela 1736, variável 44, versionado; fator de 202608 = 1), mantendo o valor nominal onde não houver fator.
 
 ### Requirement 3: Cruzamento relacional entre CAGED e municípios
 
