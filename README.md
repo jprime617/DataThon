@@ -395,3 +395,4 @@ pytest
 Os testes combinam testes de exemplo (`pytest`) e testes de propriedade (`hypothesis`, mínimo de 100 exemplos por propriedade). LLM e Azure são sempre mockados nos testes para isolar a lógica e evitar custo/rede.
 
 `tests/test_contrato_dados_reais.py` é a exceção útil: lê apenas o cabeçalho e as primeiras linhas dos arquivos em `Dados/` e afirma as premissas de formato das quais o Limpador depende — vírgula decimal no CAGED, ponto decimal nos indicadores do IBGE, `tamestabjan` como código de faixa. Fixtures descrevem o formato que se *acredita* ter; esse teste verifica o que o arquivo *tem*. Ele é pulado automaticamente quando os dados não estão presentes.
+
