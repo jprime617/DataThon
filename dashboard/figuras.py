@@ -193,11 +193,11 @@ def construir_matriz(matriz: pd.DataFrame, rotulo: pd.Series) -> go.Figure:
                     "color": c.CORES_QUADRANTE[nome_q], "opacity": 0.75, "line": {"width": 1, "color": "white"}},
             customdata=list(zip(rot, [c.fmt_int(v) for v in parte[c.M_MOV]],
                                 [c.fmt_pct(v) for v in parte[c.M_SAIDA_VOL]],
-                                [c.fmt_razao(v) for v in parte[c.M_GAP_SAL]],
+                                [c.fmt_gap(v) for v in parte[c.M_GAP_SAL]],
                                 parte["motor"])),
             hovertemplate=("<b>%{customdata[0]}</b><br>n = %{customdata[1]} movimentações"
-                           "<br>saída voluntária %{customdata[2]} · gap salarial %{customdata[3]}"
-                           "<br>principal motor: %{customdata[4]}<extra>%{fullData.name}</extra>"),
+                           "<br>saem a pedido: %{customdata[2]} · salário de entrada: %{customdata[3]} de quem saiu"
+                           "<extra>%{fullData.name}</extra>"),
         )
     figura.add_hline(y=0, line_color=c.COR_NEUTRA, line_dash="dot")
     figura.add_vline(x=0, line_color=c.COR_NEUTRA, line_dash="dot")

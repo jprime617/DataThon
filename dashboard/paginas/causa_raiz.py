@@ -87,7 +87,7 @@ def render(ctx: c.Contexto) -> None:
     validas = unidades.dropna(subset=[c.M_GAP_SAL, c.M_SAIDA_VOL])
     if len(validas) >= 3:
         r = validas[c.M_GAP_SAL].corr(validas[c.M_SAIDA_VOL])
-        col2.caption(f"Correlação entre gap salarial e saída voluntária: {c.fmt_num(r, 2)} "
+        col2.caption(f"Correlação entre a diferença salarial (entrada vs saída) e a saída voluntária: {c.fmt_num(r, 2)} "
                      f"({len(validas)} mesorregião × setor com amostra). Correlação não é causalidade.")
 
     st.subheader("Contexto territorial")
@@ -117,7 +117,7 @@ def render(ctx: c.Contexto) -> None:
                          fracao_tecnica=float(frac.get((u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), 0.0)))
         if selos:
             linhas.append({"Unidade": f"{u[c.COLUNA_SETOR]} – {u[c.COLUNA_REGIAO]}", "Causas": " · ".join(selos),
-                           "Movimentações": int(u[c.M_MOV]), "Gap salarial": c.fmt_razao(u[c.M_GAP_SAL]),
+                           "Movimentações": int(u[c.M_MOV]), "Salário de quem entra vs quem saiu": c.fmt_gap(u[c.M_GAP_SAL]),
                            "Saída voluntária": c.fmt_pct(u[c.M_SAIDA_VOL]),
                            "Gap de escolaridade": c.fmt_metrica(c.M_GAP_ESC, u[c.M_GAP_ESC])})
     if linhas:

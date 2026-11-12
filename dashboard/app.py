@@ -37,10 +37,10 @@ from dashboard.paginas import (
 # (chave, módulo, título no menu, ícone Material, caminho na URL)
 PAGINAS = [
     ("panorama", panorama, "Panorama", ":material/map:", "panorama"),
-    ("diagnostico", diagnostico, "Diagnóstico", ":material/crisis_alert:", "diagnostico"),
-    ("causa_raiz", causa_raiz, "Causa raiz", ":material/troubleshoot:", "causa-raiz"),
-    ("ocupacoes", ocupacoes, "Ocupações (IA)", ":material/psychology:", "ocupacoes"),
-    ("recomendacoes", recomendacoes, "Recomendações", ":material/lightbulb:", "recomendacoes"),
+    ("diagnostico", diagnostico, "Quem precisa de atenção", ":material/crisis_alert:", "diagnostico"),
+    ("causa_raiz", causa_raiz, "Por que acontece", ":material/troubleshoot:", "causa-raiz"),
+    ("ocupacoes", ocupacoes, "Que profissional falta", ":material/psychology:", "ocupacoes"),
+    ("recomendacoes", recomendacoes, "O que fazer", ":material/lightbulb:", "recomendacoes"),
     ("ficha", ficha, "Ficha do território", ":material/location_city:", "ficha"),
     ("metodologia", metodologia, "Metodologia", ":material/menu_book:", "metodologia"),
     ("apresentacao", apresentacao, "Modo apresentação", ":material/slideshow:", "apresentacao"),

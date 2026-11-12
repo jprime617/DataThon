@@ -46,7 +46,7 @@ def ficha_mesorregiao(ctx: c.Contexto, regiao: str, recs: list[c.Recomendacao]) 
         f"- {c.fmt_int(t[c.M_MOV])} movimentações e saldo de {c.fmt_int(t[c.M_SALDO])} "
         f"({c.fmt_metrica(c.M_SALDO_10K, t[c.M_SALDO_10K])} por 10 mil hab.).",
         f"- Saída voluntária {c.fmt_pct(t[c.M_SAIDA_VOL])} (estado: {c.fmt_pct(ref[c.M_SAIDA_VOL])}); "
-        f"gap salarial de reposição {c.fmt_razao(t[c.M_GAP_SAL])} (estado: {c.fmt_razao(ref[c.M_GAP_SAL])}).",
+        f"quem entra ganha {c.fmt_gap(t[c.M_GAP_SAL])} do salário de quem saiu (estado: {c.fmt_gap(ref[c.M_GAP_SAL])}).",
         f"- Gap de escolaridade {c.fmt_metrica(c.M_GAP_ESC, t[c.M_GAP_ESC])} nível(is).",
     ]
     if not m.empty:

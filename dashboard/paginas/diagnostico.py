@@ -31,11 +31,10 @@ def tabela_alertas(m: pd.DataFrame, segunda: str, saida_ref: float, frac_tecnica
         linhas.append({
             "Unidade": f"{u[segunda]} – {u[c.COLUNA_REGIAO]}",
             "Quadrante": u["quadrante"],
-            "Principal motor": u["motor"],
             "Causas": ", ".join(selos) or "—",
             "Movimentações": int(u[c.M_MOV]),
             "Saída voluntária": c.fmt_pct(u[c.M_SAIDA_VOL]),
-            "Gap salarial": c.fmt_razao(u[c.M_GAP_SAL]),
+            "Salário de quem entra vs quem saiu": c.fmt_gap(u[c.M_GAP_SAL]),
             "Saldo": c.fmt_int(u[c.M_SALDO]),
         })
     return pd.DataFrame(linhas)
@@ -118,8 +117,9 @@ def render(ctx: c.Contexto) -> None:
         with st.expander(f"Ver as {len(tabela)} unidades em alerta numa tabela"):
             st.dataframe(tabela, hide_index=True, width="stretch",
                          column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
-            st.caption("Causas: Salarial = gap < 0,95; Qualificação = gap de escolaridade ≤ −0,10 com Técnico + "
-                       "Superior ≥ 50%; Retenção = saída voluntária ≥ estado + 5 p.p. com gap ≥ 1.")
+            st.caption("Causas: Salarial = quem entra ganha mais de 5% menos que quem saiu; Qualificação = entra gente "
+                       "menos escolarizada numa área técnica; Retenção = saída a pedido 5 p.p. acima do estado sem que o "
+                       "salário de entrada seja menor.")
 
     # Com um só componente de tensão não há peso para variar; volta no M4.C6.
     if len(c.PESOS_TENSAO_PADRAO) > 1:

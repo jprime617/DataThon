@@ -35,3 +35,15 @@ def test_matriz_legivel_so_cor_e_eixos_em_palavras():
     eixos = f"{figura.layout.xaxis.title.text} {figura.layout.yaxis.title.text}"
     assert "cresce" in eixos and "equipe" in eixos and "z" not in eixos.replace("cresce", "")
     assert figura.layout.xaxis.showticklabels is False
+
+
+def test_gap_salarial_em_palavras():
+    """M3.C3: "gap 0,94" vira "6% abaixo"."""
+    assert c.fmt_gap(0.94) == "6% abaixo"
+    assert c.fmt_gap(1.03) == "3% acima"
+    assert c.fmt_gap(float("nan")) == "—"
+    assert c.fmt_metrica(c.M_GAP_SAL, 0.94) == "6% abaixo"
+
+
+def test_no_maximo_quatro_indicadores_principais():
+    assert len(c.KPIS_PADRAO) <= 4

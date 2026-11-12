@@ -251,7 +251,7 @@ def test_formatacao_ptbr(funcao, valor, esperado):
 
 def test_delta_usa_ascii_para_o_sinal_que_o_streamlit_interpreta():
     assert c.delta_texto(c.M_SAIDA_VOL, 0.50, 0.47, "vs estado") == "+3,0 p.p. vs estado"
-    assert c.delta_texto(c.M_GAP_SAL, 0.90, 0.95, "vs estado") == "-0,05 vs estado"
+    assert c.delta_texto(c.M_GAP_SAL, 0.90, 0.95, "vs estado") == "-5 p.p. vs estado"
 
 
 # --- Narrativa ---------------------------------------------------------------------------

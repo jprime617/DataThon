@@ -43,7 +43,7 @@ def semelhantes(ctx: c.Contexto, nivel: str, nome: str, n: int = 5) -> pd.DataFr
         "Movimentações": [c.fmt_int(v) for v in proximos[c.M_MOV]],
         "Saldo por 10 mil hab.": [c.fmt_metrica(c.M_SALDO_10K, v) for v in proximos[c.M_SALDO_10K]],
         "Saída voluntária": [c.fmt_pct(v) if ok else "amostra insuficiente" for v, ok in zip(proximos[c.M_SAIDA_VOL], proximos[c.M_AMOSTRA_OK])],
-        "Gap salarial": [c.fmt_razao(v) for v in proximos[c.M_GAP_SAL]],
+        "Salário de quem entra vs quem saiu": [c.fmt_gap(v) for v in proximos[c.M_GAP_SAL]],
     })
 
 
@@ -76,8 +76,7 @@ def render(ctx: c.Contexto) -> None:
                f"PIB per capita 2023: {c.fmt_brl(socio['pib'])}{nota}")
     # Na ficha o delta é sempre contra o estado (mesmos filtros, sem território).
     t, ref = c.total(dados), c.total(base)
-    cols = [col for _ in range(2) for col in st.columns(3)]
-    for col, m in zip(cols, c.KPIS_PADRAO):
+    for col, m in zip(st.columns(len(c.KPIS_PADRAO)), c.KPIS_PADRAO):
         col.metric(c.DEFINICOES[m].rotulo, c.fmt_metrica(m, t[m]), border=True, help=c.DEFINICOES[m].formula,
                    delta=c.delta_texto(m, t[m], ref[m], "vs estado"),
                    delta_color="inverse" if m in c.METRICAS_INVERSAS else "normal")
@@ -111,7 +110,7 @@ def render(ctx: c.Contexto) -> None:
     col2.dataframe(pd.DataFrame({
         "Macrofamília (IA)": tensas[c.COLUNA_MACROFAMILIA_CBO].values,
         "Saída voluntária": [c.fmt_pct(v) for v in tensas[c.M_SAIDA_VOL]],
-        "Gap salarial": [c.fmt_razao(v) for v in tensas[c.M_GAP_SAL]],
+        "Salário de quem entra vs quem saiu": [c.fmt_gap(v) for v in tensas[c.M_GAP_SAL]],
     }), hide_index=True, width="stretch")
     st.caption("Só macrofamílias com ≥ 100 movimentações no território.")
 
