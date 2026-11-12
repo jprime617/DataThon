@@ -11,7 +11,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 |---|---|---|---|
 | M0 | C1 e C2 feitos; falta o C0 (organizadores) | `dashboard-v2` | M0.C2 |
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
-| M2 | prompts prontos; código não iniciado | — | — |
+| M2 | C1 feito; H1 (respostas da IA paga) pendente | `m2-ia` | M2.C1 |
 | M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
 | M4 · M5 · M6 | bloqueados pelo M0.C0 | — | — |
 | M7 | não iniciado | — | — |
@@ -123,10 +123,10 @@ O que muda, e por quê:
 ## M2 · IA dos CBOs com a IA paga (via chat, substitui o Gemini)
 
 **Branch:** `m2-ia` · **Dono:** pessoa 4 · **Estimativa:** H1 de 1 a 1,5 h, código de cerca de 1 h
-**Estado:** prompts prontos em `ia_cbo/prompts/` (23 lotes, 2.207 CBOs, ≤ 100 por lote)
+**Estado:** prompts prontos em `ia_cbo/prompts/` (23 lotes, 2.207 CBOs, ≤ 100 por lote). C1 feito na branch `m2-ia` (`LLM_PROVIDER=arquivo`, sem `LLM_API_KEY`; com lote faltando, o erro lista quais). Falta o **H1** (ninguém rodou os prompts ainda: `ia_cbo/respostas/` está vazia). Próximo: C2
 
 - [ ] **H1 (humano)** Rodar os 23 prompts na IA paga e salvar em `ia_cbo/respostas/lote_NN.json`. O passo a passo, o formato e a conferência estão em `ia_cbo/COMO_USAR.md`.
-- [ ] **M2.C1 `ClienteArquivo` em `src/cbo_ia.py`.**
+- [x] **M2.C1 `ClienteArquivo` em `src/cbo_ia.py`.**
   - Implementa `ClienteLLM`. No `__init__`, junta todos os `respostas/lote_*.json` com `_extrair_mapeamento`. `classificar()` devolve `json.dumps(dict_inteiro)`, porque `classificar_lote` já filtra os códigos do lote.
   - Se faltar a resposta de algum `prompts/lote_NN.txt`, levanta `ErroDeValidacao` listando os lotes faltantes.
   - Em `criar_cliente_llm`, adicionar `LLM_PROVIDER=arquivo`, sem exigir `LLM_API_KEY`. O nome do modelo vem de `LLM_MODELO_MANUAL`.
