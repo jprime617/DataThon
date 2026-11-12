@@ -190,8 +190,7 @@ def construir_matriz(matriz: pd.DataFrame, rotulo: pd.Series) -> go.Figure:
         figura.add_scatter(
             x=parte["dinamismo"], y=parte["tensao"], mode="markers", name=nome_q,
             marker={"size": 12 + 48 * (parte[c.M_MOV] / tamanho_ref) ** 0.5,
-                    "color": c.CORES_QUADRANTE[nome_q], "symbol": c.SIMBOLOS_QUADRANTE[nome_q],
-                    "opacity": 0.75, "line": {"width": 1, "color": "white"}},
+                    "color": c.CORES_QUADRANTE[nome_q], "opacity": 0.75, "line": {"width": 1, "color": "white"}},
             customdata=list(zip(rot, [c.fmt_int(v) for v in parte[c.M_MOV]],
                                 [c.fmt_pct(v) for v in parte[c.M_SAIDA_VOL]],
                                 [c.fmt_razao(v) for v in parte[c.M_GAP_SAL]],
@@ -206,10 +205,11 @@ def construir_matriz(matriz: pd.DataFrame, rotulo: pd.Series) -> go.Figure:
         figura.add_annotation(xref="paper", yref="paper", x=x, y=y, text=f"<b>{texto}</b>",
                               showarrow=False, xanchor="right" if x else "left",
                               yanchor="top" if y else "bottom", font={"size": 14, "color": c.CORES_QUADRANTE[texto]})
-    return _layout(figura, "Quem precisa de atenção: dinamismo × tensão", 560,
-                   xaxis_title="Dinamismo (z: saldo relativo) →",
-                   yaxis_title="Tensão (z: saída voluntária) →",
-                   legend={"orientation": "h", "y": -0.18})
+    # Eixos em palavras: o valor numérico (z-score) é detalhe técnico, fica na Metodologia.
+    return _layout(figura, "Quem precisa de atenção: crescimento × perda de gente", 560,
+                   xaxis={"title": "cresce pouco  →  cresce muito", "showticklabels": False},
+                   yaxis={"title": "segura a equipe  →  perde a equipe", "showticklabels": False},
+                   legend={"orientation": "h", "y": -0.12})
 
 
 # --- Causa raiz -------------------------------------------------------------------

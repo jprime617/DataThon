@@ -12,7 +12,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 | M0 | C1 e C2 feitos; falta o C0 (organizadores) | `dashboard-v2` | M0.C2 |
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
 | M2 | prompts prontos; código não iniciado | — | — |
-| M3 | em andamento (João + Claude); **C5 (mapa) suspenso** a pedido do João | `m3-painel` | M3.C1 |
+| M3 | em andamento (João + Claude); **C5 (mapa) suspenso** a pedido do João | `m3-painel` | M3.C2 |
 | M4 · M5 · M6 | bloqueados pelo M0.C0 | — | — |
 | M7 | não iniciado | — | — |
 
@@ -148,10 +148,10 @@ O que muda, e por quê:
 ## M3 · Painel simplificado (anotações da equipe)
 
 **Branch:** `m3-painel`, criada **depois** do merge do M1 · **Dono:** pessoa 1 · **Estimativa:** 3 a 4 h
-**Estado:** C1 feito (6 cartões de semáforo + tabela completa num expander). Próximo: C2. **C5 suspenso** a pedido do João (não mexer nos dados do mapa). O visual institucional (sanfona, cartão de destaque, contorno magenta) já foi feito em `8babb57`/`80c0842` e **não deve ser refeito**.
+**Estado:** C1–C2 feitos (cartões de semáforo; matriz só com cor, eixos em palavras e sem números de z). Próximo: C3. **C5 suspenso** a pedido do João (não mexer nos dados do mapa). O visual institucional (sanfona, cartão de destaque, contorno magenta) já foi feito em `8babb57`/`80c0842` e **não deve ser refeito**.
 
 - [x] **M3.C1 Diagnóstico em cartões.** A tabela de 9 colunas vira cartões de semáforo: "onde · situação · por quê, numa frase · 2 números".
-- [ ] **M3.C2 Matriz legível.** Só cor, sem os 4 símbolos. Eixos com palavras ("cresce pouco → cresce muito" / "segura a equipe → perde a equipe"), sem "z-score" na tela.
+- [x] **M3.C2 Matriz legível.** Só cor, sem os 4 símbolos. Eixos com palavras ("cresce pouco → cresce muito" / "segura a equipe → perde a equipe"), sem "z-score" na tela.
 - [ ] **M3.C3 Linguagem leiga.** "Gap 0,94" vira "paga 6% abaixo de quem saiu". No máximo 4 KPIs principais, e o resto em "Aprofundar". Menu sem jargão ("Por que acontece", "Que profissional falta").
 - [ ] **M3.C4 No máximo 2 gráficos por página.** As dispersões de PIB/IDHM saem de Causa raiz e vão para um expander.
 - [ ] **M3.C5 Mapa (R7.2).** Abre em saldo por 10 mil hab., **por município**, com escala divergente e legenda de mínimo e máximo. A bolha mostra o volume de movimentações; no máximo duas camadas.

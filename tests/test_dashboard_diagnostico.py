@@ -21,3 +21,17 @@ def test_frase_de_retencao_compara_com_o_estado():
 
 def test_frase_sem_causa_nao_inventa_explicacao():
     assert "nenhuma causa isolada" in frase_porque(_u(0.5, 0.97), [], 0.47)
+
+
+def test_matriz_legivel_so_cor_e_eixos_em_palavras():
+    """M3.C2: sem os 4 símbolos e sem z-score na tela."""
+    from dashboard import figuras as fig
+
+    m = pd.DataFrame({"dinamismo": [1.0, -1.0], "tensao": [1.0, -1.0], c.M_MOV: [500, 300],
+                      c.M_SAIDA_VOL: [0.6, 0.3], c.M_GAP_SAL: [0.9, 1.0], "motor": ["a", "b"],
+                      "quadrante": [c.Q_PRESSAO, c.Q_ESTAGNACAO]})
+    figura = fig.construir_matriz(m, pd.Series(["x", "y"]))
+    assert all(t.marker.symbol is None for t in figura.data)
+    eixos = f"{figura.layout.xaxis.title.text} {figura.layout.yaxis.title.text}"
+    assert "cresce" in eixos and "equipe" in eixos and "z" not in eixos.replace("cresce", "")
+    assert figura.layout.xaxis.showticklabels is False

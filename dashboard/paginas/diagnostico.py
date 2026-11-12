@@ -33,7 +33,6 @@ def tabela_alertas(m: pd.DataFrame, segunda: str, saida_ref: float, frac_tecnica
             "Quadrante": u["quadrante"],
             "Principal motor": u["motor"],
             "Causas": ", ".join(selos) or "—",
-            "Tensão (z)": c.fmt_num(u["tensao"], 2).replace("-", "−"),
             "Movimentações": int(u[c.M_MOV]),
             "Saída voluntária": c.fmt_pct(u[c.M_SAIDA_VOL]),
             "Gap salarial": c.fmt_razao(u[c.M_GAP_SAL]),
@@ -95,7 +94,7 @@ def render(ctx: c.Contexto) -> None:
     st.caption(
         f"{contagem.get(c.Q_APAGAO, 0)} unidades em **{c.Q_APAGAO}** e {contagem.get(c.Q_PRESSAO, 0)} em "
         f"**{c.Q_PRESSAO}**, de {len(m)} com amostra suficiente ({excluidas} com < 100 movimentações ficaram "
-        "fora). Eixos em z-score entre as unidades: 0 = média do recorte."
+        "fora). As linhas pontilhadas marcam a média do recorte; quanto maior a bolha, mais movimentações."
     )
 
     st.subheader("Alertas, do mais tenso ao menos tenso")
