@@ -64,3 +64,14 @@ def test_no_maximo_dois_graficos_a_vista_por_pagina():
         a_vista = [n for n in ast.walk(arvore) if isinstance(n, ast.Call)
                    and ast.unparse(n.func).endswith(("plotly_chart", "graphviz_chart")) and id(n) not in dentro]
         assert len(a_vista) <= 2, f"{arquivo.name}: {len(a_vista)} gráficos à vista"
+
+
+def test_metodologia_cobre_r1_a_r9_e_r7_4_tem_grafico():
+    """M3.C7: tabela requisito → onde aparece, e o R7.4 existe de fato."""
+    import inspect
+
+    from dashboard.paginas import causa_raiz, metodologia
+
+    ids = " ".join(r for r, _, _ in metodologia.REQUISITOS)
+    assert all(f"R{i}" in ids for i in range(1, 10))
+    assert "c.M_ESC_ADM, c.M_SAL_ADM" in inspect.getsource(causa_raiz.render)

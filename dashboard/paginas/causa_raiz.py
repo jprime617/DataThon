@@ -91,6 +91,14 @@ def render(ctx: c.Contexto) -> None:
             col2.caption(f"Correlação entre a diferença salarial (entrada vs saída) e a saída voluntária: "
                          f"{c.fmt_num(r, 2)} ({len(validas)} mesorregião × setor com amostra). "
                          "Correlação não é causalidade.")
+        # R7.4: salário médio de admissão × escolaridade ordinal média, por macrofamília.
+        por_macro = macros[macros[c.M_SALARIO_OK]]
+        st.plotly_chart(fig.construir_dispersao(por_macro, por_macro[c.COLUNA_MACROFAMILIA_CBO].astype(str),
+                                                c.M_ESC_ADM, c.M_SAL_ADM,
+                                                "Quem entra com mais estudo ganha mais? (por macrofamília)"),
+                        width="stretch")
+        st.caption("Cada bolha é uma macrofamília (IA); o tamanho é o volume de movimentações. "
+                   f"Só macrofamílias com ≥ {c.MIN_SALARIOS} salários de cada lado.")
 
     with st.expander("Aprofundar: riqueza do município (IDHM e PIB per capita)"):
         col1, col2 = st.columns([1, 3])

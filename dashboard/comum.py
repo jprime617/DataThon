@@ -449,6 +449,8 @@ DEFINICOES: dict[str, Definicao] = {
     M_SALDO_REL: Definicao("Saldo relativo", "saldo ÷ movimentações", "pct"),
     M_SAL_ADM: Definicao("Salário médio de admissão", "soma dos salários ÷ admissões com salário", "brl"),
     M_SAL_DESL: Definicao("Salário médio de desligamento", "soma dos salários ÷ desligamentos com salário", "brl"),
+    M_ESC_ADM: Definicao("Escolaridade média de quem entra",
+                         "nível ordinal médio dos admitidos (1 = analfabeto … 11 = doutorado)", "num2"),
     COLUNA_IDHM_2010: Definicao("IDHM 2010", "Índice de Desenvolvimento Humano Municipal (PNUD, 2010)", "num2"),
     COLUNA_PIB_PER_CAPITA_2023: Definicao("PIB per capita 2023", "PIB municipal ÷ população (IBGE, 2023)", "brl"),
 }

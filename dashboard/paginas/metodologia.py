@@ -47,6 +47,38 @@ PROXIMOS = """
 - Salários deflacionados pelo INPC e intervalos de confiança por bootstrap.
 """
 
+# Para a banca: cada requisito (.kiro/specs/.../requirements.md) e onde conferi-lo.
+REQUISITOS = [
+    ("R1", "Ingestão e validação dos dados de origem",
+     "Pipeline (`notebooks/01_pipeline.ipynb`, etapa 1); nesta página, em Procedência e no funil de linhas."),
+    ("R2", "Limpeza, tipos e decodificação",
+     "Funil desta página (linhas fora do período excluídas); regra de salário válido em Procedência."),
+    ("R3", "Cruzamento CAGED × municípios",
+     "Saldo por 10 mil hab. (Panorama) e população, IDHM e PIB na Ficha do território."),
+    ("R4", "Métricas de negócio",
+     "Indicadores do Panorama e tabela Definições desta página. Rotatividade descontada: pendente de RAIS."),
+    ("R5", "Agrupamento de CBOs via IA",
+     "Página Que profissional falta: macrofamílias, regras A–D, prompt e concordância entre rodadas."),
+    ("R6", "Agregações para o painel",
+     "Tabelas pré-agregadas lidas pelo painel; botão Baixar dados filtrados (CSV) em cada página."),
+    ("R7.1", "No mínimo 3 KPIs",
+     "Panorama: coluna Principais (4 indicadores) e Ficha do território."),
+    ("R7.2", "Mapa de SC pelo saldo por 10 mil hab.",
+     "Panorama: escolha Saldo por 10 mil hab. e Município no mapa (escala divergente, legenda em faixas)."),
+    ("R7.3", "Ranking de seções por saldo",
+     "Panorama: tabela Seções, com a saída voluntária ao lado."),
+    ("R7.4", "Salário × escolaridade ordinal média",
+     "Por que acontece → Aprofundar: qualificação e retenção (dispersão por macrofamília)."),
+    ("R7.5–7.6", "Filtros e recorte vazio",
+     "Barra lateral (período, território, setor, macrofamília, nível); recorte vazio mostra aviso, sem erro."),
+    ("R7.7–7.8", "Leitura das tabelas e falha de dados",
+     "Procedência desta página (origem em uso); sem dados, o painel avisa e não desenha os gráficos."),
+    ("R8", "Reprodutibilidade e documentação",
+     "README, notebook do pipeline, testes automatizados e commit do pipeline em Procedência."),
+    ("R9", "Implantação no Azure",
+     "Este painel no Azure App Service, lendo do Azure Blob Storage (origem em Procedência)."),
+]
+
 
 def render(ctx: c.Contexto) -> None:
     st.title("Metodologia e sistema")
@@ -96,11 +128,14 @@ def render(ctx: c.Contexto) -> None:
         "- **Tensão** = média ponderada dos z-scores dos **sintomas** de dificuldade de reter gente. Hoje há um só: "
         "a **saída voluntária**. Rotatividade descontada e desligamento precoce entram quando houver o estoque da RAIS.\n"
         "- **Causas não entram no índice.** A compressão salarial (gap < 0,95), o gap de escolaridade e a retenção "
-        "viram selos no Diagnóstico e regras nas Recomendações. Somá-las à tensão e depois usá-las para explicá-la "
+        "viram selos em Quem precisa de atenção e regras em O que fazer. Somá-las à tensão e depois usá-las para explicá-la "
         "seria contar a mesma coisa duas vezes.\n"
         "- **Saíram:** o giro (função exata do saldo relativo) e a aceleração entre semestres (media o calendário: "
         "dezembro concentra desligamentos)."
     )
+
+    st.subheader("Requisitos do desafio: onde conferir")
+    st.table(pd.DataFrame(REQUISITOS, columns=["Requisito", "O quê", "Onde aparece"]).set_index("Requisito"))
 
     st.subheader("Premissas e limites")
     st.markdown(LIMITES)
