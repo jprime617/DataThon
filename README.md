@@ -50,7 +50,7 @@ Este é o caminho feliz ponta a ponta que um novo usuário segue. Cada passo é 
   O script baixa os 295 municípios de SC e reescreve a identificação das *features* para a Chave_Municipal de 6 dígitos usada pelo agregado.
 
 - **Variáveis de ambiente** (veja a seção [Credenciais](#credenciais-e-segredos)):
-  - `LLM_PROVIDER` — provedor do LLM externo: `gemini` (padrão, **gratuito**) ou `anthropic`.
+  - `LLM_PROVIDER` — provedor do LLM externo: `gemini` (padrão, **gratuito**), `anthropic` ou `arquivo` (respostas coladas de uma IA via chat, sem chave; ver Opção C).
   - `LLM_API_KEY` — credencial da API do LLM externo (etapa de agrupamento de CBOs). Para o Gemini, obtida no [Google AI Studio](https://aistudio.google.com/apikey); para o Claude, no [Anthropic Console](https://console.anthropic.com).
   - `AZURE_STORAGE_CONNECTION_STRING` — acesso ao Azure Blob Storage (upload das tabelas agregadas e leitura pelo dashboard).
 
@@ -111,6 +111,23 @@ O modelo padrão é `gemini-3.1-flash-lite` (`MODELO_PADRAO_GEMINI` em `src/cbo_
 2. **Settings** → **API Keys** → **Create Key** → copiar o valor. A chave começa com `sk-ant-` e **só é exibida uma vez**.
 3. Garantir saldo em **Settings** → **Billing**. Sem crédito, a API responde `400 — credit balance is too low`.
 4. Exportar com `LLM_PROVIDER=anthropic`. O modelo padrão é `claude-opus-5` (`MODELO_PADRAO`).
+
+#### Opção C — Classificação via chat (`LLM_PROVIDER=arquivo`, sem API)
+
+Para usar uma IA paga sem acesso à API, os prompts já estão gerados em `ia_cbo/prompts/lote_NN.txt` (23 lotes, 2.207 CBOs).
+
+1. Siga `ia_cbo/COMO_USAR.md`: cole cada prompt na IA e salve só o JSON da resposta em `ia_cbo/respostas/lote_NN.json`.
+2. Rode a classificação a partir das respostas. **Não precisa de `LLM_API_KEY`.**
+
+   ```bash
+   export LLM_PROVIDER=arquivo LLM_MODELO_MANUAL="<nome do modelo usado no chat>" RECLASSIFICAR_CBO=1 PULAR_UPLOAD=1
+   .venv/bin/jupyter nbconvert --to notebook --execute --inplace notebooks/01_pipeline.ipynb
+   ```
+
+- Se faltar a resposta de algum lote, o pipeline para e lista os lotes que faltam. Se um arquivo vier sem JSON válido, ele diz qual.
+- A concordância deixa de ser "a mesma IA com a ordem embaralhada", que daria 100% ao reler os mesmos arquivos. Ela passa a comparar a IA paga com a classificação anterior do Gemini, guardada em `data_processed/cbo_macrofamilias_gemini.csv`. As divergências vão para `data_processed/cbo_divergencias.csv`.
+- O `cbo_macrofamilias.csv.meta.json` registra o provedor (`ClienteArquivo`), o modelo informado e a nota "classificação via chat; prompts e respostas em `ia_cbo/`".
+- Para corrigir uma classificação após revisão humana, edite o `lote_NN.json` com uma justificativa começando por "Revisão humana:" e rode de novo.
 
 #### Dois comportamentos que evitam o fracasso silencioso
 
@@ -378,3 +395,4 @@ pytest
 Os testes combinam testes de exemplo (`pytest`) e testes de propriedade (`hypothesis`, mínimo de 100 exemplos por propriedade). LLM e Azure são sempre mockados nos testes para isolar a lógica e evitar custo/rede.
 
 `tests/test_contrato_dados_reais.py` é a exceção útil: lê apenas o cabeçalho e as primeiras linhas dos arquivos em `Dados/` e afirma as premissas de formato das quais o Limpador depende — vírgula decimal no CAGED, ponto decimal nos indicadores do IBGE, `tamestabjan` como código de faixa. Fixtures descrevem o formato que se *acredita* ter; esse teste verifica o que o arquivo *tem*. Ele é pulado automaticamente quando os dados não estão presentes.
+

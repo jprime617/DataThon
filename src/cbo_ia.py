@@ -88,6 +88,11 @@ COLUNA_JUSTIFICATIVA = "justificativa"
 
 # Rodada 2 de concordância: mesma classificação com a ordem embaralhada.
 SEED_RODADA_2 = 2026
+
+# Com o provedor `arquivo`, a rodada 2 é a classificação anterior (Gemini),
+# guardada ao lado do CSV: reexecutar o mesmo arquivo daria 100% trivialmente.
+NOME_CSV_REFERENCIA = "cbo_macrofamilias_gemini.csv"
+NOTA_ARQUIVO = "classificação via chat; prompts e respostas em `ia_cbo/`"
 NOME_CSV_DIVERGENCIAS = "cbo_divergencias.csv"
 
 # Sufixo do arquivo irmão que guarda o prompt usado no agrupamento (R5.8).
@@ -242,9 +247,56 @@ class ClienteGemini:
         return resposta.text or ""
 
 
+# Pasta com os prompts gerados e as respostas coladas da IA paga (via chat).
+# Ancorada na raiz do projeto: o notebook roda com o diretório em `notebooks/`.
+PASTA_IA_CBO = Path(__file__).resolve().parent.parent / "ia_cbo"
+
+# Nome do modelo usado no chat, só para o registro em `.meta.json`.
+VAR_MODELO_MANUAL = "LLM_MODELO_MANUAL"
+
+
+class ClienteArquivo:
+    """`ClienteLLM` que lê respostas já salvas, em vez de chamar uma API (M2.C1).
+
+    A classificação foi feita colando `ia_cbo/prompts/lote_NN.txt` numa IA paga
+    via chat e salvando cada resposta em `ia_cbo/respostas/lote_NN.json`
+    (`ia_cbo/COMO_USAR.md`). No ``__init__`` todas as respostas são juntadas por
+    código; ``classificar`` devolve o dicionário inteiro, porque
+    `classificar_lote` já fica só com os códigos do lote que pediu.
+
+    Raises:
+        ErroDeValidacao: se algum prompt não tiver a resposta correspondente
+            (lista os lotes faltantes) ou se uma resposta não tiver JSON válido.
+    """
+
+    def __init__(self, pasta: str | os.PathLike | None = None, modelo: str | None = None) -> None:
+        raiz = Path(pasta) if pasta is not None else PASTA_IA_CBO
+        prompts = sorted((raiz / "prompts").glob("lote_*.txt"))
+        respostas = raiz / "respostas"
+        faltantes = [p.stem for p in prompts if not (respostas / f"{p.stem}.json").is_file()]
+        if faltantes:
+            raise ErroDeValidacao(
+                f"Faltam {len(faltantes)} resposta(s) em {respostas}: {', '.join(faltantes)}. "
+                "Rode esses prompts na IA e salve o JSON como lote_NN.json (ia_cbo/COMO_USAR.md)."
+            )
+        self._mapeamento: dict[str, dict] = {}
+        for arquivo in sorted(respostas.glob("lote_*.json")):
+            lido = _extrair_mapeamento(arquivo.read_text(encoding="utf-8"))
+            if not lido:
+                raise ErroDeValidacao(
+                    f"{arquivo} não tem um objeto JSON válido. Peça à IA para repetir só o JSON completo."
+                )
+            self._mapeamento.update(lido)
+        self._modelo = modelo or "manual (chat)"
+
+    def classificar(self, prompt: str, *, timeout: int) -> str:  # noqa: ARG002 - contrato ClienteLLM
+        return json.dumps(self._mapeamento, ensure_ascii=False)
+
+
 # Provedores de LLM_Externo suportados por `criar_cliente_llm`.
 PROVEDOR_ANTHROPIC = "anthropic"
 PROVEDOR_GEMINI = "gemini"
+PROVEDOR_ARQUIVO = "arquivo"
 
 # Variável de ambiente que escolhe o provedor; o padrão é o Gemini, que tem
 # camada gratuita e portanto é o caminho que roda sem custo.
@@ -262,7 +314,9 @@ def criar_cliente_llm(
     qualquer chamada à API se ausente/vazia) e o provedor de ``LLM_PROVIDER``:
 
     - ``gemini`` (padrão) — Google AI Studio, camada gratuita;
-    - ``anthropic`` — Claude, requer saldo na conta.
+    - ``anthropic`` — Claude, requer saldo na conta;
+    - ``arquivo`` — respostas coladas da IA paga em ``ia_cbo/respostas/``; não
+      exige ``LLM_API_KEY`` e o nome do modelo vem de ``LLM_MODELO_MANUAL``.
 
     Args:
         provedor: força um provedor, ignorando a variável de ambiente.
@@ -277,12 +331,14 @@ def criar_cliente_llm(
             provedor configurado não for reconhecido.
     """
     ambiente = os.environ if env is None else env
-    credencial = verificar_credencial_llm(ambiente)
     escolhido = (
         provedor
         if provedor is not None
         else (ambiente.get(VAR_PROVEDOR_LLM) or PROVEDOR_PADRAO)
     ).strip().lower()
+    if escolhido == PROVEDOR_ARQUIVO:
+        return ClienteArquivo(modelo=ambiente.get(VAR_MODELO_MANUAL))
+    credencial = verificar_credencial_llm(ambiente)
 
     if escolhido == PROVEDOR_GEMINI:
         return ClienteGemini(api_key=credencial)
@@ -291,7 +347,7 @@ def criar_cliente_llm(
     raise ErroDeValidacao(
         f"Provedor de LLM_Externo desconhecido: {escolhido!r}. "
         f"Valores aceitos em {VAR_PROVEDOR_LLM!r}: "
-        f"{PROVEDOR_GEMINI!r} (gratuito) ou {PROVEDOR_ANTHROPIC!r}."
+        f"{PROVEDOR_GEMINI!r} (gratuito), {PROVEDOR_ANTHROPIC!r} ou {PROVEDOR_ARQUIVO!r}."
     )
 
 
@@ -788,6 +844,16 @@ def _registrar_concordancia(
     }
 
 
+def _ler_mapeamento(caminho: Path) -> dict[str, dict[str, str]]:
+    """Lê um `cbo_macrofamilias*.csv` como `{código: {macrofamilia, nivel}}`."""
+    mapa = pd.read_csv(caminho, dtype={COLUNA_CBO: str})
+    return {
+        _normalizar_cbo(c): {"macrofamilia": f, "nivel": n}
+        for c, f, n in zip(mapa[COLUNA_CBO], mapa[COLUNA_MACROFAMILIA], mapa[COLUNA_NIVEL])
+        if _normalizar_cbo(c)
+    }
+
+
 def aplicar_mapeamento(
     df: pd.DataFrame, caminho_csv: str = CAMINHO_CSV_PADRAO
 ) -> pd.DataFrame:
@@ -855,7 +921,8 @@ def classificar_cbos(
         KeyError: se a coluna `cbo2002ocupação` não estiver presente em `df`.
     """
     # 1. Guarda de credencial antes de qualquer chamada à API externa (R8.6).
-    if verificar_credencial:
+    # Respostas lidas de arquivo não chamam API nenhuma: não há credencial a exigir.
+    if verificar_credencial and not isinstance(client, ClienteArquivo):
         verificar_credencial_llm(env)
 
     logger = obter_logger()
@@ -912,14 +979,31 @@ def classificar_cbos(
     # mapeamento por construção).
     sem_correspondencia = int(df_enriquecido[COLUNA_MACROFAMILIA].isna().sum())
 
-    # 6. Rodada 2: a mesma classificação com a ordem embaralhada (lotes com
-    # vizinhança diferente). Só mede a estabilidade; o mapeamento final é o da
-    # rodada 1.
-    embaralhados = list(cbos)
-    random.Random(SEED_RODADA_2).shuffle(embaralhados)
-    rodada2 = _classificar_todos(embaralhados, client)
+    # 6. Rodada 2. Por API: a mesma classificação com a ordem embaralhada
+    # (lotes com vizinhança diferente). Por arquivo: a classificação anterior
+    # (Gemini), já que reler as mesmas respostas daria 100%. Só mede a
+    # estabilidade; o mapeamento final é sempre o da rodada 1.
+    extras: dict[str, object] = {}
+    referencia = Path(caminho_csv).with_name(NOME_CSV_REFERENCIA)
+    if isinstance(client, ClienteArquivo) and referencia.is_file():
+        rodada2 = _ler_mapeamento(referencia)
+        comuns = {c: d for c, d in detalhes.items() if c in rodada2}
+        extras = {
+            "comparacao": f"IA paga (chat) × classificação anterior ({referencia.name})",
+            "cbos_comparados": len(comuns),
+            "nota": NOTA_ARQUIVO,
+        }
+        r1 = comuns
+    else:
+        embaralhados = list(cbos)
+        random.Random(SEED_RODADA_2).shuffle(embaralhados)
+        rodada2 = _classificar_todos(embaralhados, client)
+        extras = {"comparacao": "mesma IA, 2ª rodada com a ordem dos códigos embaralhada"}
+        if isinstance(client, ClienteArquivo):
+            extras["nota"] = NOTA_ARQUIVO
+        r1 = detalhes
     concordancia = _registrar_concordancia(
-        detalhes, rodada2, chave_normalizada.value_counts(),
+        r1, rodada2, chave_normalizada.value_counts(),
         Path(caminho_csv).with_name(NOME_CSV_DIVERGENCIAS), logger,
     )
     # Procedência da classificação, lida depois pelo `metadados.json`.
@@ -930,6 +1014,7 @@ def classificar_cbos(
                 "modelo": getattr(client, "_modelo", None),
                 "gerado_em": pd.Timestamp.now().isoformat(timespec="seconds"),
                 **concordancia,
+                **extras,
             },
             ensure_ascii=False,
             indent=2,

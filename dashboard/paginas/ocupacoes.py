@@ -78,14 +78,17 @@ def render(ctx: c.Contexto) -> None:
     meta = (ctx.art.metadados or {}).get("ia", {})
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Concordância na família", c.fmt_pct(meta.get("concordancia_familia")), border=True,
-                help="Mesma classificação nas duas rodadas, com a ordem dos códigos embaralhada na 2ª.")
+                help="Comparação: " + meta.get("comparacao", "mesma IA, 2ª rodada com a ordem dos códigos embaralhada")
+                + ".")
     col2.metric("Concordância no nível", c.fmt_pct(meta.get("concordancia_nivel")), border=True)
     col3.metric("Não classificado", c.fmt_pct(meta.get("nao_classificado_ponderado"), 2), border=True,
                 help="Ponderado pelas movimentações.")
     col4.metric("Ocupações classificadas", c.fmt_int(len(mapa)) if mapa is not None else "—", border=True)
     if meta.get("modelo"):
         st.caption(f"Modelo: {meta.get('modelo')} ({meta.get('provedor', '')}), classificação de "
-                   f"{str(meta.get('gerado_em', ''))[:10]}. A IA roda no pipeline, nunca no painel.")
+                   f"{str(meta.get('gerado_em', ''))[:10]}. A IA roda no pipeline, nunca no painel."
+                   + (f" {meta['nota'][0].upper()}{meta['nota'][1:]}." if meta.get("nota") else "")
+                   + (f" Concordância medida em: {meta['comparacao']}." if meta.get("comparacao") else ""))
     with st.expander("Regras da taxonomia (A–D)"):
         st.markdown(REGRAS)
         st.caption(f"{len(MACROFAMILIAS) - 1} macrofamílias + Não classificado; "
