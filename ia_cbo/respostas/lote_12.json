@@ -1,0 +1,502 @@
+{
+ "410215": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "623420": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Básico",
+  "justificativa": "Trabalho agropecuário elementar."
+ },
+ "623325": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "773320": {
+  "macrofamilia": "Madeira, móveis, cerâmica e vidro",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "783240": {
+  "macrofamilia": "Logística e transporte",
+  "nivel": "Básico",
+  "justificativa": "Amarração de embarcações é tarefa braçal elementar."
+ },
+ "862505": {
+  "macrofamilia": "Operação de linha e processo",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "123305": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Superior",
+  "justificativa": "Direção comercial."
+ },
+ "515220": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "723205": {
+  "macrofamilia": "Metalmecânica e eletroeletrônica",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "311515": {
+  "macrofamilia": "Engenharia, técnicos industriais e TI",
+  "nivel": "Técnico",
+  "justificativa": ""
+ },
+ "351705": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Técnico",
+  "justificativa": ""
+ },
+ "123705": {
+  "macrofamilia": "Engenharia, técnicos industriais e TI",
+  "nivel": "Superior",
+  "justificativa": "Direção de P&D (engenharia e tecnologia)."
+ },
+ "421115": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "203215": {
+  "macrofamilia": "Engenharia, técnicos industriais e TI",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "517115": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "776405": {
+  "macrofamilia": "Madeira, móveis, cerâmica e vidro",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "261115": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Superior",
+  "justificativa": "Direção de redação, serviço de comunicação."
+ },
+ "722105": {
+  "macrofamilia": "Metalmecânica e eletroeletrônica",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "373145": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Qualificado",
+  "justificativa": "Assistente audiovisual, sem formação técnica exigida."
+ },
+ "724125": {
+  "macrofamilia": "Metalmecânica e eletroeletrônica",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "848105": {
+  "macrofamilia": "Alimentos e bebidas",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "725415": {
+  "macrofamilia": "Metalmecânica e eletroeletrônica",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "251610": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "622425": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Básico",
+  "justificativa": "Trabalho agrícola elementar."
+ },
+ "763205": {
+  "macrofamilia": "Têxtil, confecção, couro e calçados",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "782705": {
+  "macrofamilia": "Logística e transporte",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "611005": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "232140": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "234510": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "232155": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "991105": {
+  "macrofamilia": "Manutenção e reparação",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "760405": {
+  "macrofamilia": "Têxtil, confecção, couro e calçados",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "141525": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Superior",
+  "justificativa": "Gerencia turismo, serviço."
+ },
+ "760605": {
+  "macrofamilia": "Operação de linha e processo",
+  "nivel": "Qualificado",
+  "justificativa": "Supervisão gráfica é processo gráfico, não têxtil."
+ },
+ "422220": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "312310": {
+  "macrofamilia": "Engenharia, técnicos industriais e TI",
+  "nivel": "Técnico",
+  "justificativa": ""
+ },
+ "811715": {
+  "macrofamilia": "Operação de linha e processo",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "123115": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Superior",
+  "justificativa": "Direção financeira."
+ },
+ "723220": {
+  "macrofamilia": "Metalmecânica e eletroeletrônica",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "914305": {
+  "macrofamilia": "Manutenção e reparação",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "761210": {
+  "macrofamilia": "Têxtil, confecção, couro e calçados",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "251520": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Superior",
+  "justificativa": "Psicologia hospitalar é serviço de saúde."
+ },
+ "724325": {
+  "macrofamilia": "Metalmecânica e eletroeletrônica",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "513510": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Básico",
+  "justificativa": "Auxiliar de alimentação é ocupação elementar."
+ },
+ "342205": {
+  "macrofamilia": "Logística e transporte",
+  "nivel": "Qualificado",
+  "justificativa": "Ajudante, sem formação técnica exigida."
+ },
+ "214105": {
+  "macrofamilia": "Engenharia, técnicos industriais e TI",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "725420": {
+  "macrofamilia": "Metalmecânica e eletroeletrônica",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "262505": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Qualificado",
+  "justificativa": "Atuação artística, serviço de cultura; não exige nível superior."
+ },
+ "751125": {
+  "macrofamilia": "Madeira, móveis, cerâmica e vidro",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "765205": {
+  "macrofamilia": "Têxtil, confecção, couro e calçados",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "992215": {
+  "macrofamilia": "Construção civil e extração",
+  "nivel": "Qualificado",
+  "justificativa": "Conservação de vias é ofício de obras."
+ },
+ "710215": {
+  "macrofamilia": "Construção civil e extração",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "354410": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Técnico",
+  "justificativa": ""
+ },
+ "811605": {
+  "macrofamilia": "Operação de linha e processo",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "391110": {
+  "macrofamilia": "Engenharia, técnicos industriais e TI",
+  "nivel": "Técnico",
+  "justificativa": ""
+ },
+ "111220": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Superior",
+  "justificativa": "Cargo executivo público, área administrativa."
+ },
+ "261215": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Superior",
+  "justificativa": "Análise de informações é função administrativa."
+ },
+ "413230": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "761360": {
+  "macrofamilia": "Têxtil, confecção, couro e calçados",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "510115": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "251545": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Superior",
+  "justificativa": "Neuropsicologia é serviço de saúde."
+ },
+ "951310": {
+  "macrofamilia": "Manutenção e reparação",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "841110": {
+  "macrofamilia": "Alimentos e bebidas",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "214605": {
+  "macrofamilia": "Engenharia, técnicos industriais e TI",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "142125": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Superior",
+  "justificativa": "Compliance é área administrativa/jurídica."
+ },
+ "142365": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Superior",
+  "justificativa": "Família 1423 é gerência de comercialização e marketing."
+ },
+ "223815": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "762340": {
+  "macrofamilia": "Têxtil, confecção, couro e calçados",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "252315": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "331305": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Técnico",
+  "justificativa": ""
+ },
+ "860105": {
+  "macrofamilia": "Manutenção e reparação",
+  "nivel": "Qualificado",
+  "justificativa": "Supervisão de manutenção eletromecânica é ofício de manutenção."
+ },
+ "513320": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Básico",
+  "justificativa": "Arrumação de cabines é ocupação elementar."
+ },
+ "519115": {
+  "macrofamilia": "Logística e transporte",
+  "nivel": "Qualificado",
+  "justificativa": "Mototáxi é transporte de passageiros."
+ },
+ "318425": {
+  "macrofamilia": "Engenharia, técnicos industriais e TI",
+  "nivel": "Técnico",
+  "justificativa": ""
+ },
+ "725005": {
+  "macrofamilia": "Metalmecânica e eletroeletrônica",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "232105": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "424130": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "141610": {
+  "macrofamilia": "Logística e transporte",
+  "nivel": "Superior",
+  "justificativa": "Gerencia operações postais (logística)."
+ },
+ "318115": {
+  "macrofamilia": "Engenharia, técnicos industriais e TI",
+  "nivel": "Técnico",
+  "justificativa": ""
+ },
+ "911130": {
+  "macrofamilia": "Manutenção e reparação",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "317115": {
+  "macrofamilia": "Engenharia, técnicos industriais e TI",
+  "nivel": "Técnico",
+  "justificativa": ""
+ },
+ "225225": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "725510": {
+  "macrofamilia": "Metalmecânica e eletroeletrônica",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "724215": {
+  "macrofamilia": "Metalmecânica e eletroeletrônica",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "253305": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "715310": {
+  "macrofamilia": "Construção civil e extração",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "761420": {
+  "macrofamilia": "Têxtil, confecção, couro e calçados",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "773405": {
+  "macrofamilia": "Madeira, móveis, cerâmica e vidro",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "131310": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Superior",
+  "justificativa": "Dirige instituição de educação."
+ },
+ "415215": {
+  "macrofamilia": "Logística e transporte",
+  "nivel": "Qualificado",
+  "justificativa": "Entrega de publicações é logística."
+ },
+ "342550": {
+  "macrofamilia": "Logística e transporte",
+  "nivel": "Técnico",
+  "justificativa": ""
+ },
+ "123805": {
+  "macrofamilia": "Manutenção e reparação",
+  "nivel": "Superior",
+  "justificativa": "Direção de manutenção."
+ },
+ "214910": {
+  "macrofamilia": "Engenharia, técnicos industriais e TI",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "760110": {
+  "macrofamilia": "Têxtil, confecção, couro e calçados",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "351105": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Técnico",
+  "justificativa": ""
+ },
+ "224125": {
+  "macrofamilia": "Serviços de apoio e outros",
+  "nivel": "Superior",
+  "justificativa": ""
+ },
+ "716530": {
+  "macrofamilia": "Construção civil e extração",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "914205": {
+  "macrofamilia": "Manutenção e reparação",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ },
+ "141720": {
+  "macrofamilia": "Administrativo e comercial",
+  "nivel": "Superior",
+  "justificativa": "Gerencia crédito e cobrança (financeiro)."
+ },
+ "782105": {
+  "macrofamilia": "Logística e transporte",
+  "nivel": "Qualificado",
+  "justificativa": ""
+ }
+}
