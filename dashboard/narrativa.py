@@ -89,6 +89,16 @@ def _filtro_unidade(regiao: str, setor: str | None = None, macro: str | None = N
     return filtros
 
 
+def _sintomas(u: pd.Series, ref: pd.Series) -> str:
+    """Os sintomas de tensão da unidade contra o estado, do mais forte (z) ao mais fraco."""
+    partes = []
+    for nome in sorted(c.PESOS_TENSAO_PADRAO, key=lambda n: -float(u.get(f"z_{n}", float("-inf")) or 0)):
+        if pd.notna(u.get(nome)):
+            rotulo = c.DEFINICOES[nome].rotulo.lower()
+            partes.append(f"{rotulo} {c.fmt_pct(u[nome])} (estado: {c.fmt_pct(ref[nome])})")
+    return ", ".join(partes)
+
+
 def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
     """3–5 achados ranqueados pela força do sinal (|z|), cada um com seus filtros."""
     if df is None or df.empty:
@@ -100,8 +110,7 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
         u = m.iloc[0]
         achados.append(Achado(
             "Maior tensão",
-            f"**{u[c.COLUNA_SETOR]}** em **{u[c.COLUNA_REGIAO]}**: saída voluntária "
-            f"{c.fmt_pct(u[c.M_SAIDA_VOL])} (estado: {c.fmt_pct(ref[c.M_SAIDA_VOL])}), quem entra ganha "
+            f"**{u[c.COLUNA_SETOR]}** em **{u[c.COLUNA_REGIAO]}**: {_sintomas(u, ref)}; quem entra ganha "
             f"{c.fmt_gap(u[c.M_GAP_SAL])} de quem saiu, n = {c.fmt_int(u[c.M_MOV])}.",
             _filtro_unidade(u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), float(u["tensao"]),
         ))
@@ -110,8 +119,11 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
             e = exp.iloc[0]
             achados.append(Achado(
                 "Expansão mais acelerada",
-                f"**{e[c.COLUNA_SETOR]}** em **{e[c.COLUNA_REGIAO]}**: saldo {c.fmt_int(e[c.M_SALDO])} "
-                f"({c.fmt_pct(e[c.M_SALDO_REL])} das movimentações), n = {c.fmt_int(e[c.M_MOV])}.",
+                f"**{e[c.COLUNA_SETOR]}** em **{e[c.COLUNA_REGIAO]}**: saldo {c.fmt_int(e[c.M_SALDO])}"
+                + (f" ({c.fmt_pct(e[c.M_VAR_REL])} do estoque; aceleração {c.fmt_pp(e[c.M_ACEL])} sobre o ano anterior)"
+                   if pd.notna(e[c.M_VAR_REL]) and pd.notna(e[c.M_ACEL])
+                   else f" ({c.fmt_pct(e[c.M_SALDO_REL])} das movimentações)")
+                + f", n = {c.fmt_int(e[c.M_MOV])}.",
                 _filtro_unidade(e[c.COLUNA_REGIAO], e[c.COLUNA_SETOR]), float(e["dinamismo"]),
             ))
         z_comp = c.zscore(1 - m[c.M_GAP_SAL])

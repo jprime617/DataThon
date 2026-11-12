@@ -33,7 +33,9 @@ def tabela_alertas(m: pd.DataFrame, segunda: str, saida_ref: float, frac_tecnica
             "Quadrante": u["quadrante"],
             "Causas": ", ".join(selos) or "—",
             "Movimentações": int(u[c.M_MOV]),
+            "Rotatividade descontada": c.fmt_pct(u[c.M_ROT_DESC]),
             "Saída voluntária": c.fmt_pct(u[c.M_SAIDA_VOL]),
+            "Desligamento precoce": c.fmt_pct(u[c.M_PRECOCE]),
             "Salário de quem entra vs quem saiu": c.fmt_gap(u[c.M_GAP_SAL]),
             "Saldo": c.fmt_int(u[c.M_SALDO]),
         })
@@ -41,11 +43,24 @@ def tabela_alertas(m: pd.DataFrame, segunda: str, saida_ref: float, frac_tecnica
 
 
 CARTOES_MAX = 6
+# Rótulo curto de cada sintoma de tensão no cartão de alerta.
+ROTULO_SINTOMA = {c.M_ROT_DESC: "Rotatividade", c.M_SAIDA_VOL: "Saem a pedido",
+                  c.M_PRECOCE: "Saem com < 1 ano"}
+
+
+def sintoma_principal(u: pd.Series) -> str:
+    """O sintoma com o maior z-score na unidade (o que mais puxa a tensão)."""
+    presentes = [n for n in c.PESOS_TENSAO_PADRAO if pd.notna(u.get(f"z_{n}"))]
+    return max(presentes, key=lambda n: u[f"z_{n}"]) if presentes else c.M_SAIDA_VOL
 _CLASSE_QUADRANTE = {c.Q_APAGAO: "apagao", c.Q_PRESSAO: "pressao"}
 
 
-def frase_porque(u: pd.Series, selos: list[str], saida_ref: float) -> str:
-    """O "por quê" de uma unidade em alerta, numa frase sem jargão."""
+def frase_porque(u: pd.Series, selos: list[str], saida_ref: float, ref: pd.Series | None = None) -> str:
+    """O "por quê" de uma unidade em alerta, numa frase sem jargão.
+
+    Sem causa isolada, cita o sintoma que mais puxa a tensão (com ``ref``, o
+    total do recorte); sem ``ref``, a saída voluntária.
+    """
     saida, gap = u[c.M_SAIDA_VOL], u[c.M_GAP_SAL]
     if c.CAUSA_SALARIAL in selos:
         return (f"Quem entra ganha {c.fmt_pct(gap, 0)} do salário de quem sai, "
@@ -55,6 +70,13 @@ def frase_porque(u: pd.Series, selos: list[str], saida_ref: float) -> str:
                 "e o salário de entrada não é menor: o problema é reter.")
     if c.CAUSA_QUALIFICACAO in selos:
         return "Contrata gente menos escolarizada do que a que sai, numa área que pede técnico ou superior."
+    if ref is not None:
+        nome = sintoma_principal(u)
+        valor, base = u[nome], ref[nome]
+        if pd.notna(valor) and pd.notna(base):
+            comparacao = "acima" if valor >= base else "abaixo"
+            return (f"{c.DEFINICOES[nome].rotulo}: {c.fmt_pct(valor, 0)}, {comparacao} dos {c.fmt_pct(base, 0)} "
+                    "do estado; nenhuma causa isolada se destaca.")
     if pd.notna(saida) and pd.notna(saida_ref):
         comparacao = "acima" if saida >= saida_ref else "abaixo"
         return (f"{c.fmt_pct(saida, 0)} dos desligamentos são a pedido, {comparacao} dos "
@@ -62,16 +84,17 @@ def frase_porque(u: pd.Series, selos: list[str], saida_ref: float) -> str:
     return "Sem causa isolada identificada com os dados disponíveis."
 
 
-def _cartao(u: pd.Series, segunda: str, selos: list[str], saida_ref: float, i: int) -> None:
+def _cartao(u: pd.Series, segunda: str, selos: list[str], ref: pd.Series, i: int) -> None:
     quadrante = u["quadrante"]
     with st.container(border=True, key=f"rx-alerta-{_CLASSE_QUADRANTE[quadrante]}-{i}"):
         st.markdown(f"**{u[segunda]}**  \n{u[c.COLUNA_REGIAO]}")
         st.html(f'<span class="rx-semaforo rx-{_CLASSE_QUADRANTE[quadrante]}">{quadrante}</span>')
-        st.markdown(frase_porque(u, selos, saida_ref))
+        st.markdown(frase_porque(u, selos, ref[c.M_SAIDA_VOL], ref))
         a, b = st.columns(2)
-        a.metric("Saem a pedido", c.fmt_pct(u[c.M_SAIDA_VOL], 0),
-                 delta=c.delta_texto(c.M_SAIDA_VOL, u[c.M_SAIDA_VOL], saida_ref, "vs SC"),
-                 delta_color="inverse")
+        nome = sintoma_principal(u)
+        a.metric(ROTULO_SINTOMA[nome], c.fmt_pct(u[nome], 0),
+                 delta=c.delta_texto(nome, u[nome], ref[nome], "vs SC"),
+                 delta_color="inverse", help=c.DEFINICOES[nome].formula)
         b.metric("Saldo de vagas", c.fmt_int(u[c.M_SALDO]), help=f"{c.fmt_int(u[c.M_MOV])} movimentações")
 
 
@@ -97,7 +120,8 @@ def render(ctx: c.Contexto) -> None:
     )
 
     st.subheader("Alertas, do mais tenso ao menos tenso")
-    saida_ref = c.total(ctx.df)[c.M_SAIDA_VOL]
+    ref = c.total(ctx.df)
+    saida_ref = ref[c.M_SAIDA_VOL]
     frac_tecnica = c.fracao_por_nivel(ctx.df, por, c.NIVEIS_QUALIFICADOS)
     tabela = tabela_alertas(m, segunda, saida_ref, frac_tecnica)
     if tabela.empty:
@@ -111,7 +135,7 @@ def render(ctx: c.Contexto) -> None:
             selos = c.causas(u, saida_ref=saida_ref,
                              fracao_tecnica=float(frac_tecnica.get((u[c.COLUNA_REGIAO], u[segunda]), 0.0)))
             with colunas[i % 3]:
-                _cartao(u, segunda, selos, saida_ref, i)
+                _cartao(u, segunda, selos, ref, i)
         st.caption(f"Vermelho = {c.Q_APAGAO}: perde gente e cresce pouco. Laranja = {c.Q_PRESSAO}: cresce, "
                    "mas perde gente. Primeiro as unidades com ao menos 1% das movimentações.")
         with st.expander(f"Ver as {len(tabela)} unidades em alerta numa tabela"):
