@@ -5,6 +5,19 @@
 **Base deste plano:** o parecer "Realinhamento do Raio-X SC", conferido contra o código. Os três problemas de método foram confirmados e os números batem.
 As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 
+### Progresso (atualize a cada ciclo; é o primeiro lugar que a IA de cada um deve ler)
+
+| Marco | Situação | Onde está | Último ciclo feito |
+|---|---|---|---|
+| M0 | C1 e C2 feitos; falta o C0 (organizadores) | `dashboard-v2` | M0.C2 |
+| M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
+| M2 | prompts prontos; código não iniciado | — | — |
+| M3 | em andamento (João + Claude); **C5 (mapa) suspenso** a pedido do João | `m3-painel` | — |
+| M4 · M5 · M6 | bloqueados pelo M0.C0 | — | — |
+| M7 | não iniciado | — | — |
+
+Commits locais só sobem com autorização do João: confira `git log origin/dashboard-v2..` antes de supor que algo foi publicado.
+
 ---
 
 ## Como trabalhar (vale para todos)
