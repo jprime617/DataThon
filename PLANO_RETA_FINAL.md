@@ -13,7 +13,8 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
 | M2 | C1–C2 feitos e **mergeados** (PR #1); C3 preparado; **H1 (respostas da IA paga) pendente** | `dashboard-v2` | M2.C2 (+ C3 preparado) |
 | M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
-| M4 · M5 · M6 | bloqueados pelo M0.C0 | — | — |
+| M4 | C1 feito (download + layout); C2 em andamento; **uso no pitch ainda depende do M0.C0** | `m4-rais` | M4.C1 |
+| M5 · M6 | bloqueados pelo M0.C0 | — | — |
 | M7 | não iniciado | — | — |
 
 Commits locais só sobem com autorização do João: confira `git log origin/dashboard-v2..` antes de supor que algo foi publicado.
@@ -165,11 +166,15 @@ O que muda, e por quê:
 ## M4 · RAIS 2025: estoque, rotatividade oficial e desligamento precoce
 
 **Branch:** `m4-rais` · **Dono:** pessoa 2 (C1–C4) e pessoa 1 nos ciclos [painel] · **Estimativa:** 3 a 4 h · **Exige M0.C0**
-**Estado:** não iniciado. O FTP respondeu em 12/11: `ftp://ftp.mtps.gov.br/pdet/microdados/RAIS/2025/RAIS_VINC_PUB_SUL.7z` (705 MB).
+**Estado:** C1 feito na branch `m4-rais` (`python scripts/baixar_rais.py`, retomável; cerca de 12 min a 1 MB/s; extrai com `7z` ou, se não houver, com `bsdtar`). Próximo: C2. O que o C1 encontrou, **conferido no layout `RAIS_vinculos_layout.xls` e no próprio arquivo**:
+  - O arquivo extraído é `data/raw/rais/2025/RAIS_VINC_PUB_SUL.COMT` (4,3 GB, PR+SC+RS). **Separador `,`** (o layout diz `;`, mas está errado para 2025), **encoding Latin-1**, decimal `.`, cabeçalho entre aspas e alguns códigos entre aspas com espaço à esquerda (`" 4772500"`): use `dtype=str` e `.str.strip()`.
+  - Colunas que o M4 usa: `Município - Código` (6 dígitos; SC começa com `42`), `Tipo Vínculo - Código`, `Ind Vínculo Ativo 31/12 - Código` (0 = não, 1 = sim), `Motivo Desligamento - Código` (0 = não desligado no ano), `Mês Desligamento - Código` (0 = não desligado), `Tempo Emprego` (em **meses**, com decimal), `Escolaridade Após 2005 - Código` (1–11, médio completo = 7; −1 = ignorado), `CBO 2002 Ocupação - Código`, `CNAE 2.0 Subclasse - Codigo` (sem acento no "Codigo"), `Vl Rem Média Nom`.
+  - `Tipo Vínculo` CLT segundo o layout: **10, 15, 20, 25** (prazo indeterminado) e **60, 65, 70, 75** (prazo determinado). Ficam de fora: 30–35 (estatutário), 40 (avulso), 50 (temporário), 55 (aprendiz), 80 (diretor) e 90–97. Decisão para o C2: usar só esses oito códigos CLT; aprendiz e temporário ficam fora, e isso vai para a Metodologia.
+  - Os códigos de desligamento da RAIS **não são os do CAGED**: 10/11 = demissão com/sem justa causa, 12 = término de contrato, 20/21 = a pedido (com/sem justa causa), 30–34 = transferência, 60–64 = falecimento, 70–80 = aposentadoria. Não reaproveite o "40 = a pedido" do CAGED aqui.
 
 **Ideia central:** **só a RAIS 2025.** O estoque em 31/12/2025 cai dentro da janela set/25–ago/26 e serve de aproximação do estoque médio. Assim saem a rotatividade descontada (PLANEJAMENTO §6), a variação relativa (saldo ÷ estoque), o desligamento precoce e o gap de escolaridade contra o estoque. A RAIS 2024 e o estoque mensal rolado ficam para depois.
 
-- [ ] **M4.C1 Baixar e inspecionar** (mergeável sozinho).
+- [x] **M4.C1 Baixar e inspecionar** (mergeável sozinho).
   - Script que baixa para `data/raw/rais/2025/`, retomável (pula o que já existe), e extrai com `7z`.
   - Baixar também o layout da RAIS no FTP e anotar no Estado: nomes das colunas, separador, encoding e os códigos de `Tipo Vínculo` CLT e de `Vínculo Ativo 31/12`. **Conferir no layout, não de memória.**
 - [ ] **M4.C2 `src/rais.py: ler_rais_sc()`.**
