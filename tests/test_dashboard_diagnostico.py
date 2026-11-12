@@ -47,3 +47,20 @@ def test_gap_salarial_em_palavras():
 
 def test_no_maximo_quatro_indicadores_principais():
     assert len(c.KPIS_PADRAO) <= 4
+
+
+def test_no_maximo_dois_graficos_a_vista_por_pagina():
+    """M3.C4: gráficos além de 2 ficam dentro de um expander ("Aprofundar")."""
+    import ast
+    from pathlib import Path
+
+    for arquivo in (Path(__file__).parent.parent / "dashboard" / "paginas").glob("*.py"):
+        if arquivo.stem in ("apresentacao", "__init__"):  # apresentação: um gráfico por slide
+            continue
+        arvore = ast.parse(arquivo.read_text(encoding="utf-8"))
+        dentro = {id(n) for w in ast.walk(arvore) if isinstance(w, ast.With)
+                  and any("expander" in ast.unparse(i.context_expr) for i in w.items)
+                  for n in ast.walk(w)}
+        a_vista = [n for n in ast.walk(arvore) if isinstance(n, ast.Call)
+                   and ast.unparse(n.func).endswith(("plotly_chart", "graphviz_chart")) and id(n) not in dentro]
+        assert len(a_vista) <= 2, f"{arquivo.name}: {len(a_vista)} gráficos à vista"
