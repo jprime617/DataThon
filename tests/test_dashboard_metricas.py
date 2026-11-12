@@ -97,11 +97,10 @@ def test_recorte_vazio_tem_contagens_zero_e_razoes_nan():
     assert rotulos["Saldo"] == 0.0
 
 
-def test_aceleracao_compara_os_dois_semestres_em_pontos_percentuais():
-    df = _df(_celula(mes="202509", admissoes=50, desligamentos=50),
-             _celula(mes="202603", admissoes=60, desligamentos=40))
-    t = c.total(df, corte_mes="202603")
-    assert t[c.M_ACEL] == pytest.approx((20 / 100 - 0) * 100)
+def test_aceleracao_semestral_saiu_das_metricas():
+    """M1.C3: comparar semestres media calendário; volta por blocos 12 × 12 (M5.C6)."""
+    assert not hasattr(c, "M_ACEL") and not hasattr(c, "corte_semestral")
+    assert "aceleracao" not in c.total(_df(_celula(admissoes=200))).index
 
 
 # --- Guarda de amostra -----------------------------------------------------------

@@ -30,7 +30,7 @@ digraph {
 """
 
 LIMITES = """
-- **12 meses de dados** (set/25–ago/26): a aceleração compara os dois semestres e carrega sazonalidade (dezembro concentra desligamentos).
+- **12 meses de dados** (set/25–ago/26): sem um bloco anterior de 12 meses, não há aceleração sem sazonalidade, então ela fica fora do índice.
 - **O CAGED mede fluxos, não estoque, e não tem vagas abertas.** "Apagão" é inferido por sinais de tensão (hoje, a saída voluntária; a compressão salarial entra como causa), não observado.
 - **Giro é um proxy** (mín ÷ máx entre admissões e desligamentos); não é a taxa de rotatividade do MTE, que exige o estoque de vínculos.
 - **Salários são declarados pelo empregador** e não deflacionados; as medianas do perfil, ao juntar células, são aproximadas pela mediana ponderada.
@@ -88,7 +88,7 @@ def render(ctx: c.Contexto) -> None:
              .set_index("Indicador"))
     st.caption(f"Guarda de amostra: taxas exigem ≥ {c.MIN_MOVIMENTACOES} movimentações; gaps salariais, "
                f"≥ {c.MIN_SALARIOS} salários de admissão e de desligamento. Abaixo disso a célula fica em cinza "
-               "e sai de rankings e da matriz. Dinamismo = média dos z-scores de saldo relativo e aceleração; "
+               "e sai de rankings e da matriz. Dinamismo = z-score do saldo relativo; "
                "Tensão = z-score da saída voluntária.")
 
     st.subheader("Premissas e limites")

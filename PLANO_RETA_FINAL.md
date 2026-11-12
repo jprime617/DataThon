@@ -76,7 +76,7 @@ Leia PLANO_RETA_FINAL.md, seção "Como trabalhar". Continue o marco <Mx> a part
 ## M1 · Corrigir os 3 problemas de método (sem dado novo)
 
 **Branch:** `m1-metodo` · **Dono:** pessoa 1 · **Estimativa:** 1,5 a 2 h
-**Estado:** C1–C2 feitos. A regra de Automação ficou "Básico ≥ 50% e saldo ≤ 0" (sem o giro). Próximo: C3.
+**Estado:** C1–C2 feitos. A regra de Automação ficou "Básico ≥ 50% e saldo ≤ 0" (sem o giro). C3 feito: sem recorte, a sanfona não mostra delta (o "2º vs 1º sem." também media calendário). Próximo: C4.
 
 O que muda, e por quê:
 - **Giro:** hoje é `min(adm, desl) / max(adm, desl)`, que é função exata do saldo relativo (indústria: 0,9954 = (1−|s|)/(1+|s|)). Sai de tudo. A rotatividade oficial volta no M4.
@@ -92,7 +92,7 @@ O que muda, e por quê:
   - Apagar `M_GIRO` de `comum.py`: definição, `KPIS_PADRAO`, grupos de indicadores, `METRICAS_INVERSAS` e as regras de recomendação que o usam.
   - Apagar também de `narrativa.py`, `figuras.py`, `paginas/` (panorama, diagnóstico, causa raiz, recomendações, apresentação, metodologia) e dos testes.
   - Conferir com `grep -rn "M_GIRO\|giro" dashboard tests`, que deve voltar vazio.
-- [ ] **M1.C3 Aceleração semestral fora.**
+- [x] **M1.C3 Aceleração semestral fora.**
   - Tirar `M_ACEL` do Dinamismo (`PESOS_DINAMISMO_PADRAO = {M_SALDO_REL: 1.0}`), dos KPIs, do mapa e da sanfona.
   - **Apagar** `corte_semestral` e o cálculo semestral em `agregar_metricas`. O M5.C6 recria a aceleração por blocos.
 - [ ] **M1.C4 Colunas legadas do pipeline.**

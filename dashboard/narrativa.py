@@ -111,8 +111,7 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
             achados.append(Achado(
                 "Expansão mais acelerada",
                 f"**{e[c.COLUNA_SETOR]}** em **{e[c.COLUNA_REGIAO]}**: saldo {c.fmt_int(e[c.M_SALDO])} "
-                f"({c.fmt_pct(e[c.M_SALDO_REL])} das movimentações), aceleração {c.fmt_pp(e[c.M_ACEL])} "
-                f"entre semestres, n = {c.fmt_int(e[c.M_MOV])}.",
+                f"({c.fmt_pct(e[c.M_SALDO_REL])} das movimentações), n = {c.fmt_int(e[c.M_MOV])}.",
                 _filtro_unidade(e[c.COLUNA_REGIAO], e[c.COLUNA_SETOR]), float(e["dinamismo"]),
             ))
         z_comp = c.zscore(1 - m[c.M_GAP_SAL])
