@@ -1207,6 +1207,15 @@ _CSS = """
 .rx-marca em {position: absolute; top: 19px; left: 50%; transform: translateX(-50%);
   font-style: normal; font-weight: 700; font-size: .85rem; color: var(--rx-laranja-texto);}
 .rx-d-nota {color: var(--rx-suave); font-size: .85rem; margin: 0;}
+
+/* Cartões de alerta do Diagnóstico: faixa à esquerda na cor do quadrante + rótulo (nunca só cor) */
+[class*="st-key-rx-alerta-"] {border-left: 6px solid var(--rx-suave) !important;}
+[class*="st-key-rx-alerta-apagao"] {border-left-color: #D55E00 !important;}
+[class*="st-key-rx-alerta-pressao"] {border-left-color: #E69F00 !important;}
+.rx-semaforo {display: inline-flex; align-items: center; gap: .4rem; font-weight: 700; font-size: .9rem; color: var(--rx-texto);}
+.rx-semaforo::before {content: ""; width: .8rem; height: .8rem; border-radius: 50%; background: currentColor;}
+.rx-semaforo.rx-apagao::before {background: #D55E00;}
+.rx-semaforo.rx-pressao::before {background: #E69F00;}
 """
 
 

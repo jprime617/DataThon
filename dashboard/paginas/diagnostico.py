@@ -42,6 +42,41 @@ def tabela_alertas(m: pd.DataFrame, segunda: str, saida_ref: float, frac_tecnica
     return pd.DataFrame(linhas)
 
 
+CARTOES_MAX = 6
+_CLASSE_QUADRANTE = {c.Q_APAGAO: "apagao", c.Q_PRESSAO: "pressao"}
+
+
+def frase_porque(u: pd.Series, selos: list[str], saida_ref: float) -> str:
+    """O "por quê" de uma unidade em alerta, numa frase sem jargão."""
+    saida, gap = u[c.M_SAIDA_VOL], u[c.M_GAP_SAL]
+    if c.CAUSA_SALARIAL in selos:
+        return (f"Quem entra ganha {c.fmt_pct(gap, 0)} do salário de quem sai, "
+                f"e {c.fmt_pct(saida, 0)} dos desligamentos são a pedido.")
+    if c.CAUSA_RETENCAO in selos:
+        return (f"{c.fmt_pct(saida, 0)} dos desligamentos são a pedido (estado: {c.fmt_pct(saida_ref, 0)}), "
+                "e o salário de entrada não é menor: o problema é reter.")
+    if c.CAUSA_QUALIFICACAO in selos:
+        return "Contrata gente menos escolarizada do que a que sai, numa área que pede técnico ou superior."
+    if pd.notna(saida) and pd.notna(saida_ref):
+        comparacao = "acima" if saida >= saida_ref else "abaixo"
+        return (f"{c.fmt_pct(saida, 0)} dos desligamentos são a pedido, {comparacao} dos "
+                f"{c.fmt_pct(saida_ref, 0)} do estado; nenhuma causa isolada se destaca.")
+    return "Sem causa isolada identificada com os dados disponíveis."
+
+
+def _cartao(u: pd.Series, segunda: str, selos: list[str], saida_ref: float, i: int) -> None:
+    quadrante = u["quadrante"]
+    with st.container(border=True, key=f"rx-alerta-{_CLASSE_QUADRANTE[quadrante]}-{i}"):
+        st.markdown(f"**{u[segunda]}**  \n{u[c.COLUNA_REGIAO]}")
+        st.html(f'<span class="rx-semaforo rx-{_CLASSE_QUADRANTE[quadrante]}">{quadrante}</span>')
+        st.markdown(frase_porque(u, selos, saida_ref))
+        a, b = st.columns(2)
+        a.metric("Saem a pedido", c.fmt_pct(u[c.M_SAIDA_VOL], 0),
+                 delta=c.delta_texto(c.M_SAIDA_VOL, u[c.M_SAIDA_VOL], saida_ref, "vs SC"),
+                 delta_color="inverse")
+        b.metric("Saldo de vagas", c.fmt_int(u[c.M_SALDO]), help=f"{c.fmt_int(u[c.M_MOV])} movimentações")
+
+
 def render(ctx: c.Contexto) -> None:
     st.title("Quem precisa de atenção urgente?")
     c.cabecalho(ctx)
@@ -64,16 +99,28 @@ def render(ctx: c.Contexto) -> None:
     )
 
     st.subheader("Alertas, do mais tenso ao menos tenso")
-    ref = c.total(ctx.df)
-    tabela = tabela_alertas(m, segunda, ref[c.M_SAIDA_VOL],
-                            c.fracao_por_nivel(ctx.df, por, c.NIVEIS_QUALIFICADOS))
+    saida_ref = c.total(ctx.df)[c.M_SAIDA_VOL]
+    frac_tecnica = c.fracao_por_nivel(ctx.df, por, c.NIVEIS_QUALIFICADOS)
+    tabela = tabela_alertas(m, segunda, saida_ref, frac_tecnica)
     if tabela.empty:
         st.caption("Nenhuma unidade nos quadrantes de alerta.")
     else:
-        st.dataframe(tabela, hide_index=True, width="stretch",
-                     column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
-        st.caption("Primeiro as unidades com ≥ 1% das movimentações do recorte, da mais à menos tensa. Causas: Salarial = gap < 0,95; Qualificação = gap de escolaridade ≤ −0,10 com Técnico + "
-                   "Superior ≥ 50%; Retenção = saída voluntária ≥ estado + 5 p.p. com gap ≥ 1.")
+        alerta = m[m["quadrante"].isin([c.Q_APAGAO, c.Q_PRESSAO])]
+        piso = max(c.MIN_MOVIMENTACOES, nar.FRACAO_RELEVANCIA * float(m[c.M_MOV].sum()))
+        alerta = alerta.assign(_rel=alerta[c.M_MOV] >= piso).sort_values(["_rel", "tensao"], ascending=False)
+        colunas = st.columns(3)
+        for i, (_, u) in enumerate(alerta.head(CARTOES_MAX).iterrows()):
+            selos = c.causas(u, saida_ref=saida_ref,
+                             fracao_tecnica=float(frac_tecnica.get((u[c.COLUNA_REGIAO], u[segunda]), 0.0)))
+            with colunas[i % 3]:
+                _cartao(u, segunda, selos, saida_ref, i)
+        st.caption(f"Vermelho = {c.Q_APAGAO}: perde gente e cresce pouco. Laranja = {c.Q_PRESSAO}: cresce, "
+                   "mas perde gente. Primeiro as unidades com ao menos 1% das movimentações.")
+        with st.expander(f"Ver as {len(tabela)} unidades em alerta numa tabela"):
+            st.dataframe(tabela, hide_index=True, width="stretch",
+                         column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
+            st.caption("Causas: Salarial = gap < 0,95; Qualificação = gap de escolaridade ≤ −0,10 com Técnico + "
+                       "Superior ≥ 50%; Retenção = saída voluntária ≥ estado + 5 p.p. com gap ≥ 1.")
 
     # Com um só componente de tensão não há peso para variar; volta no M4.C6.
     if len(c.PESOS_TENSAO_PADRAO) > 1:
