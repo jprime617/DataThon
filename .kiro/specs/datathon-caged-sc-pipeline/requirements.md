@@ -52,6 +52,7 @@ O escopo cobre o pipeline completo (ingestão → limpeza → cruzamento relacio
 8. WHEN a carga inicial do CAGED é concluída sem erros de validação, THE Ingestor SHALL persistir o conteúdo carregado em formato Parquet.
 9. THE Ingestor SHALL registrar a contagem exata de linhas lidas de cada arquivo de origem.
 10. IF um arquivo de origem está ausente, inacessível ou ilegível, THEN THE Ingestor SHALL registrar um erro identificando o arquivo e interromper o processamento sem persistir.
+11. *(M4 — depende do M0.C0.)* WHEN a RAIS 2025 de vínculos é carregada (`src/rais.py`), THE Ingestor SHALL lê-la em blocos com separador `,` e encoding Latin-1, manter só os vínculos de municípios de SC (chave de 6 dígitos começando com `42`) e de `Tipo Vínculo` CLT (10, 15, 20, 25, 60, 65, 70 e 75, conforme o layout oficial), persistir o resultado em `data/interim/rais_sc_2025.parquet` e, se faltar alguma coluna esperada ou o arquivo, levantar um erro que identifica o arquivo e as colunas ausentes.
 
 ### Requirement 2: Limpeza, conversão de tipos e decodificação de domínios
 

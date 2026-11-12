@@ -13,7 +13,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
 | M2 | C1–C2 feitos e **mergeados** (PR #1); C3 preparado; **H1 (respostas da IA paga) pendente** | `dashboard-v2` | M2.C2 (+ C3 preparado) |
 | M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso** | `dashboard-v2` | M3.C7 |
-| M4 | C1 feito (download + layout); C2 em andamento; **uso no pitch ainda depende do M0.C0** | `m4-rais` | M4.C1 |
+| M4 | C1–C2 feitos (download, layout, leitura SC+CLT); próximo: C3; **uso no pitch ainda depende do M0.C0** | `m4-rais` | M4.C2 |
 | M5 · M6 | bloqueados pelo M0.C0 | — | — |
 | M7 | não iniciado | — | — |
 
@@ -166,7 +166,11 @@ O que muda, e por quê:
 ## M4 · RAIS 2025: estoque, rotatividade oficial e desligamento precoce
 
 **Branch:** `m4-rais` · **Dono:** pessoa 2 (C1–C4) e pessoa 1 nos ciclos [painel] · **Estimativa:** 3 a 4 h · **Exige M0.C0**
-**Estado:** C1 feito na branch `m4-rais` (`python scripts/baixar_rais.py`, retomável; cerca de 12 min a 1 MB/s; extrai com `7z` ou, se não houver, com `bsdtar`). Próximo: C2. O que o C1 encontrou, **conferido no layout `RAIS_vinculos_layout.xls` e no próprio arquivo**:
+**Estado:** C1 feito na branch `m4-rais` (`python scripts/baixar_rais.py`, retomável; cerca de 12 min a 1 MB/s; extrai com `7z` ou, se não houver, com `bsdtar`). C2 feito: `python -m src.rais` grava `data/interim/rais_sc_2025.parquet` (cerca de 95 s, 51 MB): **4.290.964 vínculos CLT de SC, 295 municípios, 2.565.458 ativos em 31/12, 1.725.506 desligados no ano** (68,5% com menos de 12 meses de casa). **Próximo: C3.** Cuidados para o C3:
+  - a RAIS **não tem a letra da seção**, só a subclasse CNAE de 7 dígitos: a seção sai da subclasse (divisão = 2 primeiros dígitos → seção CNAE);
+  - os desligamentos da RAIS incluem **31 = transferência sem ônus (165 mil)**, que não é desligamento de verdade; decida se `desligados_rais` exclui os códigos 30–34 (recomendado) e registre na Metodologia. O código 90 (16 mil) não aparece no layout;
+  - a escolaridade "médio completo ou mais" é `escolaridade >= 7` (−1 = ignorado, fora do denominador).
+  O que o C1 encontrou, **conferido no layout `RAIS_vinculos_layout.xls` e no próprio arquivo**:
   - O arquivo extraído é `data/raw/rais/2025/RAIS_VINC_PUB_SUL.COMT` (4,3 GB, PR+SC+RS). **Separador `,`** (o layout diz `;`, mas está errado para 2025), **encoding Latin-1**, decimal `.`, cabeçalho entre aspas e alguns códigos entre aspas com espaço à esquerda (`" 4772500"`): use `dtype=str` e `.str.strip()`.
   - Colunas que o M4 usa: `Município - Código` (6 dígitos; SC começa com `42`), `Tipo Vínculo - Código`, `Ind Vínculo Ativo 31/12 - Código` (0 = não, 1 = sim), `Motivo Desligamento - Código` (0 = não desligado no ano), `Mês Desligamento - Código` (0 = não desligado), `Tempo Emprego` (em **meses**, com decimal), `Escolaridade Após 2005 - Código` (1–11, médio completo = 7; −1 = ignorado), `CBO 2002 Ocupação - Código`, `CNAE 2.0 Subclasse - Codigo` (sem acento no "Codigo"), `Vl Rem Média Nom`.
   - `Tipo Vínculo` CLT segundo o layout: **10, 15, 20, 25** (prazo indeterminado) e **60, 65, 70, 75** (prazo determinado). Ficam de fora: 30–35 (estatutário), 40 (avulso), 50 (temporário), 55 (aprendiz), 80 (diretor) e 90–97. Decisão para o C2: usar só esses oito códigos CLT; aprendiz e temporário ficam fora, e isso vai para a Metodologia.
@@ -177,7 +181,7 @@ O que muda, e por quê:
 - [x] **M4.C1 Baixar e inspecionar** (mergeável sozinho).
   - Script que baixa para `data/raw/rais/2025/`, retomável (pula o que já existe), e extrai com `7z`.
   - Baixar também o layout da RAIS no FTP e anotar no Estado: nomes das colunas, separador, encoding e os códigos de `Tipo Vínculo` CLT e de `Vínculo Ativo 31/12`. **Conferir no layout, não de memória.**
-- [ ] **M4.C2 `src/rais.py: ler_rais_sc()`.**
+- [x] **M4.C2 `src/rais.py: ler_rais_sc()`.**
   - Leitura em `chunksize`, filtrando município de SC (6 dígitos começando com 42) e vínculos CLT. Manter só as colunas necessárias.
   - Grava `data/interim/rais_sc_2025.parquet`.
   - Um teste com um CSV sintético de 5 linhas.
