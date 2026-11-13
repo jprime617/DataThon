@@ -132,6 +132,21 @@ MARGEM_SAIDA_VOLUNTARIA = 0.05    # saída voluntária ≥ referência + 5 p.p. 
 # (bem abaixo das demais, que ficam entre −0,12 e +0,07 no estado).
 LIMIAR_DESTAQUE_GAP_ESC = -0.30
 
+# ANA-02: escolaridade além da média ordinal. Faixas do perfil (src.mapeamentos.FAIXAS_ESCOLARIDADE).
+FAIXA_MEDIO = "Médio completo"
+FAIXA_SUPERIOR = "Superior completo ou mais"
+FAIXAS_MEDIO_OU_MAIS = (FAIXA_MEDIO, "Superior incompleto", FAIXA_SUPERIOR)
+# Prêmio do diploma = mediana de admissão com superior completo ÷ com médio completo.
+# "Baixo" é relativo ao estado (mesmo escopo), como a causa Salarial: ≥ 20% abaixo do
+# prêmio estadual. Com diploma que quase não paga, o grupo tende a não atrair qualificados.
+FATOR_PREMIO_BAIXO = 0.80
+
+
+def premio_baixo(premio: float, premio_estado: float) -> bool:
+    """ANA-02: o prêmio salarial do superior no grupo está ≥ 20% abaixo do prêmio do estado?"""
+    return premio == premio and premio_estado == premio_estado and premio <= premio_estado * FATOR_PREMIO_BAIXO + 1e-9
+
+
 # ---------------------------------------------------------------------------
 # Alavancas do motor de recomendações
 # ---------------------------------------------------------------------------

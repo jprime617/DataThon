@@ -75,3 +75,64 @@ def test_concentracao_de_recorte_vazio_nao_quebra():
     assert c.concentracao_saldo(vazio, ["regiao", "setor"]).empty
     m = c.anexar_concentracao(c.agregar_metricas(vazio, ["regiao", "setor"]), vazio, ["regiao", "setor"])
     assert "concentrada" in m.columns and m.empty
+
+
+# --- ANA-02: escolaridade além da média ordinal ----------------------------------
+
+
+def _perfil(**valores) -> dict:
+    linha = {col: 0 for col in c.COLUNAS_ADITIVAS if not col.startswith(("soma_esc", "n_esc"))}
+    linha.update({"regiao": "Oeste Catarinense", "setor": "Têxtil", "secao_industrial": c.SECAO_TRANSFORMACAO,
+                  "escopo_industrial": True, "macrofamilia_cbo": "Têxtil, confecção, couro e calçados",
+                  "nivel_qualificacao": "Qualificado", "faixa_escolaridade": "Médio completo",
+                  "mediana_salario_admissao": 2000.0, "mediana_salario_desligamento": 2100.0})
+    linha.update(valores)
+    return linha
+
+
+def test_participacao_por_escolaridade_e_premio_do_diploma():
+    perfil = pd.DataFrame([
+        _perfil(admissoes=60, desligamentos=50, n_salario_admissao=60, mediana_salario_admissao=2000.0),
+        _perfil(faixa_escolaridade="Superior completo ou mais", admissoes=10, desligamentos=20,
+                n_salario_admissao=40, mediana_salario_admissao=3000.0),
+        _perfil(faixa_escolaridade="Fundamental completo", admissoes=30, desligamentos=30, n_salario_admissao=30),
+    ])
+    t = c.escolaridade_contratacao(perfil).iloc[0]
+    assert t["medio_adm"] == pytest.approx(70 / 100)
+    assert t["medio_desl"] == pytest.approx(70 / 100)
+    assert t["superior_adm"] == pytest.approx(10 / 100)
+    assert t["superior_desl"] == pytest.approx(20 / 100)
+    assert t["premio"] == pytest.approx(1.5)
+    assert "não está contratando gente mais instruída" not in nar.resposta_escolaridade_contratacao(t)
+    assert "1,50×" in nar.resposta_escolaridade_contratacao(t)
+
+
+def test_premio_exige_amostra_de_salarios_nas_duas_faixas():
+    perfil = pd.DataFrame([
+        _perfil(admissoes=60, n_salario_admissao=60),
+        _perfil(faixa_escolaridade="Superior completo ou mais", admissoes=5, n_salario_admissao=c.MIN_SALARIOS - 1,
+                mediana_salario_admissao=9000.0),
+    ])
+    assert pd.isna(c.escolaridade_contratacao(perfil).iloc[0]["premio"])
+
+
+@pytest.mark.parametrize("premio, estado, esperado", [
+    (1.18, 1.48, True),      # 1,48 × 0,8 = 1,184: abaixo
+    (1.184, 1.48, True),     # na borda conta
+    (1.20, 1.48, False),
+    (float("nan"), 1.48, False),
+])
+def test_regra_do_premio_baixo_e_relativa_ao_estado(premio, estado, esperado):
+    assert r.premio_baixo(premio, estado) is esperado
+
+
+def test_destaque_cita_so_os_grupos_de_premio_baixo():
+    tabela = pd.DataFrame({"setor": ["A", "B", "C"], "admissoes": [100, 50, 10], "premio": [1.03, 1.60, 1.10]})
+    texto = nar.destaque_premio_baixo(tabela, 1.48, "setor")
+    assert "**A** (1,03×)" in texto and "**C** (1,10×)" in texto and "**B**" not in texto
+    assert nar.destaque_premio_baixo(tabela[tabela["setor"] == "B"], 1.48, "setor") is None
+
+
+def test_escolaridade_contratacao_de_perfil_vazio():
+    assert c.escolaridade_contratacao(None).empty
+    assert "Sem dados" in nar.resposta_escolaridade_contratacao(None)

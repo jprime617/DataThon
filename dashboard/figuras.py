@@ -407,3 +407,30 @@ def construir_funil(etapas: list) -> go.Figure:
     ))
     figura.update_yaxes(categoryorder="array", categoryarray=rotulos, autorange="reversed")
     return _layout(figura, "Do arquivo bruto à indústria: volume em cada etapa", 340)
+
+
+def construir_premio(tabela: pd.DataFrame, categoria: str, premio_estado: float) -> go.Figure:
+    """ANA-02: prêmio do diploma (mediana superior ÷ médio) por categoria; vermelho = prêmio baixo."""
+    dados = tabela.dropna(subset=["premio"]) if tabela is not None and not tabela.empty else None
+    if dados is None or dados.empty:
+        return c.figura_vazia(f"Nenhuma categoria com ≥ {c.MIN_SALARIOS} salários de médio e de superior completo.")
+    dados = dados.sort_values("premio")
+    baixo = [c.premio_baixo(p, premio_estado) for p in dados["premio"]]
+    figura = go.Figure(go.Bar(
+        y=dados[categoria].astype(str), x=dados["premio"], orientation="h",
+        marker_color=[c.COR_TENSAO if b else c.COR_EXPANSAO for b in baixo],
+        marker_pattern_shape=["/" if b else "" for b in baixo],
+        text=[f"{c.fmt_num(v, 2)}×" for v in dados["premio"]], textposition="outside",
+        customdata=list(zip([c.fmt_brl(v) for v in dados["mediana_superior"]], [c.fmt_int(v) for v in dados["n_superior"]],
+                            [c.fmt_brl(v) for v in dados["mediana_medio"]], [c.fmt_int(v) for v in dados["n_medio"]])),
+        hovertemplate="%{y}<br>superior completo: %{customdata[0]} (n = %{customdata[1]})<br>"
+                      "médio completo: %{customdata[2]} (n = %{customdata[3]})<extra></extra>",
+    ))
+    if pd.notna(premio_estado):
+        figura.add_vline(x=premio_estado, line_dash="dot", line_color=c.COR_NEUTRA,
+                         annotation_text=f"estado {c.fmt_num(premio_estado, 2)}×", annotation_position="top")
+    figura.add_vline(x=1, line_color=c.COR_NEUTRA)
+    figura.update_traces(cliponaxis=False)
+    return _layout(figura, "Quanto a mais o diploma superior paga na entrada?", 160 + 42 * len(dados),
+                   xaxis={"title": "Mediana de admissão: superior completo ÷ médio completo",
+                          "range": [0, float(dados["premio"].max()) * 1.25]})

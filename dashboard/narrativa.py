@@ -628,3 +628,51 @@ def auditoria_ia(meta: dict, meta_r2: dict, divergencias: pd.DataFrame | None = 
         "**Desempate:** quando as rodadas divergem, vale a 1ª. Ela usou o modelo mais capaz e exigiu justificativa "
         "sempre que a família fugiu da sugerida pelo prefixo da CBO; a 2ª rodada serve só para medir a estabilidade.")
     return "\n\n".join(linhas)
+
+
+# --- ANA-02: o mercado contrata mais instruídos e paga mais por isso? ---------------
+
+def fmt_premio(valor) -> str:
+    """1.481 → "1,48×"."""
+    return "—" if pd.isna(valor) else f"{c.fmt_num(valor, 2)}×"
+
+
+def resposta_escolaridade_contratacao(t: pd.Series | None) -> str:
+    """Uma frase com as participações de admitidos × desligados e o prêmio do diploma (linha de `escolaridade_contratacao`)."""
+    if t is None or pd.isna(t.get("medio_adm")) or pd.isna(t.get("medio_desl")):
+        return "Sem dados de escolaridade suficientes nesta seleção."
+    mais_medio = t["medio_adm"] >= t["medio_desl"]
+    mais_sup = t["superior_adm"] >= t["superior_desl"]
+    if mais_medio and mais_sup:
+        leitura = "o mercado está contratando gente mais instruída do que a que sai"
+    elif not mais_medio and not mais_sup:
+        leitura = "o mercado não está contratando gente mais instruída do que a que sai"
+    else:
+        leitura = "a contratação não sobe de escolaridade de forma clara"
+    texto = (f"Entre os admitidos, {c.fmt_pct(t['medio_adm'])} têm médio completo ou mais (desligados: "
+             f"{c.fmt_pct(t['medio_desl'])}) e {c.fmt_pct(t['superior_adm'])} têm superior completo (desligados: "
+             f"{c.fmt_pct(t['superior_desl'])}): {leitura}.")
+    if pd.notna(t.get("premio")):
+        texto += (f" Quem entra com superior completo ganha {fmt_premio(t['premio'])} o salário de entrada de quem "
+                  "tem médio completo (medianas).")
+    return texto
+
+
+def destaque_premio_baixo(tabela: pd.DataFrame, premio_estado: float, rotulo, n: int = 4) -> str | None:
+    """Onde o diploma superior quase não paga a mais (prêmio ≥ 20% abaixo do estado), dos grupos com mais admissões.
+
+    `rotulo` é o nome de uma coluna ou uma função linha → texto.
+    """
+    if tabela is None or tabela.empty or pd.isna(premio_estado):
+        return None
+    baixo = tabela[[c.premio_baixo(p, premio_estado) for p in tabela["premio"]]]
+    if baixo.empty:
+        return None
+    nome = rotulo if callable(rotulo) else (lambda linha: str(linha[rotulo]))
+    topo = baixo.sort_values("admissoes", ascending=False).head(n)
+    itens = [f"**{nome(linha)}** ({fmt_premio(linha['premio'])})" for _, linha in topo.iterrows()]
+    resto = len(baixo) - len(topo)
+    return (f"Prêmio do diploma baixo (até {fmt_premio(premio_estado * c.FATOR_PREMIO_BAIXO)}; estado: "
+            f"{fmt_premio(premio_estado)}) em "
+            + (", ".join(itens) + f" e mais {resto} grupo{'s' if resto > 1 else ''}" if resto > 0 else _lista(itens))
+            + ". Quando o superior completo quase não paga a mais na entrada, a área tende a não atrair qualificados.")

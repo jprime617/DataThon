@@ -127,6 +127,11 @@ from dashboard.regras import (  # noqa: F401
     MIN_MESES_CONCENTRACAO,
     SELO_CONCENTRADA,
     expansao_concentrada,
+    FAIXA_MEDIO,
+    FAIXA_SUPERIOR,
+    FAIXAS_MEDIO_OU_MAIS,
+    FATOR_PREMIO_BAIXO,
+    premio_baixo,
 )
 
 _ETAPA = "dashboard"
@@ -1304,6 +1309,52 @@ def medianas_perfil(perfil: pd.DataFrame, por: list[str]) -> pd.DataFrame:
             "n_desligamento": int(g["n_salario_desligamento"].sum()),
         })
     return pd.DataFrame(linhas, columns=[*por, "mediana_admissao", "mediana_desligamento", "n_admissao", "n_desligamento"])
+
+
+COLUNAS_ESCOLARIDADE_CONTRATACAO = [
+    "admissoes", "desligamentos", "medio_adm", "medio_desl", "superior_adm", "superior_desl",
+    "mediana_medio", "n_medio", "mediana_superior", "n_superior", "premio"]
+
+
+def escolaridade_contratacao(perfil: pd.DataFrame | None, por: list[str] | None = None) -> pd.DataFrame:
+    """ANA-02: o mercado contrata mais instruídos e paga mais por isso?
+
+    Por grupo (`por`; vazio = uma linha com o total): a fração de admitidos e de
+    desligados com médio completo ou mais e com superior completo, e o prêmio do
+    diploma = mediana de admissão com superior completo ÷ com médio completo
+    (só com ≥ `MIN_SALARIOS` salários de cada faixa; senão NaN).
+    """
+    por = list(por or [])
+    if perfil is None or perfil.empty:
+        return pd.DataFrame(columns=[*por, *COLUNAS_ESCOLARIDADE_CONTRATACAO])
+    base = perfil.assign(_todos="") if not por else perfil
+    chave = por or ["_todos"]
+    faixa = base[COLUNA_FAIXA_ESCOLARIDADE].astype(str)
+    medio, superior = faixa.isin(FAIXAS_MEDIO_OU_MAIS), faixa == FAIXA_SUPERIOR
+    contagens = pd.DataFrame({
+        **{k: base[k].astype(str) for k in chave},
+        "admissoes": base[COLUNA_ADMISSOES], "desligamentos": base[COLUNA_DESLIGAMENTOS],
+        "medio_adm": base[COLUNA_ADMISSOES].where(medio, 0), "medio_desl": base[COLUNA_DESLIGAMENTOS].where(medio, 0),
+        "superior_adm": base[COLUNA_ADMISSOES].where(superior, 0),
+        "superior_desl": base[COLUNA_DESLIGAMENTOS].where(superior, 0),
+    }).groupby(chave, sort=False).sum()
+    for lado in ("adm", "desl"):
+        total_lado = contagens["admissoes" if lado == "adm" else "desligamentos"]
+        for nome in ("medio", "superior"):
+            contagens[f"{nome}_{lado}"] = contagens[f"{nome}_{lado}"] / total_lado.where(total_lado > 0)
+    faixas = base[faixa.isin([FAIXA_MEDIO, FAIXA_SUPERIOR])].copy()
+    for k in chave:
+        faixas[k] = faixas[k].astype(str)
+    med = medianas_perfil(faixas, [*chave, COLUNA_FAIXA_ESCOLARIDADE]) if not faixas.empty else pd.DataFrame(
+        columns=[*chave, COLUNA_FAIXA_ESCOLARIDADE, "mediana_admissao", "n_admissao"])
+    for nome, rotulo in (("medio", FAIXA_MEDIO), ("superior", FAIXA_SUPERIOR)):
+        m = med[med[COLUNA_FAIXA_ESCOLARIDADE].astype(str) == rotulo].set_index(chave)
+        contagens[f"mediana_{nome}"] = m["mediana_admissao"].reindex(contagens.index).astype("float64")
+        contagens[f"n_{nome}"] = m["n_admissao"].reindex(contagens.index).fillna(0).astype("int64")
+    ok = (contagens["n_medio"] >= MIN_SALARIOS) & (contagens["n_superior"] >= MIN_SALARIOS)
+    contagens["premio"] = (contagens["mediana_superior"] / contagens["mediana_medio"]).where(ok)
+    resultado = contagens.reset_index()
+    return resultado.drop(columns="_todos") if not por else resultado
 
 
 # ---------------------------------------------------------------------------

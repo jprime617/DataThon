@@ -80,6 +80,58 @@ def resumo_causas(selos: pd.DataFrame, total: int) -> str:
             + "\n\nUm grupo pode ter mais de uma causa.")
 
 
+def _delta_pp(diferenca: float) -> str:
+    """Delta em p.p. com o hífen ASCII: o `st.metric` só desenha a seta para baixo com "-"."""
+    return f"{c.fmt_pp(diferenca * 100).replace('−', '-')} vs desligados"
+
+
+def _escolaridade_contratacao(ctx: c.Contexto, perfil: pd.DataFrame | None, nota: str) -> None:
+    """ANA-02: participação de admitidos × desligados por escolaridade e o prêmio do diploma."""
+    st.subheader("Escolaridade: o mercado contrata mais instruídos e paga mais por isso?")
+    if perfil is None or perfil.empty:
+        st.info("Perfil de escolaridade indisponível para esta seleção.")
+        return
+    t = c.escolaridade_contratacao(perfil).iloc[0]
+    estado_perfil = ctx.art.perfil[c.mascara_escopo(ctx.art.perfil, ctx.filtros.escopo)]
+    premio_estado = c.escolaridade_contratacao(estado_perfil).iloc[0]["premio"]
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Admitidos com médio completo ou mais", c.fmt_pct(t["medio_adm"]), border=True,
+                delta=_delta_pp(t['medio_adm'] - t['medio_desl']),
+                help="De cada 100 contratados, quantos têm ao menos o ensino médio completo. "
+                     "A seta compara com quem saiu.")
+    col2.metric("Admitidos com superior completo", c.fmt_pct(t["superior_adm"]), border=True,
+                delta=_delta_pp(t['superior_adm'] - t['superior_desl']),
+                help="De cada 100 contratados, quantos têm curso superior completo. A seta compara com quem saiu.")
+    col3.metric("Prêmio do diploma superior", nar.fmt_premio(t["premio"]), border=True,
+                delta=f"estado: {nar.fmt_premio(premio_estado)}", delta_color="off", delta_arrow="off",
+                help="Quantas vezes o salário de entrada de quem tem superior completo vale o de quem tem médio "
+                     "completo. Cálculo: mediana de admissão com superior completo ÷ com médio completo "
+                     f"(≥ {c.MIN_SALARIOS} salários em cada faixa).")
+    st.markdown(nar.resposta_escolaridade_contratacao(t))
+    grupos = c.escolaridade_contratacao(perfil, [c.COLUNA_REGIAO, c.COLUNA_SETOR])
+    destaque = nar.destaque_premio_baixo(
+        grupos, premio_estado, lambda g: f"{g[c.COLUNA_SETOR]} – {g[c.COLUNA_REGIAO]}")
+    if destaque:
+        st.warning(destaque, icon=":material/school:")
+    with st.expander("Aprofundar: prêmio do diploma por macrofamília e por grupo"):
+        macros = c.escolaridade_contratacao(perfil, [c.COLUNA_MACROFAMILIA_CBO])
+        macros = macros[macros[c.COLUNA_MACROFAMILIA_CBO] != c.NAO_CLASSIFICADO]
+        st.plotly_chart(fig.construir_premio(macros, c.COLUNA_MACROFAMILIA_CBO, premio_estado), width="stretch")
+        st.caption("Vermelho hachurado = prêmio pelo menos "
+                   f"{c.fmt_pct(1 - c.FATOR_PREMIO_BAIXO, 0)} abaixo do prêmio do estado. Dentro de uma mesma "
+                   "ocupação industrial, o diploma superior quase não muda o salário de entrada. " + nota)
+        tabela = grupos.dropna(subset=["premio"]).sort_values("premio")
+        st.dataframe(pd.DataFrame({
+            "Grupo": tabela[c.COLUNA_SETOR] + " – " + tabela[c.COLUNA_REGIAO],
+            "Admitidos com médio ou mais": [c.fmt_pct(v) for v in tabela["medio_adm"]],
+            "Desligados com médio ou mais": [c.fmt_pct(v) for v in tabela["medio_desl"]],
+            "Admitidos com superior": [c.fmt_pct(v) for v in tabela["superior_adm"]],
+            "Desligados com superior": [c.fmt_pct(v) for v in tabela["superior_desl"]],
+            "Prêmio do diploma": [nar.fmt_premio(v) for v in tabela["premio"]],
+            "Prêmio baixo": ["sim" if c.premio_baixo(v, premio_estado) else "" for v in tabela["premio"]],
+        }), hide_index=True, width="stretch")
+
+
 def render(ctx: c.Contexto) -> None:
     st.title("Por quê: salário, qualificação ou estrutura?")
     c.cabecalho(ctx)
@@ -109,6 +161,8 @@ def render(ctx: c.Contexto) -> None:
     with resumo, st.container(border=True):
         st.markdown("**O que explica a perda de gente**")
         st.markdown(resumo_causas(selos, len(unidades)))
+
+    _escolaridade_contratacao(ctx, perfil, nota)
 
     # No máximo 2 gráficos à vista (M3.C4): o resto fica em "Aprofundar".
     if por_macro is not None:

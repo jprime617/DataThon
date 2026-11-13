@@ -613,3 +613,33 @@ Recorte de referência do Lote D: o padrão de abertura do painel, escopo
 | Idem, Indústria B–F | — | 8 de 41 |
 | Autopeças – Vale do Itajaí | sem selo | **Expansão concentrada**: 43% do saldo positivo em jul/26; 95% em Navegantes |
 | Construção naval – Vale do Itajaí | sem selo | sem selo (18% num mês; 63% em Navegantes) |
+
+---
+
+## ANA-02 · Escolaridade além da média ordinal
+
+- **Novo bloco** em "Por que acontece": *"Escolaridade: o mercado contrata
+  mais instruídos e paga mais por isso?"*, com três cartões (admitidos com
+  médio completo ou mais, com superior completo, cada um contra os desligados,
+  e o **prêmio do diploma** = mediana de admissão com superior completo ÷ com
+  médio completo), uma frase calculada e um alerta onde o prêmio é baixo.
+  Em "Aprofundar", o gráfico do prêmio por macrofamília e a tabela por grupo
+  (mesorregião × setor).
+- **Prêmio baixo** (`regras.premio_baixo`): ≥ 20% abaixo do prêmio do estado
+  no mesmo escopo (`FATOR_PREMIO_BAIXO = 0,80`), com ≥ 30 salários em cada
+  faixa. É relativo ao estado, como a causa Salarial (ANA-01).
+- Cálculo em `comum.escolaridade_contratacao` (perfil, período inteiro);
+  frases em `narrativa.resposta_escolaridade_contratacao` e
+  `destaque_premio_baixo`; figura `figuras.construir_premio`.
+
+| Indicador (transformação, período inteiro) | Admitidos | Desligados |
+|---|---|---|
+| Com médio completo ou mais | 63,5% | 65,3% |
+| Com superior completo | 4,8% | 5,4% |
+| Prêmio do diploma (superior ÷ médio, mediana de admissão) | 1,48× | |
+| Grupos mesorregião × setor com prêmio baixo (≤ 1,18×) | 9 de 58 com amostra | |
+
+**Leitura para o pitch:** o mercado **não** está contratando gente mais
+instruída do que a que sai. Dentro das ocupações industriais de linha
+(Operação de linha, Têxtil, Alimentos) o diploma superior paga só 1,03× o
+médio na entrada: um sinal de baixa atratividade para qualificados.
