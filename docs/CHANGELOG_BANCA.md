@@ -736,3 +736,26 @@ emprego que têm. A demanda existe; o problema é reter.
 | Custo com 3 salários (212.533 a pedido × R$ 2.623) | R$ 1,7 bi | R$ 1,7 bi |
 | Intervalo da premissa na tela | — | R$ 557,5 mi a R$ 6,7 bi (1 a 12 salários) |
 | Fonte e limitação na tela | "premissa ajustável" | premissa do time; supõe que todo desligamento a pedido é reposto |
+
+---
+
+## REC-06 · Automação vira observação
+
+- **O que se viu:** a regra (nível Básico ≥ 50% e saldo ≤ 0) gera **1**
+  recomendação na transformação (Serviços de apoio · Norte, 68,6% Básico,
+  saldo −29), **1** em B–F e **0** na economia toda. Baixar o limiar não
+  resolve: com 40% são 2 casos e com 30%, 3. A condição que trava é
+  "saldo ≤ 0", porque os grupos de nível Básico (Operação de linha, apoio)
+  estão crescendo, em Apagão. Automação também depende de investimento e
+  produtividade, que o CAGED não mede.
+- **O que mudou:** a automação é **observação**
+  (`regras.ALAVANCAS_OBSERVACAO`, `eh_observacao`, `MOTIVO_OBSERVACAO`).
+  Fica fora do Top 3 e dos cartões de prioridade e aparece numa caixa
+  "Observação", com a evidência e o motivo. Na tabela e no CSV, a prioridade
+  é "Observação". A regra na Metodologia diz isso.
+- Teste: `test_automacao_e_observacao_e_fica_fora_do_top3`.
+
+| Transformação, set/25–ago/26 | Antes | Depois |
+|---|---|---|
+| Recomendações prioritárias | 20 | 19 (+ 1 observação) |
+| Top 3 | sem mudança | sem mudança |

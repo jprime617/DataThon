@@ -254,3 +254,18 @@ def test_custo_de_reposicao_mostra_intervalo_premissa_e_limitacao():
     assert c.FONTE_CUSTO_REPOSICAO in texto
     assert "todo desligamento a pedido é reposto" in texto
     assert "1 salário por" in nar.texto_custo_reposicao(t, 1)
+
+
+# --- REC-06: automação como observação ---------------------------------------------------
+
+
+def test_automacao_e_observacao_e_fica_fora_do_top3():
+    from tests.test_dashboard_metricas import _rec
+
+    assert r.eh_observacao(c.ALAVANCA_AUTOMACAO)
+    assert not any(r.eh_observacao(a) for a in (c.ALAVANCA_SALARIO, c.ALAVANCA_FORMACAO, c.ALAVANCA_RETENCAO,
+                                                 c.ALAVANCA_MOBILIDADE))
+    recs = [_rec(c.ALAVANCA_AUTOMACAO, "Norte", "Apoio", 99, 9_999),     # a de maior volume
+            _rec(c.ALAVANCA_RETENCAO, "Oeste", "Alimentos", 5, 400)]
+    assert [x.alavanca for x in c.top_executivo(recs)] == [c.ALAVANCA_RETENCAO]
+    assert "observação" in c.REGRA_ALAVANCA[c.ALAVANCA_AUTOMACAO]

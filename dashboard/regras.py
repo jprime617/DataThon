@@ -257,8 +257,25 @@ REGRA_ALAVANCA = {
         "(fecha vagas por iniciativa do empregador, não por pedido de saída). Mostra o par origem → destino. O CAGED "
         "não mede vagas abertas nem desempregados: a origem indica onde há gente da mesma ocupação sendo "
         "dispensada."),
-    ALAVANCA_AUTOMACAO: "Nível Básico com 50% ou mais das movimentações do grupo e saldo ≤ 0.",
+    ALAVANCA_AUTOMACAO: "Nível Básico com 50% ou mais das movimentações do grupo e saldo ≤ 0. Aparece como "
+                        "observação, não como alavanca prioritária (ver abaixo).",
 }
+
+# REC-06: a regra de automação dispara 0–1 vez por escopo. Os grupos de nível Básico
+# (Operação de linha, apoio) estão crescendo, em Apagão: a condição "saldo ≤ 0" é a
+# que trava, e baixar o limiar de 50% não muda nada (com 30%, 3 casos). Automação
+# também depende de investimento e produtividade, que o CAGED não mede. Por isso ela
+# vira **observação**: fica fora do Top 3 e dos cartões de prioridade.
+ALAVANCAS_OBSERVACAO = (ALAVANCA_AUTOMACAO,)
+MOTIVO_OBSERVACAO = (
+    "A regra de automação (nível Básico ≥ 50% e saldo ≤ 0) quase nunca dispara: os grupos de nível Básico estão "
+    "crescendo. E automatizar depende de investimento e produtividade, que o CAGED não mede. Por isso é uma "
+    "observação para a empresa avaliar, não uma prioridade.")
+
+
+def eh_observacao(alavanca: str) -> bool:
+    """REC-06: a alavanca aparece como observação, fora do Top 3 e das prioridades?"""
+    return alavanca in ALAVANCAS_OBSERVACAO
 
 # ---------------------------------------------------------------------------
 # REC-02: quem age, horizonte e KPI de acompanhamento de cada alavanca

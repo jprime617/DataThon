@@ -137,6 +137,9 @@ from dashboard.regras import (  # noqa: F401
     CUSTO_REPOSICAO_MIN,
     CUSTO_REPOSICAO_PADRAO,
     FONTE_CUSTO_REPOSICAO,
+    ALAVANCAS_OBSERVACAO,
+    MOTIVO_OBSERVACAO,
+    eh_observacao,
 )
 
 _ETAPA = "dashboard"
@@ -1150,7 +1153,8 @@ def top_executivo(recs: list["Recomendacao"], n: int = TOP_EXECUTIVO) -> list["R
     """
     por_alavanca: dict[str, list[Recomendacao]] = {}
     for r in sorted(recs, key=lambda r: r.prioridade, reverse=True):
-        por_alavanca.setdefault(r.alavanca, []).append(r)
+        if not eh_observacao(r.alavanca):  # REC-06: observação não entra no Top 3
+            por_alavanca.setdefault(r.alavanca, []).append(r)
     ordem = sorted(por_alavanca, key=lambda a: por_alavanca[a][0].movimentacoes, reverse=True)
     escolhidas, grupos = [], set()
     for alavanca in ordem:

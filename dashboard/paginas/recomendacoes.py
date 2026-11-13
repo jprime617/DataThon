@@ -111,13 +111,16 @@ def render(ctx: c.Contexto) -> None:
     if ctx.df.empty:
         st.info("Nenhuma movimentação com estes filtros.")
         return
-    recs = c.gerar_recomendacoes(ctx.df, mediana_regional=medianas_regionais(ctx), ref=c.total(ctx.ref),
-                                  cbos=c.filtrar_cbo(ctx), descricoes=c.descricoes_cbo_cache())
+    todas = c.gerar_recomendacoes(ctx.df, mediana_regional=medianas_regionais(ctx), ref=c.total(ctx.ref),
+                                   cbos=c.filtrar_cbo(ctx), descricoes=c.descricoes_cbo_cache())
+    # REC-06: alavancas de observação ficam fora das prioridades e do Top 3.
+    recs = [r for r in todas if not c.eh_observacao(r.alavanca)]
+    observacoes = [r for r in todas if c.eh_observacao(r.alavanca)]
     prioridades = classificar_prioridade(recs)
-    ref = c.total(ctx.df)
     st.markdown(
         "Cada problema encontrado no diagnóstico aponta para uma **ação** que a empresa pode tomar. "
-        f"Ao todo, **{len(recs)} recomendações**, agrupadas abaixo por ação."
+        f"Ao todo, **{len(recs)} recomendações**, agrupadas abaixo por ação"
+        + (f", e {len(observacoes)} {'observação' if len(observacoes) == 1 else 'observações'}." if observacoes else ".")
     )
     if not recs:
         st.info("Nenhuma regra disparou com dados suficientes nesta seleção.")
@@ -144,15 +147,23 @@ def render(ctx: c.Contexto) -> None:
                 st.markdown(f"**{len(itens)}** {'recomendação' if len(itens) == 1 else 'recomendações'} · "
                             f"{c.fmt_int(sum(r.movimentacoes for r in itens))} movimentações")
 
+        if observacoes:
+            o = observacoes[0]
+            st.info(f"**Observação: {o.alavanca.lower()}.** "
+                    + "; ".join(f"{r.macrofamilia} · {r.regiao} ({r.evidencia})" for r in observacoes[:3])
+                    + f". {c.MOTIVO_OBSERVACAO}", icon=":material/visibility:")
+
+        prioridades_todas = {**{i: p for i, p in prioridades.items()},
+                             **{len(recs) + j: "Observação" for j in range(len(observacoes))}}
         tabela = pd.DataFrame([{
-            "Prioridade": prioridades[i], "Alavanca": r.alavanca, "Mesorregião": r.regiao,
+            "Prioridade": prioridades_todas[i], "Alavanca": r.alavanca, "Mesorregião": r.regiao,
             "Macrofamília (IA)": r.macrofamilia, "Nível-alvo": r.nivel_alvo, "Movimentações": int(r.movimentacoes),
             "Ação": r.extras.get("acao", ""),
             "Quem age": r.quem_age, "Horizonte": r.horizonte, "KPI e meta": r.kpi,
             "O que formar (CBOs de maior volume)": "; ".join(f"{cod} {d}" for cod, d, _ in r.extras.get("cbos", [])),
             "Evidência": r.evidencia, "Gatilho": r.regra,
-        } for i, r in enumerate(recs)])
-        with st.expander(f"Ver as {len(recs)} recomendações numa tabela (com a evidência de cada uma)"):
+        } for i, r in enumerate(recs + observacoes)])
+        with st.expander(f"Ver as {len(tabela)} recomendações e observações numa tabela (com a evidência de cada uma)"):
             col1, col2 = st.columns(2)
             alavancas = col1.multiselect("Alavanca", sorted(tabela["Alavanca"].unique()), placeholder="Todas")
             regioes = col2.multiselect("Mesorregião", sorted(tabela["Mesorregião"].unique()), placeholder="Todas")
