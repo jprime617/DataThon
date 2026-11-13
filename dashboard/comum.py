@@ -93,6 +93,12 @@ from dashboard.regras import (  # noqa: F401
     N_CBOS_FORMACAO,
     NIVEIS_ALVO_FORMACAO,
     QUADRANTES_FORMACAO,
+    FRACAO_META_DISTANCIA,
+    HORIZONTE,
+    KPI_ALAVANCA,
+    KPI_RESERVA,
+    PRAZO_META_MESES,
+    QUEM_AGE,
     REGRA_ALAVANCA,
     LIMIAR_GAP_ESCOLARIDADE,
     MARGEM_SALARIAL_RELATIVA,
@@ -945,8 +951,40 @@ class Recomendacao:
     movimentacoes: float
     prioridade: float = 0.0
     extras: dict = field(default_factory=dict)
+    quem_age: str = ""      # REC-02
+    horizonte: str = ""
+    kpi: str = ""           # "saída voluntária do grupo 59,0% → 53,0% em 12 meses (estado: 47,0%)"
 
 
+def meta_kpi(alavanca: str, grupo: pd.Series, ref: pd.Series) -> str:
+    """KPI de acompanhamento com meta: andar `FRACAO_META_DISTANCIA` da distância até o estado.
+
+    Entre os candidatos da alavanca, usa o que está mais longe do estado, para
+    pior (distância relativa). Se o grupo já está melhor em todos, a meta é
+    manter o patamar do primeiro candidato.
+    """
+    def _dados(cands):
+        return [(n, menor, grupo.get(n), ref.get(n)) for n, menor in cands
+                if not _vazio(grupo.get(n)) and not _vazio(ref.get(n))]
+
+    candidatos = _dados(KPI_ALAVANCA.get(alavanca, KPI_RESERVA)) or _dados(KPI_RESERVA)
+    if not candidatos:
+        return "—"
+
+    def _piora(item):
+        _, menor, valor, estado = item
+        diff = (valor - estado) if menor else (estado - valor)
+        return diff / max(abs(estado), 0.05)
+
+    piores = [x for x in candidatos if _piora(x) > 0]
+    nome, menor, valor, estado = max(piores, key=_piora) if piores else candidatos[0]
+    rotulo = DEFINICOES[nome].rotulo.lower()
+    if not piores:
+        return (f"{rotulo} do grupo: manter em {fmt_metrica(nome, valor)} ou melhor "
+                f"(estado: {fmt_metrica(nome, estado)})")
+    alvo = valor - FRACAO_META_DISTANCIA * (valor - estado)
+    return (f"{rotulo} do grupo: {fmt_metrica(nome, valor)} → {fmt_metrica(nome, alvo)} em {PRAZO_META_MESES} meses "
+            f"(estado: {fmt_metrica(nome, estado)})")
 
 
 def gerar_recomendacoes(
@@ -990,7 +1028,9 @@ def gerar_recomendacoes(
 
         def add(alavanca, regra, evidencia, severidade, alvo=nivel, **extras):
             recs.append(Recomendacao(regiao, macro, alavanca, regra, evidencia, alvo,
-                                     float(severidade), mov, extras=extras))
+                                     float(severidade), mov, extras=extras,
+                                     quem_age=QUEM_AGE.get(alavanca, "—"), horizonte=HORIZONTE.get(alavanca, "—"),
+                                     kpi=meta_kpi(alavanca, u, ref)))
 
         if salario_pior_que_estado(gap, gap_ref) and pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA:
             ref_sal = mediana_regional.get(chave)

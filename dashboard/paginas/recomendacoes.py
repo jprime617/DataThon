@@ -78,6 +78,9 @@ def ficha_mesorregiao(ctx: c.Contexto, regiao: str, recs: list[c.Recomendacao]) 
         linhas.append("- Nenhuma regra disparou com amostra suficiente nesta mesorregião.")
     for i, r in enumerate(proprias, 1):
         linhas += [f"{i}. **{r.alavanca}** — {r.macrofamilia} (nível {r.nivel_alvo})",
+                   *([f"   - Ação: {r.extras['acao']}."] if r.extras.get("acao") else []),
+                   f"   - Quem age: {r.quem_age} · Horizonte: {r.horizonte}.",
+                   f"   - KPI e meta: {r.kpi}.",
                    f"   - Gatilho: {r.regra}.", f"   - Evidência: {r.evidencia}."]
     linhas += ["", "_Fonte: Novo CAGED (MTE), movimentações; macrofamílias por IA com dupla rodada. "
                "O CAGED mede fluxos, não vagas abertas._"]
@@ -120,6 +123,7 @@ def render(ctx: c.Contexto) -> None:
             "Prioridade": prioridades[i], "Alavanca": r.alavanca, "Mesorregião": r.regiao,
             "Macrofamília (IA)": r.macrofamilia, "Nível-alvo": r.nivel_alvo, "Movimentações": int(r.movimentacoes),
             "Ação": r.extras.get("acao", ""),
+            "Quem age": r.quem_age, "Horizonte": r.horizonte, "KPI e meta": r.kpi,
             "O que formar (CBOs de maior volume)": "; ".join(f"{cod} {d}" for cod, d, _ in r.extras.get("cbos", [])),
             "Evidência": r.evidencia, "Gatilho": r.regra,
         } for i, r in enumerate(recs)])

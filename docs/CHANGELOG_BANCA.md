@@ -363,3 +363,32 @@ Exemplo (maior prioridade): **Alimentos e bebidas – Oeste Catarinense**
 (Apagão; gap de escolaridade −0,95) → formar Magarefe (848520), Trabalhador
 de tratamento do leite (841505), Desossador (848515), Salsicheiro (848115) e
 Supervisor de produção da indústria alimentícia (840105).
+
+---
+
+## REC-02 · Recomendações com responsável, prazo e meta
+
+- `regras.py`: `QUEM_AGE` (Empresa / Federação–SENAI / Empresa + Poder
+  público), `HORIZONTE` (0–3 / 3–12 / 12+ meses) e `KPI_ALAVANCA` (KPIs
+  candidatos de cada alavanca), com `FRACAO_META_DISTANCIA = 0,5` e
+  `PRAZO_META_MESES = 12`.
+- `comum.meta_kpi`: escolhe o candidato em que o grupo está **mais longe do
+  estado, para pior** (o sinal que disparou a recomendação) e propõe andar
+  metade da distância em 12 meses. Ex.: "saída voluntária do grupo: 64,0% →
+  57,5% em 12 meses (estado: 50,9%)". Se o grupo já está melhor em todos, a
+  meta é "manter".
+- `Recomendacao` ganha `quem_age`, `horizonte` e `kpi`. Na tabela, no CSV e
+  na ficha da mesorregião, entram as colunas "Quem age", "Horizonte" e "KPI
+  e meta". A ficha também traz a "Ação" quando há uma.
+- Testes: `test_toda_alavanca_tem_responsavel_horizonte_e_kpi`,
+  `test_meta_e_metade_da_distancia_ate_o_estado`,
+  `test_meta_usa_o_candidato_mais_distante_do_estado`,
+  `test_recomendacoes_e_csv_trazem_as_tres_colunas`.
+
+| Alavanca | Quem age | Horizonte | KPI (exemplo do recorte padrão) |
+|---|---|---|---|
+| Formação profissional direcionada | Federação–SENAI | 3–12 meses | escolaridade de quem entra vs quem saiu (Alimentos – Oeste): −0,95 → −0,51 |
+| Retenção não salarial | Empresa | 0–3 meses | saída voluntária (Alimentos – Oeste): 64,0% → 57,5% |
+| Revisar faixas salariais | Empresa | 0–3 meses | salário de quem entra vs quem saiu: 17% abaixo → 12% abaixo |
+| Recrutamento inter-regional | Empresa + Poder público | 3–12 meses | saída voluntária / rotatividade, o que estiver pior |
+| Automação e redesenho | Empresa | 12+ meses | rotatividade descontada |

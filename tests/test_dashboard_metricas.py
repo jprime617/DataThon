@@ -684,3 +684,34 @@ def test_formacao_nao_dispara_sem_sinal_de_falta_de_qualificacao():
                                     soma_escolaridade_admissao=9 * 200, n_escolaridade_admissao=200,
                                     soma_escolaridade_desligamento=9 * 200, n_escolaridade_desligamento=200))
     assert c.ALAVANCA_FORMACAO not in _alavancas(df)
+
+
+# --- REC-02: quem age, horizonte e KPI com meta ---------------------------------
+
+def test_toda_alavanca_tem_responsavel_horizonte_e_kpi():
+    for alavanca in c.REGRA_ALAVANCA:
+        assert c.QUEM_AGE[alavanca] and c.HORIZONTE[alavanca]
+        for nome, _ in c.KPI_ALAVANCA[alavanca]:
+            assert nome in c.DEFINICOES, nome
+
+
+def test_meta_e_metade_da_distancia_ate_o_estado():
+    grupo = pd.Series({c.M_SAIDA_VOL: 0.59})
+    ref = pd.Series({c.M_SAIDA_VOL: 0.47})
+    assert c.meta_kpi(c.ALAVANCA_RETENCAO, grupo, ref) == \
+        "saída voluntária do grupo: 59,0% → 53,0% em 12 meses (estado: 47,0%)"
+    melhor = pd.Series({c.M_SAIDA_VOL: 0.40})
+    assert "manter em 40,0% ou melhor" in c.meta_kpi(c.ALAVANCA_RETENCAO, melhor, ref)
+
+
+def test_meta_usa_o_candidato_mais_distante_do_estado():
+    grupo = pd.Series({c.M_GAP_ESC: -0.95, c.M_PRECOCE: 0.655})
+    ref = pd.Series({c.M_GAP_ESC: -0.08, c.M_PRECOCE: 0.659})
+    assert c.meta_kpi(c.ALAVANCA_FORMACAO, grupo, ref).startswith("escolaridade de quem entra")
+
+
+def test_recomendacoes_e_csv_trazem_as_tres_colunas():
+    df = _df(_referencia(), _celula(admissoes=200, desligamentos=200, desligamentos_a_pedido=120,
+                                    **_salarios(2100, 2000)))
+    recs = c.gerar_recomendacoes(df)
+    assert recs and all(r.quem_age and r.horizonte and r.kpi for r in recs)

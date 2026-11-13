@@ -211,3 +211,36 @@ REGRA_ALAVANCA = {
         "mesorregião."),
     ALAVANCA_AUTOMACAO: "Nível Básico com 50% ou mais das movimentações do grupo e saldo ≤ 0.",
 }
+
+# ---------------------------------------------------------------------------
+# REC-02: quem age, horizonte e KPI de acompanhamento de cada alavanca
+# ---------------------------------------------------------------------------
+
+QUEM_AGE = {
+    ALAVANCA_SALARIO: "Empresa",
+    ALAVANCA_RETENCAO: "Empresa",
+    ALAVANCA_FORMACAO: "Federação–SENAI",
+    ALAVANCA_MOBILIDADE: "Empresa + Poder público",
+    ALAVANCA_AUTOMACAO: "Empresa",
+}
+HORIZONTE = {
+    ALAVANCA_SALARIO: "0–3 meses",
+    ALAVANCA_RETENCAO: "0–3 meses",
+    ALAVANCA_FORMACAO: "3–12 meses",
+    ALAVANCA_MOBILIDADE: "3–12 meses",
+    ALAVANCA_AUTOMACAO: "12+ meses",
+}
+# KPI candidatos de cada alavanca: (chave da métrica do painel, "menor é melhor").
+# A meta usa o candidato em que o grupo está mais longe do estado, para pior
+# (o sinal que disparou a recomendação); se nenhum está pior, "manter" o primeiro.
+KPI_ALAVANCA = {
+    ALAVANCA_SALARIO: (("gap_salarial", False),),
+    ALAVANCA_RETENCAO: (("saida_voluntaria", True),),
+    ALAVANCA_FORMACAO: (("gap_escolaridade", False), ("precoce", True)),
+    ALAVANCA_MOBILIDADE: (("saida_voluntaria", True), ("rotatividade_desc", True), ("precoce", True)),
+    ALAVANCA_AUTOMACAO: (("rotatividade_desc", True), ("saida_voluntaria", True)),
+}
+KPI_RESERVA = (("saida_voluntaria", True),)   # quando nenhum candidato tem dado no grupo
+# Meta = andar esta fração da distância entre o grupo e o estado, no prazo abaixo.
+FRACAO_META_DISTANCIA = 0.5
+PRAZO_META_MESES = 12
