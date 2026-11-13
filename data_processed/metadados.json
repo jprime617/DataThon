@@ -35,5 +35,23 @@
     "regra": "> 0 e ≤ 20 × mediana estadual dos salários positivos",
     "teto": 43376.40766808095
   },
-  "testes": null
+  "testes": 411,
+  "artefatos": {
+    "caged_agregado.parquet": {
+      "sha256": "b4861f78fc81c185abc6c8eea77eaabdf20fe38bbfdfdbd5dc86ebca42154f1e",
+      "bytes": 15050866
+    },
+    "caged_perfil.parquet": {
+      "sha256": "d4fbeaaadc1e02afc6dc2d2d239915a2b377f418cd85d730f06b44e15e5700e0",
+      "bytes": 825018
+    },
+    "caged_cbo.parquet": {
+      "sha256": "0712e24a79904c124d7de8a9779537c689688e9255beb7c34673398321f9028f",
+      "bytes": 8880181
+    },
+    "rais_estoque.parquet": {
+      "sha256": "d4f2233af8ce826463d0794ff34e92e46b8103d38b369316c67f53943b22fae2",
+      "bytes": 432226
+    }
+  }
 }

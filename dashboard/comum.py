@@ -330,6 +330,38 @@ def schema_v2_ok(df: pd.DataFrame | None) -> bool:
     return df is not None and set(COLUNAS_V2) <= set(df.columns)
 
 
+AVISO_SEM_IMPRESSAO = ("Os dados do Azure Blob não trazem impressão digital dos arquivos (foram gerados antes "
+                       "dessa verificação): não dá para garantir que são todos da mesma execução do pipeline. "
+                       "Commit do pipeline no Blob: {commit}.")
+# Avisos de carga que aparecem no topo de todas as páginas (os demais ficam na Metodologia).
+TERMOS_AVISO_NA_TELA = ("schema antigo", "ilegível", "execuções diferentes", "impressão digital")
+
+
+def _nao_bate(nomes: list[str]) -> str:
+    return "não bate" if len(nomes) == 1 else "não batem"
+
+
+def aviso_na_tela(aviso: str) -> bool:
+    """O aviso de carga é grave o bastante para o topo de todas as páginas?"""
+    return any(termo in aviso for termo in TERMOS_AVISO_NA_TELA)
+
+
+def conferir_impressoes(conteudos: dict[str, bytes], meta: dict) -> tuple[list[str], bool]:
+    """(arquivos cujo SHA-256 não bate com o `metadados.json`, o metadados tem impressões?).
+
+    Só compara os arquivos presentes nos dois lados: um opcional ausente (ex.:
+    a tabela por CBO) já tem aviso próprio.
+    """
+    from src.agregador import sha256_bytes
+
+    esperado = (meta or {}).get("artefatos") or {}
+    if not esperado:
+        return [], False
+    divergentes = [nome for nome, conteudo in conteudos.items()
+                   if nome in esperado and sha256_bytes(conteudo) != esperado[nome].get("sha256")]
+    return sorted(divergentes), True
+
+
 def carregar_artefatos(
     *,
     baixar: Callable[[str, str], bytes] | None = None,
@@ -367,23 +399,41 @@ def carregar_artefatos(
             except Exception:  # noqa: BLE001
                 estoque = None
             agregado = anexar_blocos(anexar_estoque(agregado, estoque, avisos))
+        # A cópia local não tem alternativa: se misturada, só avisa.
+        locais = {n: (pasta / n).read_bytes() for n in (NOME_BLOB_AGREGADO, NOME_BLOB_PERFIL, NOME_BLOB_ESTOQUE,
+                                                         NOME_BLOB_CBO) if (pasta / n).is_file()}
+        divergentes, _ = conferir_impressoes(locais, meta)
+        if divergentes:
+            avisos.append(f"A cópia local mistura arquivos de execuções diferentes do pipeline "
+                          f"({', '.join(divergentes)} {_nao_bate(divergentes)} com o metadados.json).")
         return agregado, perfil, meta
 
     credencial = (ambiente.get(VAR_CREDENCIAL_AZURE) or "").strip()
     if credencial:
         try:
-            agregado = ler_parquet_enxuto(io.BytesIO(baixar(credencial, NOME_BLOB_AGREGADO)))
+            brutos = {NOME_BLOB_AGREGADO: baixar(credencial, NOME_BLOB_AGREGADO)}
+            agregado = ler_parquet_enxuto(io.BytesIO(brutos[NOME_BLOB_AGREGADO]))
             if not schema_v2_ok(agregado):
                 raise ValueError("a cópia do Blob está no schema antigo (sem as colunas v2)")
-            perfil = ler_parquet_enxuto(io.BytesIO(baixar(credencial, NOME_BLOB_PERFIL)))
+            brutos[NOME_BLOB_PERFIL] = baixar(credencial, NOME_BLOB_PERFIL)
+            perfil = ler_parquet_enxuto(io.BytesIO(brutos[NOME_BLOB_PERFIL]))
             meta = json.loads(baixar(credencial, NOME_BLOB_METADADOS).decode("utf-8"))
-            estoque = _nomes_atuais(pd.read_parquet(io.BytesIO(baixar(credencial, NOME_BLOB_ESTOQUE))))
-            agregado = anexar_blocos(anexar_estoque(agregado, estoque, avisos))
+            brutos[NOME_BLOB_ESTOQUE] = baixar(credencial, NOME_BLOB_ESTOQUE)
+            estoque = _nomes_atuais(pd.read_parquet(io.BytesIO(brutos[NOME_BLOB_ESTOQUE])))
             try:
-                cbo = ler_parquet_enxuto(io.BytesIO(baixar(credencial, NOME_BLOB_CBO)))
+                brutos[NOME_BLOB_CBO] = baixar(credencial, NOME_BLOB_CBO)
+                cbo = ler_parquet_enxuto(io.BytesIO(brutos[NOME_BLOB_CBO]))
             except Exception:  # noqa: BLE001 — opcional: sem ela, as listas de CBO somem
                 cbo = None
                 avisos.append("Tabela por ocupação (CBO) indisponível no Blob.")
+            # Upload parcial (ex.: agregado novo, estoque antigo): nunca misturar execuções.
+            divergentes, tem_impressoes = conferir_impressoes(brutos, meta)
+            if divergentes:
+                raise ValueError(f"os arquivos do Blob são de execuções diferentes do pipeline "
+                                 f"({', '.join(divergentes)} {_nao_bate(divergentes)} com o metadados.json)")
+            if not tem_impressoes:
+                avisos.append(AVISO_SEM_IMPRESSAO.format(commit=meta.get("commit") or "—"))
+            agregado = anexar_blocos(anexar_estoque(agregado, estoque, avisos))
             return Artefatos(preparar_tipos(agregado), perfil, meta, "blob", tuple(avisos), cbo=cbo)
         except Exception as exc:  # noqa: BLE001
             avisos.append(f"Azure Blob não usado: {exc}. Exibindo a cópia local.")
@@ -2103,7 +2153,7 @@ def cabecalho(ctx: Contexto) -> None:
     st.caption(f":material/filter_alt: {ctx.filtros.descricao()}  ·  :material/database: {origem}"
                + (f", gerado em {gerado}" if gerado else ""))
     for aviso in ctx.art.avisos:
-        if "schema antigo" in aviso or "ilegível" in aviso:
+        if aviso_na_tela(aviso):
             st.warning(aviso, icon=":material/warning:")
 
 

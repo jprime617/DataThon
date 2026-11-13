@@ -1006,3 +1006,43 @@ são próprios da transformação.
   quadrantes, no rodapé da matriz, no resumo das causas, nos títulos das
   tabelas e no total de recomendações (inclusive no modo apresentação).
 - Testes: `test_plural_com_um_e_com_varios`, `test_resumo_de_causas_no_singular`.
+
+---
+
+# Lote C (publicação)
+
+## ENT-03 (preparo) · Trava: os arquivos do Blob precisam ser da mesma execução
+
+- **O risco:** o painel lê do Blob o agregado, o perfil, o estoque, a tabela
+  por CBO e o `metadados.json`, e só caía na cópia local se o agregado
+  estivesse no schema antigo. Um Blob desatualizado, ou um upload parcial
+  (ex.: agregado novo com estoque antigo), passava em silêncio.
+- **O que mudou:**
+  - O pipeline grava no `metadados.json` o **SHA-256 e o tamanho** de cada
+    artefato (`src.agregador.impressoes_digitais`, chave `artefatos`).
+  - O painel confere as impressões ao baixar do Blob
+    (`comum.conferir_impressoes`). Se algum arquivo não bate, **não usa o
+    Blob**: exibe a cópia local do pacote e avisa no topo de todas as páginas.
+  - Se o metadados do Blob não tem impressões (dados de antes desta trava),
+    usa o Blob, mas avisa que não dá para garantir a consistência e mostra o
+    commit.
+  - Na cópia local, uma mistura só gera aviso, porque não há alternativa.
+- **Contagem de testes na Metodologia:** saía vazia porque o pipeline chamava
+  `python` pelo nome, e no kernel do notebook esse comando não é encontrado.
+  Agora usa o próprio interpretador (`src.agregador.contar_testes`).
+- **`metadados.json` atualizado sem reprocessar:** acrescentei `artefatos`,
+  calculado dos próprios arquivos da execução `7245713`, e `testes` (411,
+  pela mesma função). Os demais campos e os parquets não mudaram.
+- Verificação visual com um Blob simulado: estoque de outra execução → cópia
+  local + aviso; Blob sem impressões → aviso com o commit; tudo consistente
+  → Blob, sem aviso.
+- Testes:
+  `test_painel_so_usa_o_blob_quando_todos_os_arquivos_sao_da_mesma_execucao`,
+  `test_blob_sem_impressao_digital_avisa_na_tela_com_o_commit`,
+  `test_impressoes_do_metadados_versionado_batem_com_os_arquivos`,
+  `test_metadados_leva_as_impressoes_e_conferir_detecta_divergencia`.
+
+**Para o deploy:** subir os 5 arquivos juntos (o `metadados.json` por último)
+e conferir, em qualquer página, que **não há aviso amarelo no topo**, e na
+Metodologia: "Origem em uso: Azure Blob Storage" e "commit do pipeline:
+7245713".
