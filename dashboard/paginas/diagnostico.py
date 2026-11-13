@@ -118,7 +118,7 @@ def _cartoes(alerta: pd.DataFrame, segunda: str, frac_tecnica: pd.Series,
 
 
 def render(ctx: c.Contexto) -> None:
-    st.title("Quem precisa de atenção urgente?")
+    st.title("Quem precisa de atenção urgente?", anchor=False)
     c.cabecalho(ctx)
     escolha = st.segmented_control("Unidade de análise", list(UNIDADES), default=list(UNIDADES)[0],
                                    key="diag_unidade") or list(UNIDADES)[0]
@@ -140,7 +140,7 @@ def render(ctx: c.Contexto) -> None:
         + ". As linhas pontilhadas marcam a média; quanto maior a bolha, mais movimentações."
     )
 
-    st.subheader("Alertas, do mais tenso ao menos tenso")
+    st.subheader("Alertas, do mais tenso ao menos tenso", anchor=False)
     ref = c.total(ctx.ref)  # ANA-01: estado inteiro, mesmo escopo e período
     frac_tecnica = c.fracao_por_nivel(ctx.df, por, c.NIVEIS_QUALIFICADOS)
     tabela = tabela_alertas(m, segunda, ref, frac_tecnica)

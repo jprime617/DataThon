@@ -759,3 +759,21 @@ emprego que têm. A demanda existe; o problema é reter.
 |---|---|---|
 | Recomendações prioritárias | 20 | 19 (+ 1 observação) |
 | Top 3 | sem mudança | sem mudança |
+
+---
+
+## BUG-06 · Cliques em títulos
+
+- **O que se viu** (Streamlit 1.67, Playwright com permissão de área de
+  transferência): clicar no título ou no ícone de link ao lado dele **não
+  escreve na área de transferência**. O ícone é um link `#âncora`: o clique
+  muda a URL (ex.: `/ficha#grande-florianopolis`) e rola a página. No código
+  do Streamlit, só escrevem na área de transferência o Ctrl+C numa tabela
+  (`st.dataframe`) e o botão de copiar de bloco de código (aba do prompt).
+  Os dois são ações explícitas. Hipótese confirmada só em parte: o
+  efeito colateral do clique no título era a URL, não a área de transferência.
+- **O que mudou:** `anchor=False` em todas as 29 chamadas de
+  `st.title/header/subheader`, e CSS que esconde o link-âncora dos títulos
+  feitos em markdown (`####`). O ícone de ajuda continua.
+- Conferido em 5 páginas: 0 âncoras visíveis, e a URL não muda depois de
+  clicar em todos os títulos. Teste: `test_titulos_sem_link_ancora`.

@@ -142,16 +142,16 @@ def _comparacao_regra_salarial(ctx: c.Contexto) -> str:
 
 
 def render(ctx: c.Contexto) -> None:
-    st.title("Metodologia e sistema")
+    st.title("Metodologia e sistema", anchor=False)
     c.cabecalho(ctx)
     meta = ctx.art.metadados or {}
 
-    st.subheader("Arquitetura")
+    st.subheader("Arquitetura", anchor=False)
     _, centro, _ = st.columns([1, 2, 1])
     centro.graphviz_chart(ARQUITETURA, width="stretch")
     st.caption("O LLM roda só no pipeline local; o painel lê tabelas pré-agregadas de poucos MB, nunca microdados.")
 
-    st.subheader("Procedência dos dados")
+    st.subheader("Procedência dos dados", anchor=False)
     linhas = meta.get("linhas", {})
     periodo = meta.get("periodo", {})
     st.markdown(
@@ -172,14 +172,14 @@ def render(ctx: c.Contexto) -> None:
         st.caption(nar.texto_funil(etapas) + f" Agregado: {c.fmt_int(linhas.get('agregado', 0))} linhas; "
                    f"perfil: {c.fmt_int(linhas.get('perfil', 0))} linhas.")
 
-    st.subheader("Definições")
+    st.subheader("Definições", anchor=False)
     st.table(pd.DataFrame([{"Indicador": d.rotulo, "Fórmula": d.formula} for d in c.DEFINICOES.values()])
              .set_index("Indicador"))
     st.caption(f"Guarda de amostra: taxas exigem ≥ {c.MIN_MOVIMENTACOES} movimentações; gaps salariais, "
                f"≥ {c.MIN_SALARIOS} salários de admissão e de desligamento. Abaixo disso a célula fica em cinza "
                "e sai de rankings e da matriz.")
 
-    st.subheader("Resposta à pergunta central: quando renda e escolaridade \"explicam\"")
+    st.subheader("Resposta à pergunta central: quando renda e escolaridade \"explicam\"", anchor=False)
     st.markdown(
         "Entre os grupos mesorregião × setor com amostra, medimos (1) a **correlação** entre o fator e a saída "
         "voluntária (negativa = quanto pior o fator, mais gente pede para sair) e (2) a **fração de grupos** com a "
@@ -192,19 +192,19 @@ def render(ctx: c.Contexto) -> None:
         "- **Não explica:** abaixo disso. Uma macrofamília com gap de escolaridade fora da curva aparece como exceção.\n"
         "Correlação não é causalidade: o veredito diz se o fator acompanha a saída, não se a provoca.")
 
-    st.subheader("Regras das recomendações")
+    st.subheader("Regras das recomendações", anchor=False)
     st.markdown("Cada recomendação de O que fazer sai de uma regra explícita, avaliada por mesorregião × "
                 "macrofamília (IA), só em grupos com ≥ 100 movimentações. A referência é o estado inteiro no "
                 "mesmo escopo e período.")
     st.table(pd.DataFrame([{"Alavanca": a, "Quando dispara": r} for a, r in c.REGRA_ALAVANCA.items()])
              .set_index("Alavanca"))
 
-    st.subheader("Setores: divisão CNAE → setor")
+    st.subheader("Setores: divisão CNAE → setor", anchor=False)
     st.markdown("Na indústria de transformação (seção C), o setor agrupa divisões CNAE 2.0 (dois primeiros dígitos "
                 "da subclasse). Nas demais seções, o setor é a própria seção.")
     st.table(tabela_setores().set_index("Setor"))
 
-    st.subheader("Como a matriz é calculada: Dinamismo (cresce?) e Tensão (perde gente?)")
+    st.subheader("Como a matriz é calculada: Dinamismo (cresce?) e Tensão (perde gente?)", anchor=False)
     st.markdown(
         "- **Dinamismo** = média dos z-scores da **variação do emprego** (saldo ÷ estoque de 31/12/2025) e da **aceleração** "
         "(saldo de set/25–ago/26 menos o de set/24–ago/25, ÷ estoque), entre as unidades com amostra. Blocos de 12 "
@@ -241,15 +241,15 @@ def render(ctx: c.Contexto) -> None:
 
     _sensibilidade(ctx)
 
-    st.subheader("Onde conferir cada critério da banca")
+    st.subheader("Onde conferir cada critério da banca", anchor=False)
     st.table(pd.DataFrame(CRITERIOS_BANCA, columns=["Critério", "Onde conferir"]).set_index("Critério"))
     st.markdown("**Engenharia**")
     st.table(pd.DataFrame(ENGENHARIA, columns=["Item", "Onde conferir"]).set_index("Item"))
 
-    st.subheader("Premissas e limites")
+    st.subheader("Premissas e limites", anchor=False)
     st.markdown(LIMITES)
 
-    st.subheader("Qualidade do código")
+    st.subheader("Qualidade do código", anchor=False)
     testes = meta.get("testes")
     repo = os.environ.get("DASHBOARD_REPO_URL", "").strip()
     st.markdown(
@@ -259,8 +259,8 @@ def render(ctx: c.Contexto) -> None:
         + (f" (commit `{meta.get('commit')}`)." if meta.get("commit") else ".")
     )
 
-    st.subheader("Próximos passos")
+    st.subheader("Próximos passos", anchor=False)
     st.markdown(PROXIMOS)
 
-    st.subheader("Glossário")
+    st.subheader("Glossário", anchor=False)
     st.markdown("\n".join(f"- **{termo}**: {texto}" for termo, texto in GLOSSARIO))

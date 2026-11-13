@@ -151,7 +151,7 @@ def _resposta_central(ctx: c.Contexto) -> None:
 
 
 def render(ctx: c.Contexto) -> None:
-    st.title("Onde está o problema?")
+    st.title("Onde está o problema?", anchor=False)
     c.cabecalho(ctx)
     if ctx.df.empty:
         st.info("Nenhuma movimentação com estes filtros. Use **Limpar filtros** na barra lateral.")

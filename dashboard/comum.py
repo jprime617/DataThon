@@ -1800,6 +1800,10 @@ _CSS = """
 /* Foco visível no conteúdo */
 [data-testid="stMain"] :focus-visible {outline: 2px solid var(--rx-foco) !important; outline-offset: 2px;}
 
+/* BUG-06: sem o link-âncora nos títulos de markdown (clicar no título mudava a URL);
+   st.title/header/subheader já usam anchor=False. O ícone de ajuda (help=) continua. */
+[data-testid="stMain"] [data-testid="stHeaderActionElements"] a[href^="#"] {display: none;}
+
 /* Títulos institucionais, sem sombra, borda fina */
 [data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="stMain"] h3 {font-weight: 700; letter-spacing: 0;}
 [data-testid="stMain"] hr {border: 0; border-top: 3px solid var(--rx-laranja); margin: 2rem 0 1rem;}

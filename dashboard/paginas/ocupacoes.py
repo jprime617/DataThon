@@ -56,7 +56,7 @@ def _alem_do_prefixo(ctx: c.Contexto, mapa: pd.DataFrame | None) -> None:
 
 
 def render(ctx: c.Contexto) -> None:
-    st.title("Que profissional falta?")
+    st.title("Que profissional falta?", anchor=False)
     c.cabecalho(ctx)
     st.markdown("A IA agrupou as **ocupações (CBO)** em macrofamílias por ofício e nível de qualificação. "
                 "Isso revela o que a CNAE esconde: *quem* gira dentro de cada setor.")
@@ -78,7 +78,7 @@ def render(ctx: c.Contexto) -> None:
                        f"{c.fmt_pct(basico)} das movimentações deste recorte.")
 
     mapa, divergencias, prompt = c.cbo_cache()
-    st.subheader("Explorador de ocupações")
+    st.subheader("Explorador de ocupações", anchor=False)
     if mapa is None:
         st.info("Classificação da IA (cbo_macrofamilias.csv) indisponível neste ambiente.")
     else:

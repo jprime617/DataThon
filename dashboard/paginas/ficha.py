@@ -48,7 +48,7 @@ def semelhantes(ctx: c.Contexto, nivel: str, nome: str, n: int = 5) -> pd.DataFr
 
 
 def render(ctx: c.Contexto) -> None:
-    st.title("Ficha do território")
+    st.title("Ficha do território", anchor=False)
     c.cabecalho(ctx)
     base = c.filtrar(ctx.art.agregado, ctx.filtros, ignorar=("territorio",))
     if base.empty:
@@ -69,7 +69,7 @@ def render(ctx: c.Contexto) -> None:
     nome = col2.selectbox(nivel, opcoes, key="ficha_nome")
 
     dados = base[base[coluna].astype(str) == nome]
-    st.subheader(nome)
+    st.subheader(nome, anchor=False)
     socio = contexto_socioeconomico(dados)
     nota = "" if nivel == c.NIVEL_MUNICIPIO else f" (média dos {socio['municipios']} municípios ponderada pela população)"
     st.caption(f"População 2026: {c.fmt_int(socio['populacao'])} · IDHM 2010: {c.fmt_num(socio['idhm'], 3)} · "

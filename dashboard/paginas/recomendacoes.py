@@ -106,7 +106,7 @@ def ficha_mesorregiao(ctx: c.Contexto, regiao: str, recs: list[c.Recomendacao]) 
 
 
 def render(ctx: c.Contexto) -> None:
-    st.title("O que fazer?")
+    st.title("O que fazer?", anchor=False)
     c.cabecalho(ctx)
     if ctx.df.empty:
         st.info("Nenhuma movimentação com estes filtros.")
@@ -131,7 +131,7 @@ def render(ctx: c.Contexto) -> None:
             st.markdown(texto_top3(top3))
             st.caption("Uma por alavanca: a de maior prioridade (severidade × movimentações) dentro de cada uma; "
                        "entre as alavancas, as de mais movimentações afetadas. Muda com os filtros.")
-        st.subheader("Prioridades")
+        st.subheader("Prioridades", anchor=False)
         grupos = agrupar_por_alavanca(recs)
         colunas = st.columns(min(3, len(grupos)))
         for i, (alavanca, itens) in enumerate(grupos.items()):
@@ -182,7 +182,7 @@ def render(ctx: c.Contexto) -> None:
         st.download_button("Baixar ficha (Markdown)", texto.encode("utf-8"),
                            file_name=f"ficha_{escolhida.lower().replace(' ', '_')}.md", icon=":material/download:")
 
-    st.subheader("Quanto custa a saída voluntária?")
+    st.subheader("Quanto custa a saída voluntária?", anchor=False)
     n = st.slider("Custo de repor um trabalhador, em salários (premissa ajustável)", c.CUSTO_REPOSICAO_MIN,
                   c.CUSTO_REPOSICAO_MAX, c.CUSTO_REPOSICAO_PADRAO, 1,
                   help="Inclui recrutamento, seleção, treinamento e produtividade perdida até o novo "

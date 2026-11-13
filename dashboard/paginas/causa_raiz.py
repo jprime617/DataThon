@@ -87,7 +87,7 @@ def _delta_pp(diferenca: float) -> str:
 
 def _escolaridade_contratacao(ctx: c.Contexto, perfil: pd.DataFrame | None, nota: str) -> None:
     """ANA-02: participação de admitidos × desligados por escolaridade e o prêmio do diploma."""
-    st.subheader("Escolaridade: o mercado contrata mais instruídos e paga mais por isso?")
+    st.subheader("Escolaridade: o mercado contrata mais instruídos e paga mais por isso?", anchor=False)
     if perfil is None or perfil.empty:
         st.info("Perfil de escolaridade indisponível para esta seleção.")
         return
@@ -133,7 +133,7 @@ def _escolaridade_contratacao(ctx: c.Contexto, perfil: pd.DataFrame | None, nota
 
 
 def render(ctx: c.Contexto) -> None:
-    st.title("Por quê: salário, qualificação ou estrutura?")
+    st.title("Por quê: salário, qualificação ou estrutura?", anchor=False)
     c.cabecalho(ctx)
     if ctx.df.empty:
         st.info("Nenhuma movimentação com estes filtros.")
@@ -145,7 +145,7 @@ def render(ctx: c.Contexto) -> None:
     unidades = unidades[unidades[c.M_AMOSTRA_OK]]
     selos = selos_por_unidade(ctx, unidades)
 
-    st.subheader("Salário: quem entra ganha menos do que quem sai?")
+    st.subheader("Salário: quem entra ganha menos do que quem sai?", anchor=False)
     grafico, resumo = st.columns([3, 2], gap="large")
     por_macro = None
     if perfil is None or perfil.empty:

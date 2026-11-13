@@ -269,3 +269,21 @@ def test_automacao_e_observacao_e_fica_fora_do_top3():
             _rec(c.ALAVANCA_RETENCAO, "Oeste", "Alimentos", 5, 400)]
     assert [x.alavanca for x in c.top_executivo(recs)] == [c.ALAVANCA_RETENCAO]
     assert "observação" in c.REGRA_ALAVANCA[c.ALAVANCA_AUTOMACAO]
+
+
+# --- BUG-06: títulos sem link-âncora -------------------------------------------------------
+
+
+def test_titulos_sem_link_ancora():
+    import ast
+    from pathlib import Path
+
+    raiz = Path(__file__).resolve().parent.parent / "dashboard"
+    for arquivo in raiz.rglob("*.py"):
+        for no in ast.walk(ast.parse(arquivo.read_text(encoding="utf-8"))):
+            if (isinstance(no, ast.Call) and isinstance(no.func, ast.Attribute)
+                    and no.func.attr in ("title", "header", "subheader") and no.args):
+                ancora = next((k for k in no.keywords if k.arg == "anchor"), None)
+                assert ancora is not None and getattr(ancora.value, "value", None) is False, \
+                    f"{arquivo.name}:{no.lineno} sem anchor=False"
+    assert 'stHeaderActionElements"] a[href^="#"] {display: none;}' in c._CSS

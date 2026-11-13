@@ -128,7 +128,7 @@ def render(ctx_global: c.Contexto) -> None:
     chave = os.environ.get(VAR_CHAVE, "").strip()
     if not st.session_state.get("apresentacao_ok"):
         if not acesso_liberado(chave, st.query_params.get("chave")):
-            st.title("Página não encontrada")
+            st.title("Página não encontrada", anchor=False)
             st.caption("Use o menu lateral para navegar pelo painel.")
             return
         st.session_state["apresentacao_ok"] = True
@@ -137,7 +137,7 @@ def render(ctx_global: c.Contexto) -> None:
     passo = int(st.session_state.get("passo", 0)) % len(PASSOS)
 
     topo = st.columns([5, 1.4, 1.4, 1.1])
-    topo[0].title(f"{passo + 1}/{len(PASSOS)} · {PASSOS[passo]}")
+    topo[0].title(f"{passo + 1}/{len(PASSOS)} · {PASSOS[passo]}", anchor=False)
     if topo[1].button("Anterior", icon=":material/arrow_back:", disabled=passo == 0, width="stretch"):
         st.session_state["passo"] = passo - 1
         st.rerun()
