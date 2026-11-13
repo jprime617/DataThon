@@ -48,23 +48,19 @@ def legenda_compressao(medianas: pd.DataFrame, categoria: str) -> str:
             f"{c.fmt_brl(pior['mediana_desligamento'])}).")
 
 
-LEGENDA_CAUSAS = ("Salarial = quem entra ganha mais de 5% menos que quem saiu; Qualificação = entra gente menos "
-                  "escolarizada numa área técnica; Retenção = muito mais gente pede para sair do que no estado, "
-                  "sem que o salário de entrada seja menor.")
-
-
 def selos_por_unidade(ctx: c.Contexto, unidades: pd.DataFrame) -> pd.DataFrame:
     """Mesorregião × setor com ao menos uma causa (Salarial, Qualificação, Retenção), da maior para a menor."""
-    ref = c.total(ctx.df)
+    ref = c.total(ctx.ref)  # ANA-01: referência = estado inteiro, mesmo escopo e período
     frac = c.fracao_por_nivel(ctx.df, [c.COLUNA_REGIAO, c.COLUNA_SETOR], c.NIVEIS_QUALIFICADOS)
     linhas = []
     for _, u in unidades.iterrows():
-        selos = c.causas(u, saida_ref=ref[c.M_SAIDA_VOL],
+        selos = c.causas(u, saida_ref=ref[c.M_SAIDA_VOL], gap_ref=ref[c.M_GAP_SAL],
                          fracao_tecnica=float(frac.get((u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), 0.0)))
         if selos:
             linhas.append({"Grupo": f"{u[c.COLUNA_SETOR]} – {u[c.COLUNA_REGIAO]}", "Causas": " · ".join(selos),
                            "Movimentações": int(u[c.M_MOV]),
                            "Salário de quem entra vs quem saiu": c.fmt_gap(u[c.M_GAP_SAL]),
+                           "Mesma razão no estado": c.fmt_gap(ref[c.M_GAP_SAL]),
                            "Saem a pedido": c.fmt_pct(u[c.M_SAIDA_VOL])})
     if not linhas:
         return pd.DataFrame(columns=["Grupo", "Causas", "Movimentações"])
@@ -75,8 +71,8 @@ def resumo_causas(selos: pd.DataFrame, total: int) -> str:
     """Quantos grupos têm cada causa, em linguagem leiga."""
     if selos.empty:
         return f"Nenhum dos {total} grupos analisados tem uma causa clara nos dados."
-    textos = {c.CAUSA_SALARIAL: "o salário de entrada é menor que o de quem saiu",
-              c.CAUSA_RETENCAO: "o problema é reter (o salário não é menor)",
+    textos = {c.CAUSA_SALARIAL: "o salário de entrada perde mais para o de quem saiu do que no estado",
+              c.CAUSA_RETENCAO: "o problema é reter (o salário de entrada não é pior que o do estado)",
               c.CAUSA_QUALIFICACAO: "entra gente com menos estudo numa área técnica"}
     linhas = [f"- **{selos['Causas'].str.contains(causa).sum()}** grupos: {texto}"
               for causa, texto in textos.items() if selos["Causas"].str.contains(causa).any()]
@@ -171,4 +167,4 @@ def render(ctx: c.Contexto) -> None:
         else:
             st.dataframe(selos, hide_index=True, width="stretch",
                          column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
-            st.caption(LEGENDA_CAUSAS)
+            st.caption(nar.legenda_causas(c.total(ctx.ref)))

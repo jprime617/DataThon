@@ -11,7 +11,8 @@ def _u(saida: float, gap: float) -> pd.Series:
 
 
 def test_frase_prioriza_a_causa_salarial():
-    assert frase_porque(_u(0.6, 0.87), [c.CAUSA_SALARIAL], 0.47).startswith("Quem entra ganha 87%")
+    frase = frase_porque(_u(0.6, 0.87), [c.CAUSA_SALARIAL], 0.47, 0.93)
+    assert frase.startswith("Quem entra ganha 87%") and "no estado, 93%" in frase
 
 
 def test_frase_de_retencao_compara_com_o_estado():

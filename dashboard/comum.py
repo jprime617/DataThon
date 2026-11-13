@@ -84,6 +84,7 @@ from dashboard.regras import (  # noqa: F401
     LIMIAR_COMPRESSAO,
     LIMIAR_DESTAQUE_GAP_ESC,
     LIMIAR_GAP_ESCOLARIDADE,
+    MARGEM_SALARIAL_RELATIVA,
     MARGEM_SAIDA_VOLUNTARIA,
     MIN_MOVIMENTACOES,
     MIN_SALARIOS,
@@ -95,6 +96,8 @@ from dashboard.regras import (  # noqa: F401
     QUADRANTES,
     QUADRANTES_ALERTA,
     quadrante,
+    salario_nao_explica,
+    salario_pior_que_estado,
 )
 
 _ETAPA = "dashboard"
@@ -818,23 +821,27 @@ def matriz_diagnostico(
 
 
 
-def causas(linha: pd.Series, *, saida_ref: float, fracao_tecnica: float = 0.0) -> list[str]:
-    """Selos de causa de uma unidade (PLANEJAMENTO §7.2), a partir das métricas.
+def causas(linha: pd.Series, *, saida_ref: float, gap_ref: float, fracao_tecnica: float = 0.0) -> list[str]:
+    """Selos de causa de uma unidade, a partir das métricas e da referência do estado.
 
-    - Salarial: gap de reposição < 0,95 (com amostra salarial suficiente).
+    `saida_ref` e `gap_ref` são a saída voluntária e a razão salarial entrada/saída
+    do estado inteiro no mesmo escopo e período (`Contexto.ref`).
+
+    - Salarial: razão entrada/saída ≥ 3 p.p. abaixo da do estado (ANA-01).
     - Qualificação: gap de escolaridade ≤ −0,10 numa unidade em que Técnico +
       Superior somam ao menos metade das movimentações.
-    - Retenção: saída voluntária ≥ referência + 5 p.p. com gap ≥ 1.
+    - Retenção: saída voluntária ≥ referência + 5 p.p. com salário de entrada
+      não pior que o do estado (o salário não explica a saída).
     """
     selos = []
     gap = linha.get(M_GAP_SAL)
-    if pd.notna(gap) and gap < LIMIAR_COMPRESSAO:
+    if pd.notna(gap) and salario_pior_que_estado(gap, gap_ref):
         selos.append(CAUSA_SALARIAL)
     gap_esc = linha.get(M_GAP_ESC)
     if pd.notna(gap_esc) and gap_esc <= LIMIAR_GAP_ESCOLARIDADE and fracao_tecnica >= 0.5:
         selos.append(CAUSA_QUALIFICACAO)
     saida = linha.get(M_SAIDA_VOL)
-    if pd.notna(saida) and pd.notna(gap) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA and gap >= 1:
+    if pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA and salario_nao_explica(gap, gap_ref):
         selos.append(CAUSA_RETENCAO)
     return selos
 
@@ -876,18 +883,19 @@ def gerar_recomendacoes(
     df: pd.DataFrame,
     *,
     mediana_regional: dict[tuple[str, str], float] | None = None,
+    ref: pd.Series | None = None,
 ) -> list[Recomendacao]:
     """Avalia as 5 regras por mesorregião × macrofamília (com guarda de amostra).
 
-    As referências ("alta") são o valor do próprio recorte filtrado inteiro —
-    o "estado" na seleção atual —, para que o critério se explique sozinho:
-    "saída voluntária 58% vs 47% no recorte".
+    As referências ("alta", "pior") vêm de `ref`: o estado inteiro no mesmo
+    escopo e período (`Contexto.ref`). Sem `ref`, usa o total de `df`. Assim o
+    critério se explica sozinho: "saída voluntária 58% vs 47% no estado".
     """
     if df is None or df.empty:
         return []
     mediana_regional = mediana_regional or {}
-    ref = total(df)
-    saida_ref = ref[M_SAIDA_VOL]
+    ref = total(df) if ref is None else ref
+    saida_ref, gap_ref = ref[M_SAIDA_VOL], ref[M_GAP_SAL]
     por = [COLUNA_REGIAO, COLUNA_MACROFAMILIA_CBO]
     m = matriz_diagnostico(df, por)
     if m.empty:
@@ -911,13 +919,15 @@ def gerar_recomendacoes(
             recs.append(Recomendacao(regiao, macro, alavanca, regra, evidencia, alvo,
                                      float(severidade), mov, extras=extras))
 
-        if pd.notna(gap) and gap < LIMIAR_COMPRESSAO and pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA:
+        if salario_pior_que_estado(gap, gap_ref) and pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA:
             ref_sal = mediana_regional.get(chave)
             texto_ref = f"; mediana regional de admissão {fmt_brl(ref_sal)}" if ref_sal else ""
             add(ALAVANCA_SALARIO,
-                f"salário de entrada mais de {fmt_gap(LIMIAR_COMPRESSAO).split()[0]} abaixo do de saída e saída voluntária ≥ referência + 5 p.p.",
-                f"quem entra ganha {fmt_gap(gap)} de quem saiu; saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)} no recorte{texto_ref}",
-                (LIMIAR_COMPRESSAO - gap) / LIMIAR_COMPRESSAO + (saida - saida_ref))
+                f"razão salarial entrada/saída ≥ {fmt_num(MARGEM_SALARIAL_RELATIVA * 100, 0)} p.p. pior que a do estado "
+                f"e saída voluntária ≥ estado + {fmt_num(MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p.",
+                f"quem entra ganha {fmt_pct(gap, 0)} do salário de quem saiu (estado: {fmt_pct(gap_ref, 0)}); "
+                f"saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)} no estado{texto_ref}",
+                (gap_ref - gap) + (saida - saida_ref))
         f_tec = float(frac_tecnica.get(chave, 0.0))
         if pd.notna(u[M_GAP_ESC]) and u[M_GAP_ESC] <= LIMIAR_GAP_ESCOLARIDADE and f_tec >= 0.5:
             add(ALAVANCA_FORMACAO,
@@ -940,10 +950,12 @@ def gerar_recomendacoes(
                 "nível Básico ≥ 50% e saldo ≤ 0",
                 f"{fmt_pct(f_bas)} em nível Básico; saldo {fmt_int(u[M_SALDO])}",
                 f_bas - 0.5, alvo="Básico")
-        if pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA and pd.notna(gap) and gap >= 1:
+        if pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA and salario_nao_explica(gap, gap_ref):
             add(ALAVANCA_RETENCAO,
-                "saída voluntária ≥ referência + 5 p.p. com gap de reposição ≥ 1 (salário não explica)",
-                f"saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)}; quem entra ganha {fmt_gap(gap)} de quem saiu",
+                f"saída voluntária ≥ estado + {fmt_num(MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p. com salário de entrada "
+                "não pior que o do estado (o salário não explica)",
+                f"saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)}; quem entra ganha {fmt_pct(gap, 0)} do "
+                f"salário de quem saiu (estado: {fmt_pct(gap_ref, 0)})",
                 saida - saida_ref)
     for r in recs:
         r.prioridade = r.severidade * r.movimentacoes

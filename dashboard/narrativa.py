@@ -390,3 +390,18 @@ def rotulo_lista_principal(demais: pd.DataFrame, df: pd.DataFrame, por: list[str
         return "Transformação"
     so_c = c.marcar_secao(demais, df, por, c.SECAO_TRANSFORMACAO).all()
     return "Transformação" if so_c else "Transformação e demais seções (exceto construção)"
+
+
+# --- ANA-01: critério das causas, em texto gerado dos limiares --------------------
+
+def legenda_causas(ref: pd.Series | None = None) -> str:
+    """Como cada causa é decidida, com a referência do estado quando houver."""
+    gap_ref = ref[c.M_GAP_SAL] if ref is not None else float("nan")
+    estado = f" (no estado, quem entra ganha {c.fmt_pct(gap_ref, 0)} do salário de quem sai)" if pd.notna(gap_ref) else ""
+    margem = c.fmt_num(c.MARGEM_SALARIAL_RELATIVA * 100, 0)
+    return (f"Salarial = a razão entre o salário de quem entra e o de quem sai fica {margem} p.p. ou mais abaixo da "
+            f"razão do estado{estado}. Quem sai tem mais tempo de casa, então ganhar um pouco menos na entrada é "
+            f"normal; o selo só acende quando a diferença é pior que a do estado. Qualificação = entra gente menos "
+            f"escolarizada numa área técnica. Retenção = saída a pedido "
+            f"{c.fmt_num(c.MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p. acima do estado, com salário de entrada não pior "
+            "que o do estado.")

@@ -244,9 +244,36 @@ def test_regras_respeitam_a_guarda_de_amostra():
 
 def test_causas_selam_salarial_qualificacao_e_retencao():
     linha = pd.Series({c.M_GAP_SAL: 0.9, c.M_GAP_ESC: -0.3, c.M_SAIDA_VOL: 0.6})
-    assert c.causas(linha, saida_ref=0.47, fracao_tecnica=0.6) == [c.CAUSA_SALARIAL, c.CAUSA_QUALIFICACAO]
+    assert c.causas(linha, saida_ref=0.47, gap_ref=0.94, fracao_tecnica=0.6) == [c.CAUSA_SALARIAL, c.CAUSA_QUALIFICACAO]
     linha = pd.Series({c.M_GAP_SAL: 1.05, c.M_GAP_ESC: 0.1, c.M_SAIDA_VOL: 0.6})
-    assert c.causas(linha, saida_ref=0.47) == [c.CAUSA_RETENCAO]
+    assert c.causas(linha, saida_ref=0.47, gap_ref=0.94) == [c.CAUSA_RETENCAO]
+
+
+# --- ANA-01: causa salarial relativa ao estado (viés de tempo de casa) ---------
+
+@pytest.mark.parametrize("gap, gap_estado, salarial", [
+    (0.90, 0.94, True),    # 4 p.p. pior que o estado
+    (0.91, 0.94, True),    # exatamente 3 p.p.: acende
+    (0.92, 0.94, False),   # 2 p.p.: dentro do normal do estado (antes acendia, < 0,95)
+    (0.93, 0.93, False),
+    (0.97, 0.94, False),
+    (float("nan"), 0.94, False),
+    (0.80, float("nan"), False),
+])
+def test_salarial_e_relativo_ao_estado(gap, gap_estado, salarial):
+    linha = pd.Series({c.M_GAP_SAL: gap, c.M_GAP_ESC: 0.0, c.M_SAIDA_VOL: 0.40})
+    assert (c.CAUSA_SALARIAL in c.causas(linha, saida_ref=0.47, gap_ref=gap_estado)) is salarial
+
+
+def test_retencao_quando_salario_nao_e_pior_que_o_do_estado():
+    alta = pd.Series({c.M_GAP_SAL: 0.95, c.M_GAP_ESC: 0.0, c.M_SAIDA_VOL: 0.60})
+    assert c.causas(alta, saida_ref=0.47, gap_ref=0.94) == [c.CAUSA_RETENCAO]     # antes exigia gap ≥ 1
+    assert c.causas(alta, saida_ref=0.47, gap_ref=0.96) == []                      # pior que o estado em 1 p.p.
+
+
+def test_legenda_das_causas_mostra_a_regra_e_a_referencia():
+    texto = nar.legenda_causas(pd.Series({c.M_GAP_SAL: 0.929}))
+    assert "3 p.p." in texto and "93%" in texto and "tempo de casa" in texto
 
 
 # --- Formatação pt-BR ------------------------------------------------------------------

@@ -207,3 +207,43 @@ Mesorregião × macrofamília (66 grupos): Apagão 19 · Retração 15 · Expans
 
 No escopo B–F, a maior tensão fora da construção é Têxtil, confecção e
 calçados – Sul Catarinense, e a da construção é Construção – Vale do Itajaí.
+
+---
+
+## ANA-01 · Viés de tempo de casa na causa "Salarial"
+
+- **Regra nova (P0, sem reprocessar):** a causa *Salarial* acende quando a
+  razão salário de entrada ÷ salário de saída do grupo fica **≥ 3 p.p. abaixo
+  da razão do estado inteiro** no mesmo escopo e período
+  (`regras.salario_pior_que_estado`, `MARGEM_SALARIAL_RELATIVA = 0,03`). Antes,
+  o corte era absoluto: < 0,95.
+- **Retenção, por coerência:** saída voluntária ≥ estado + 5 p.p. **com salário
+  de entrada não pior que o do estado** (`regras.salario_nao_explica`). Antes
+  exigia gap ≥ 1, o que quase nunca acontece (0 grupos).
+- A alavanca "Revisar faixas salariais" e a "Retenção não salarial" usam as
+  mesmas funções.
+- **Referência = estado** (`Contexto.ref`: mesmo escopo e período, sem os
+  filtros de território, setor etc.) em causas e recomendações. Antes, com
+  um território filtrado, o grupo era comparado com o próprio recorte.
+- **Na tela:** a coluna "Mesma razão no estado" aparece nas tabelas de causa
+  (Quem precisa de atenção e Por que acontece), a frase do cartão mostra "(no
+  estado, 93%)" e a legenda das causas é gerada dos limiares
+  (`narrativa.legenda_causas`). A Metodologia explica o viés e a correção.
+- **P1 (dentro da mesma CBO):** fica para o Lote D, porque precisa de CBO no
+  agregado, ou seja, de reprocessamento.
+- Testes: `test_salarial_e_relativo_ao_estado` (incluindo a borda exata de
+  3 p.p.), `test_retencao_quando_salario_nao_e_pior_que_o_do_estado`,
+  `test_legenda_das_causas_mostra_a_regra_e_a_referencia`.
+
+| Indicador (12 meses) | Antes | Depois |
+|---|---|---|
+| Razão salarial do estado, indústria B–F | 0,940 | (referência) |
+| Razão salarial do estado, transformação C | 0,929 | (referência) |
+| Grupos com causa Salarial, B–F (meso × setor) | **55 / 82** | **16 / 82** |
+| Grupos com causa Retenção, B–F | 0 / 82 | 4 / 82 |
+| Grupos com causa Salarial, transformação | 43 / 59 | 6 / 59 |
+| Grupos com causa Retenção, transformação | 0 / 59 | 2 / 59 |
+| Recomendações "Revisar faixas salariais", B–F (meso × macrofamília) | 11 | 1 |
+| Recomendações "Retenção não salarial", B–F | 0 | 11 |
+| Recomendações "Revisar faixas salariais", transformação | 6 | 1 |
+| Recomendações "Retenção não salarial", transformação | 0 | 6 |

@@ -89,7 +89,7 @@ def render(ctx: c.Contexto) -> None:
     if ctx.df.empty:
         st.info("Nenhuma movimentação com estes filtros.")
         return
-    recs = c.gerar_recomendacoes(ctx.df, mediana_regional=medianas_regionais(ctx))
+    recs = c.gerar_recomendacoes(ctx.df, mediana_regional=medianas_regionais(ctx), ref=c.total(ctx.ref))
     prioridades = classificar_prioridade(recs)
     ref = c.total(ctx.df)
     st.markdown(

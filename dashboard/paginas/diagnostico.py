@@ -16,7 +16,7 @@ def rotulo_unidade(m: pd.DataFrame, segunda: str) -> pd.Series:
     return m[segunda].astype(str) + " – " + m[c.COLUNA_REGIAO].astype(str)
 
 
-def tabela_alertas(m: pd.DataFrame, segunda: str, saida_ref: float, frac_tecnica: pd.Series) -> pd.DataFrame:
+def tabela_alertas(m: pd.DataFrame, segunda: str, ref: pd.Series, frac_tecnica: pd.Series) -> pd.DataFrame:
     """Unidades nos quadrantes de alerta (perdem a equipe), com motor e selos de causa."""
     alerta = m[m["quadrante"].isin(c.QUADRANTES_ALERTA)].copy()
     # Unidades relevantes (≥ 1% das movimentações) primeiro; dentro de cada
@@ -27,7 +27,8 @@ def tabela_alertas(m: pd.DataFrame, segunda: str, saida_ref: float, frac_tecnica
     linhas = []
     for _, u in alerta.iterrows():
         chave = (u[c.COLUNA_REGIAO], u[segunda])
-        selos = c.causas(u, saida_ref=saida_ref, fracao_tecnica=float(frac_tecnica.get(chave, 0.0)))
+        selos = c.causas(u, saida_ref=ref[c.M_SAIDA_VOL], gap_ref=ref[c.M_GAP_SAL],
+                         fracao_tecnica=float(frac_tecnica.get(chave, 0.0)))
         linhas.append({
             "Unidade": f"{u[segunda]} – {u[c.COLUNA_REGIAO]}",
             "Grupo": c.ROTULO_CONSTRUCAO if bool(u.get("construcao", False)) else "Transformação e demais",
@@ -38,6 +39,7 @@ def tabela_alertas(m: pd.DataFrame, segunda: str, saida_ref: float, frac_tecnica
             "Saída voluntária": c.fmt_pct(u[c.M_SAIDA_VOL]),
             "Desligamento precoce": c.fmt_pct(u[c.M_PRECOCE]),
             "Salário de quem entra vs quem saiu": c.fmt_gap(u[c.M_GAP_SAL]),
+            "Mesma razão no estado": c.fmt_gap(ref[c.M_GAP_SAL]),
             "Saldo": c.fmt_int(u[c.M_SALDO]),
         })
     return pd.DataFrame(linhas)
@@ -56,7 +58,7 @@ def sintoma_principal(u: pd.Series) -> str:
 _CLASSE_QUADRANTE = {q: d.classe for q, d in c.QUADRANTES.items()}
 
 
-def frase_porque(u: pd.Series, selos: list[str], saida_ref: float) -> str:
+def frase_porque(u: pd.Series, selos: list[str], saida_ref: float, gap_ref: float = float("nan")) -> str:
     """O "por quê" de uma unidade em alerta, numa frase sem jargão.
 
     Sem causa isolada devolve "": o cartão já mostra o sintoma que mais pesa,
@@ -64,7 +66,8 @@ def frase_porque(u: pd.Series, selos: list[str], saida_ref: float) -> str:
     """
     saida, gap = u[c.M_SAIDA_VOL], u[c.M_GAP_SAL]
     if c.CAUSA_SALARIAL in selos:
-        return (f"Quem entra ganha {c.fmt_pct(gap, 0)} do salário de quem sai, "
+        estado = f" (no estado, {c.fmt_pct(gap_ref, 0)})" if pd.notna(gap_ref) else ""
+        return (f"Quem entra ganha {c.fmt_pct(gap, 0)} do salário de quem sai{estado}, "
                 f"e {c.fmt_pct(saida, 0)} dos desligamentos são a pedido.")
     if c.CAUSA_RETENCAO in selos:
         return (f"{c.fmt_pct(saida, 0)} dos desligamentos são a pedido (estado: {c.fmt_pct(saida_ref, 0)}), "
@@ -79,7 +82,7 @@ def _cartao(u: pd.Series, segunda: str, selos: list[str], ref: pd.Series, i: int
     with st.container(border=True, key=f"rx-alerta-{_CLASSE_QUADRANTE[quadrante]}-{i}"):
         st.markdown(f"**{u[segunda]}**  \n{u[c.COLUNA_REGIAO]}")
         st.html(f'<span class="rx-semaforo rx-{_CLASSE_QUADRANTE[quadrante]}">{quadrante}</span>')
-        frase = frase_porque(u, selos, ref[c.M_SAIDA_VOL])
+        frase = frase_porque(u, selos, ref[c.M_SAIDA_VOL], ref[c.M_GAP_SAL])
         if frase:
             st.markdown(frase)
         a, b = st.columns(2)
@@ -92,7 +95,7 @@ def _cartao(u: pd.Series, segunda: str, selos: list[str], ref: pd.Series, i: int
                  delta_color="off", delta_arrow="off")
 
 
-def _cartoes(alerta: pd.DataFrame, segunda: str, saida_ref: float, frac_tecnica: pd.Series,
+def _cartoes(alerta: pd.DataFrame, segunda: str, frac_tecnica: pd.Series,
              ref: pd.Series, maximo: int, inicio: int) -> None:
     """Até `maximo` cartões de alerta em 3 colunas (`inicio` mantém as chaves únicas)."""
     if alerta.empty:
@@ -100,7 +103,7 @@ def _cartoes(alerta: pd.DataFrame, segunda: str, saida_ref: float, frac_tecnica:
         return
     colunas = st.columns(3)
     for i, (_, u) in enumerate(alerta.head(maximo).iterrows()):
-        selos = c.causas(u, saida_ref=saida_ref,
+        selos = c.causas(u, saida_ref=ref[c.M_SAIDA_VOL], gap_ref=ref[c.M_GAP_SAL],
                          fracao_tecnica=float(frac_tecnica.get((u[c.COLUNA_REGIAO], u[segunda]), 0.0)))
         with colunas[i % 3]:
             _cartao(u, segunda, selos, ref, inicio + i)
@@ -129,10 +132,9 @@ def render(ctx: c.Contexto) -> None:
     )
 
     st.subheader("Alertas, do mais tenso ao menos tenso")
-    ref = c.total(ctx.df)
-    saida_ref = ref[c.M_SAIDA_VOL]
+    ref = c.total(ctx.ref)  # ANA-01: estado inteiro, mesmo escopo e período
     frac_tecnica = c.fracao_por_nivel(ctx.df, por, c.NIVEIS_QUALIFICADOS)
-    tabela = tabela_alertas(m, segunda, saida_ref, frac_tecnica)
+    tabela = tabela_alertas(m, segunda, ref, frac_tecnica)
     if tabela.empty:
         st.caption("Nenhuma unidade nos quadrantes de alerta.")
     else:
@@ -144,21 +146,19 @@ def render(ctx: c.Contexto) -> None:
         demais = alerta[~alerta["construcao"]]
         if c.inclui_construcao(ctx.filtros.escopo) and not obra.empty:
             st.markdown(f"##### {nar.rotulo_lista_principal(demais, ctx.df, por)}")
-            _cartoes(demais, segunda, saida_ref, frac_tecnica, ref, CARTOES_MAX, 0)
+            _cartoes(demais, segunda, frac_tecnica, ref, CARTOES_MAX, 0)
             st.markdown(f"##### {c.ROTULO_CONSTRUCAO}")
             st.caption("Na construção, parte da troca de equipe é estrutural: a obra termina e o time sai. "
                        "Compare a construção com ela mesma, não com a transformação.")
-            _cartoes(obra, segunda, saida_ref, frac_tecnica, ref, 3, CARTOES_MAX)
+            _cartoes(obra, segunda, frac_tecnica, ref, 3, CARTOES_MAX)
         else:
-            _cartoes(alerta, segunda, saida_ref, frac_tecnica, ref, CARTOES_MAX, 0)
+            _cartoes(alerta, segunda, frac_tecnica, ref, CARTOES_MAX, 0)
         st.caption(nar.legenda_quadrantes_alerta() + " Cartão sem frase = salário, qualificação e retenção "
                    "não explicam sozinhos a tensão; o número mostra o sintoma que mais pesa.")
         with st.expander(f"Ver as {len(tabela)} unidades em alerta numa tabela"):
             st.dataframe(tabela, hide_index=True, width="stretch",
                          column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
-            st.caption("Causas: Salarial = quem entra ganha mais de 5% menos que quem saiu; Qualificação = entra gente "
-                       "menos escolarizada numa área técnica; Retenção = saída a pedido 5 p.p. acima do estado sem que o "
-                       "salário de entrada seja menor.")
+            st.caption(nar.legenda_causas(ref))
 
     c.baixar_csv(m.drop(columns=[col for col in m.columns if col.startswith(("soma_", "n_"))]),
                  "diagnostico_matriz.csv")

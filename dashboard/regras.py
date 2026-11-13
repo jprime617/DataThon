@@ -107,7 +107,24 @@ CAUSA_SALARIAL = "Salarial"
 CAUSA_QUALIFICACAO = "Qualificação"
 CAUSA_RETENCAO = "Retenção"
 
-LIMIAR_COMPRESSAO = 0.95          # salário de entrada ÷ de saída abaixo disso = compressão
+LIMIAR_COMPRESSAO = 0.95          # salário de entrada ÷ de saída abaixo disso = compressão (leitura do gap)
+# ANA-01: quem sai tem mais tempo de casa, então ganhar menos na entrada é o
+# esperado (viés de tempo de casa). A causa "Salarial" passa a ser RELATIVA:
+# a razão entrada/saída do grupo fica ≥ 3 p.p. abaixo da razão do estado inteiro
+# (mesmo escopo e período). Antes, com o corte fixo em 0,95, 55 de 82 grupos
+# recebiam o selo e ele não discriminava nada.
+MARGEM_SALARIAL_RELATIVA = 0.03
+
+
+def salario_pior_que_estado(gap: float, gap_estado: float) -> bool:
+    """Causa "Salarial": razão entrada/saída ≥ 3 p.p. pior que a do estado."""
+    # +1e-9: 0,94 − 0,03 vira 0,9099999… em ponto flutuante; a borda exata (3 p.p.) conta.
+    return gap == gap and gap_estado == gap_estado and gap <= gap_estado - MARGEM_SALARIAL_RELATIVA + 1e-9
+
+
+def salario_nao_explica(gap: float, gap_estado: float) -> bool:
+    """O salário de entrada do grupo não é pior que o do estado (base da causa "Retenção")."""
+    return gap == gap and gap_estado == gap_estado and gap >= gap_estado
 LIMIAR_GAP_ESCOLARIDADE = -0.10   # gap de escolaridade (níveis) que acende "Qualificação"
 NIVEIS_QUALIFICADOS = ("Técnico", "Superior")
 MARGEM_SAIDA_VOLUNTARIA = 0.05    # saída voluntária ≥ referência + 5 p.p. = "alta"
