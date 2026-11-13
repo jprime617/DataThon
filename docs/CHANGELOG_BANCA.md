@@ -777,3 +777,22 @@ emprego que têm. A demanda existe; o problema é reter.
   feitos em markdown (`####`). O ícone de ajuda continua.
 - Conferido em 5 páginas: 0 âncoras visíveis, e a URL não muda depois de
   clicar em todos os títulos. Teste: `test_titulos_sem_link_ancora`.
+
+---
+
+## TAX-06 · Script reproduzível de classificação pela API
+
+- Novo `ia_cbo/classificar.py` (com `--help`): lê **os mesmos**
+  `ia_cbo/prompts/lote_NN.txt` usados no chat, chama a API (Anthropic ou
+  Gemini, pelos clientes de `src.cbo_ia`) lote a lote, com novas tentativas,
+  e grava `lote_NN.json` no **mesmo formato** das respostas do chat. A
+  saída padrão é `ia_cbo/respostas_api/`, separada das oficiais. A chave
+  vem só de `LLM_API_KEY`: sem ela, o script para antes de qualquer
+  chamada. O modelo padrão na Anthropic é o do chat, lido de
+  `cbo_macrofamilias.csv.meta.json`.
+- **Não foi executado.** O README tem uma seção nova: "Como a classificação
+  oficial foi feita, e como repeti-la pela API" (oficial = via chat, prompts
+  e respostas versionados; a API é o caminho reproduzível).
+- Testes: `test_script_de_classificacao_tem_help`,
+  `test_script_grava_respostas_no_formato_do_chat`,
+  `test_script_exige_a_chave_antes_de_qualquer_chamada`.

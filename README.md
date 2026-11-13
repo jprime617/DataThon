@@ -129,6 +129,28 @@ Para usar uma IA paga sem acesso à API, os prompts já estão gerados em `ia_cb
 - O `cbo_macrofamilias.csv.meta.json` registra o provedor (`ClienteArquivo`), o modelo informado e a nota "classificação via chat; prompts e respostas em `ia_cbo/`".
 - Para corrigir uma classificação após revisão humana, edite o `lote_NN.json` com uma justificativa começando por "Revisão humana:" e rode de novo.
 
+#### Como a classificação oficial foi feita, e como repeti-la pela API
+
+**A execução oficial do painel foi via chat** (Opção C): o modelo `claude-opus-5-5` recebeu os 23 prompts de
+`ia_cbo/prompts/` pela interface de chat, e as respostas estão em `ia_cbo/respostas/`. **Prompts e respostas estão
+versionados**: qualquer pessoa confere o que foi enviado e o que voltou. O pipeline lê esses arquivos
+(`LLM_PROVIDER=arquivo`), sem chamar API.
+
+Para repetir a mesma classificação **pela API**, com os mesmos prompts, use `ia_cbo/classificar.py`:
+
+```bash
+python ia_cbo/classificar.py --help
+export LLM_API_KEY="..."                          # só no ambiente; nunca no repositório
+python ia_cbo/classificar.py --provedor anthropic # modelo padrão = o do chat (cbo_macrofamilias.csv.meta.json)
+python ia_cbo/classificar.py --provedor gemini --lotes 01 02 --saida /tmp/teste
+```
+
+- O script lê `ia_cbo/prompts/lote_NN.txt`, chama a API lote a lote (com novas tentativas) e grava
+  `lote_NN.json` no mesmo formato das respostas do chat. A saída padrão é `ia_cbo/respostas_api/`, separada das
+  respostas oficiais.
+- Para o pipeline usar essas respostas, copie-as para `ia_cbo/respostas/` (ou rode com
+  `--saida ia_cbo/respostas --sobrescrever`) e siga o passo 2 da Opção C.
+
 #### Dois comportamentos que evitam o fracasso silencioso
 
 - **Falha permanente** do provedor (saldo insuficiente, credencial inválida, modelo inexistente — HTTP 400/401/403/404) **interrompe o pipeline** com uma mensagem acionável, em vez de cair no fallback. Um modelo aposentado ou uma conta sem saldo faria *toda* chamada falhar e, sem essa proteção, o pipeline terminaria "com sucesso" classificando os 2.206 CBOs como `Não classificado`.

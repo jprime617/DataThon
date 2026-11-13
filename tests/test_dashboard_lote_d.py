@@ -287,3 +287,60 @@ def test_titulos_sem_link_ancora():
                 assert ancora is not None and getattr(ancora.value, "value", None) is False, \
                     f"{arquivo.name}:{no.lineno} sem anchor=False"
     assert 'stHeaderActionElements"] a[href^="#"] {display: none;}' in c._CSS
+
+
+# --- TAX-06: script reproduzível de classificação pela API ------------------------------
+
+
+def test_script_de_classificacao_tem_help():
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    raiz = Path(__file__).resolve().parent.parent
+    saida = subprocess.run([sys.executable, str(raiz / "ia_cbo" / "classificar.py"), "--help"],
+                           capture_output=True, text=True, timeout=120)
+    assert saida.returncode == 0
+    assert "LLM_API_KEY" in saida.stdout and "--provedor" in saida.stdout and "--saida" in saida.stdout
+
+
+def test_script_grava_respostas_no_formato_do_chat(tmp_path):
+    import json
+
+    from ia_cbo.classificar import classificar_lotes, codigos_do_prompt
+    from src.cbo_ia import _extrair_mapeamento
+
+    prompts = tmp_path / "prompts"
+    prompts.mkdir()
+    (prompts / "lote_01.txt").write_text("Classifique:\n- 784205 | Alimentador de Linha\n- 10105 | Oficial\n",
+                                         encoding="utf-8")
+    assert codigos_do_prompt((prompts / "lote_01.txt").read_text()) == {"784205", "010105"}
+
+    class Falso:
+        chamadas = 0
+
+        def classificar(self, prompt, *, timeout):
+            self.chamadas += 1
+            if self.chamadas == 1:
+                return "desculpe, sem JSON"          # 1ª tentativa vazia: tenta de novo
+            return '```json\n{"784205": {"macrofamilia": "Operação de linha e processo", "nivel": "Básico", ' \
+                   '"justificativa": "Elementar."}}\n```'
+
+    falso = Falso()
+    gravados = classificar_lotes(sorted(prompts.glob("lote_*.txt")), tmp_path / "saida", falso, espera=0,
+                                 log=lambda *_: None)
+    assert gravados == {"lote_01": 1} and falso.chamadas == 2
+    arquivo = tmp_path / "saida" / "lote_01.json"
+    assert _extrair_mapeamento(arquivo.read_text(encoding="utf-8"))["784205"]["nivel"] == "Básico"
+    assert json.loads(arquivo.read_text(encoding="utf-8"))["784205"]["macrofamilia"] == "Operação de linha e processo"
+    # Sem --sobrescrever, um lote já gravado não é refeito.
+    assert classificar_lotes(sorted(prompts.glob("lote_*.txt")), tmp_path / "saida", falso, espera=0,
+                             log=lambda *_: None) == {}
+
+
+def test_script_exige_a_chave_antes_de_qualquer_chamada():
+    from ia_cbo.classificar import criar_cliente
+    from src.erros import ErroDeValidacao
+
+    with pytest.raises(ErroDeValidacao):
+        criar_cliente("anthropic", None, env={})
