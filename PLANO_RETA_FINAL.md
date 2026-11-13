@@ -16,7 +16,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 | M4 | **concluído e mergeado** (C1–C6; C7 opcional) | `dashboard-v2` | M4.C6 |
 | M5 | **concluído e mergeado** (C1–C6) | `dashboard-v2` | M5.C6 |
 | M6 | falta o H2 (xlsx do PDET) | — | — |
-| Banca | Lotes A, B, D e C **concluídos** (plano em `PLANO_CORRECOES_DATATHON.md`, §4); **publicado no Azure em 13/11** (commit `c8d6954`, tag `deploy-20261113`); números do pitch conferidos (ENT-04). Falta: rodar a suíte completa e os placeholders da equipe no `docs/PITCH_APOIO.md` | `dashboard-v2` (via `fix/banca-c`) | ENT-04 |
+| Banca | Lotes A, B, D e C **concluídos** (plano em `PLANO_CORRECOES_DATATHON.md`, §4); **publicado no Azure em 13/11** (commit `c8d6954`, tag `deploy-20261113`); números do pitch conferidos (ENT-04). `pytest -q` com 411 verdes (13/11). Falta: os placeholders da equipe no `docs/PITCH_APOIO.md` | `dashboard-v2` (via `fix/banca-c`) | ENT-04 |
 | M7 | C1–C3 feitos (**no ar**: https://datathon-caged-sc-br.azurewebsites.net) **concluído**; tag `entrega-v1`, código congelado | `dashboard-v2` | M7.C5 |
 
 Commits locais só sobem com autorização do João: confira `git log origin/dashboard-v2..` antes de supor que algo foi publicado.

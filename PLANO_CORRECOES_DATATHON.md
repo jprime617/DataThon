@@ -305,7 +305,7 @@ Se o tempo acabar no meio de um item P0, **reverta esse item** em vez de publica
 ## 4. Definição de pronto
 
 - [x] Todos os P0 implementados ou, se a hipótese se mostrou falsa, justificados no CHANGELOG.
-- [ ] Suíte de testes passando, com testes novos para as regras alteradas. *(13/11: testes novos existem; a suíte completa não rodou antes do deploy, por pressa. Rodaram só `test_dashboard_metricas` e `test_dashboard_lote_d`, 183 verdes; numa tentativa anterior, `test_agregador_propriedades::test_prop26` falhou e ainda não foi investigado.)*
+- [x] Suíte de testes passando, com testes novos para as regras alteradas. *(13/11: `pytest -q` com 411 verdes. O `test_prop26` falhava de forma intermitente por estourar o limite de 200 ms do Hypothesis no 1º exemplo; o perfil do `conftest.py` agora usa `deadline=None`.)*
 - [x] Nenhum termo interno nem rótulo antigo na interface (buscas de NAR-01 e NAR-04 vazias).
 - [x] Todo número em texto vem de cálculo e reage aos filtros.
 - [x] Painel publicado no Azure, com as 7 páginas conferidas no endereço público. *(13/11, commit `c8d6954`; rollback em `~/Documentos/DataThon-rollback/20261113-0825/VOLTAR.sh`, na máquina do João.)*

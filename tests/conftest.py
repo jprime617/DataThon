@@ -23,6 +23,9 @@ if str(_RAIZ) not in sys.path:
 settings.register_profile(
     "datathon",
     max_examples=100,
+    # As propriedades testam correção, não tempo: o 1º exemplo (pandas frio)
+    # passava dos 200 ms padrão e virava FlakyFailure intermitente (prop26).
+    deadline=None,
     suppress_health_check=[HealthCheck.too_slow],
 )
 settings.load_profile("datathon")
