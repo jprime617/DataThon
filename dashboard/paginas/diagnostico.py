@@ -86,7 +86,9 @@ def _cartao(u: pd.Series, segunda: str, selos: list[str], ref: pd.Series, i: int
         a.metric(ROTULO_SINTOMA[nome], c.fmt_pct(u[nome], 0),
                  delta=c.delta_texto(nome, u[nome], ref[nome], "vs SC"),
                  delta_color="inverse", help=c.DEFINICOES[nome].formula)
-        b.metric("Saldo de vagas", c.fmt_int(u[c.M_SALDO]), help=f"{c.fmt_int(u[c.M_MOV])} movimentações")
+        b.metric("Saldo de vagas", c.fmt_int(u[c.M_SALDO]), help=f"{c.fmt_int(u[c.M_MOV])} movimentações",
+                 delta=c.participacao_estadual(c.M_SALDO, u[c.M_SALDO], ref[c.M_SALDO]),
+                 delta_color="off", delta_arrow="off")
 
 
 def render(ctx: c.Contexto) -> None:

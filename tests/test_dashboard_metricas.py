@@ -374,3 +374,25 @@ def test_destaque_escolaridade_some_quando_nada_passa_do_limiar():
     )
     assert nar.destaque_escolaridade(df) is None
     assert nar.destaque_escolaridade(df.iloc[0:0]) is None
+
+
+# --- BUG-01: absoluto de território nunca se compara com o absoluto do estado --
+
+@pytest.mark.parametrize("nome", sorted(c.METRICAS_ABSOLUTAS))
+def test_delta_recusa_metricas_absolutas(nome):
+    assert c.delta_texto(nome, -1913, 2726, "vs estado") is None
+
+
+def test_delta_continua_em_taxas_e_razoes():
+    assert c.delta_texto(c.M_SALDO_10K, 5.0, 2.0, "vs estado") == "+3,0 vs estado"
+    assert c.delta_texto(c.M_ROT_DESC, 0.30, 0.336, "vs SC") == "-3,6 p.p. vs SC"
+
+
+def test_participacao_estadual_no_mesmo_sinal_e_com_sinais_opostos():
+    assert c.participacao_estadual(c.M_SALDO, 1000, 2726) == "36,7% do saldo estadual"
+    assert c.participacao_estadual(c.M_MOV, 50, 200) == "25,0% das movimentações do estado"
+    # Grande Florianópolis fechou vagas e o estado abriu: fração negativa não tem leitura.
+    assert c.participacao_estadual(c.M_SALDO, -1913, 2726) == "estado: 2.726"
+    assert c.participacao_estadual(c.M_SALDO, 0, 2726) == "0,0% do saldo estadual"
+    assert c.participacao_estadual(c.M_SALDO, 10, 0) is None
+    assert c.participacao_estadual(c.M_SAIDA_VOL, 0.5, 0.4) is None  # taxa: usa delta_texto

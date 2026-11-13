@@ -77,9 +77,13 @@ def render(ctx: c.Contexto) -> None:
     # Na ficha o delta é sempre contra o estado (mesmos filtros, sem território).
     t, ref = c.total(dados), c.total(base)
     for col, m in zip(st.columns(len(c.KPIS_PADRAO)), c.KPIS_PADRAO):
-        col.metric(c.DEFINICOES[m].rotulo, c.fmt_metrica(m, t[m]), border=True, help=c.DEFINICOES[m].formula,
-                   delta=c.delta_texto(m, t[m], ref[m], "vs estado"),
-                   delta_color="inverse" if m in c.METRICAS_INVERSAS else "normal")
+        if m in c.METRICAS_ABSOLUTAS:  # BUG-01: absoluto → participação no estado, sem seta
+            col.metric(c.DEFINICOES[m].rotulo, c.fmt_metrica(m, t[m]), border=True, help=c.DEFINICOES[m].formula,
+                       delta=c.participacao_estadual(m, t[m], ref[m]), delta_color="off", delta_arrow="off")
+        else:
+            col.metric(c.DEFINICOES[m].rotulo, c.fmt_metrica(m, t[m]), border=True, help=c.DEFINICOES[m].formula,
+                       delta=c.delta_texto(m, t[m], ref[m], "vs estado"),
+                       delta_color="inverse" if m in c.METRICAS_INVERSAS else "normal")
     if not t[c.M_AMOSTRA_OK]:
         st.warning(f"Amostra insuficiente: {c.fmt_int(t[c.M_MOV])} movimentações (< {c.MIN_MOVIMENTACOES}). "
                    "Leia as taxas com cautela.")

@@ -1319,6 +1319,7 @@ _CSS = """
 .rx-delta {display: block; font-size: .8rem; margin-top: .1rem;}
 .rx-bom {color: var(--rx-bom);}
 .rx-ruim {color: var(--rx-ruim);}
+.rx-neutro {color: var(--rx-suave);}
 @media (max-width: 640px) {
   .rx-linha {grid-template-columns: 1fr; padding-left: .5rem;}
 }
@@ -1378,9 +1379,35 @@ def cabecalho(ctx: Contexto) -> None:
             st.warning(aviso, icon=":material/warning:")
 
 
+# BUG-01: métricas absolutas (contagens) de um território não se comparam com o
+# absoluto do estado inteiro por diferença ("−4.639 vs estado" não diz nada).
+# Para elas o painel mostra a participação no total estadual (`participacao_estadual`);
+# o delta "vs estado" fica só para taxas e razões.
+METRICAS_ABSOLUTAS = {M_MOV, M_SALDO, M_ESTOQUE}
+_TOTAL_ESTADUAL = {M_MOV: "das movimentações do estado", M_SALDO: "do saldo estadual",
+                   M_ESTOQUE: "do estoque estadual"}
+
+
+def participacao_estadual(nome: str, valor: float, referencia: float) -> str | None:
+    """"38,2% do saldo estadual" para métricas absolutas; com sinais opostos, só o valor do estado.
+
+    Com sinais opostos (território fechou vagas, estado abriu) a fração seria
+    negativa e sem leitura; mostramos o total do estado como referência.
+    """
+    if nome not in METRICAS_ABSOLUTAS or _vazio(valor) or _vazio(referencia) or float(referencia) == 0:
+        return None
+    valor, referencia = float(valor), float(referencia)
+    if valor * referencia < 0:
+        return f"estado: {fmt_int(referencia)}"
+    return f"{fmt_pct(valor / referencia)} {_TOTAL_ESTADUAL[nome]}"
+
+
 def delta_texto(nome: str, valor: float, referencia: float, sufixo: str) -> str | None:
-    """Delta pt-BR de uma métrica vs referência ("+2,3 p.p. vs SC")."""
-    if _vazio(valor) or _vazio(referencia):
+    """Delta pt-BR de uma taxa/razão vs referência ("+2,3 p.p. vs SC").
+
+    Métricas absolutas devolvem ``None``: use `participacao_estadual` (BUG-01).
+    """
+    if nome in METRICAS_ABSOLUTAS or _vazio(valor) or _vazio(referencia):
         return None
     formato = DEFINICOES[nome].formato
     diff = float(valor) - float(referencia)
@@ -1461,6 +1488,8 @@ def cartoes_kpi(ctx: Contexto, metricas: list[str] | None = None) -> None:
             bom = subiu != (nome in METRICAS_INVERSAS)
             extra = (f'<span class="rx-delta {"rx-bom" if bom else "rx-ruim"}">'
                      f'{"↑" if subiu else "↓"} {html.escape(delta)}</span>')
+        elif ref is not None and (fatia := participacao_estadual(nome, atual[nome], ref[nome])):
+            extra = f'<span class="rx-delta rx-neutro">{html.escape(fatia)}</span>'
         return (f'<div class="rx-linha" title="{html.escape(ajuda)}">'
                 f'<span class="rx-rotulo">{html.escape(definicao.rotulo)} <span class="rx-periodo">{periodo}</span></span>'
                 f'<span class="rx-valor"><b>{html.escape(fmt_metrica(nome, atual[nome]))}</b> '

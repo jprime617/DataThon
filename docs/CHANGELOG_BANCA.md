@@ -43,3 +43,23 @@ O CAGED não mostra a causa.
 | Indicador | Antes | Depois |
 |---|---|---|
 | Gap de escolaridade, Alimentos e bebidas (indústria, 12 meses) | −0,73 | −0,73 (sem mudança) |
+
+---
+
+## BUG-01 · "vs estado" em métricas absolutas
+
+- `comum.delta_texto` agora devolve `None` para `METRICAS_ABSOLUTAS`
+  (movimentações, saldo e estoque): nenhum absoluto de território é subtraído
+  do absoluto do estado. O delta "vs estado/vs SC" fica só em taxas e razões.
+- Nova `comum.participacao_estadual`: mostra "36,7% do saldo estadual", em
+  cinza e sem seta. Com sinais opostos (o território fechou vagas e o estado
+  abriu), mostra só "estado: 2.726".
+- Onde se aplica: Ficha do território (cartão Saldo), cartões de alerta de
+  "Quem precisa de atenção" (Saldo de vagas) e `cartoes_kpi` (todas as
+  páginas, quando há recorte).
+- Testes: `test_delta_recusa_metricas_absolutas`,
+  `test_participacao_estadual_no_mesmo_sinal_e_com_sinais_opostos`.
+
+| Tela | Antes | Depois |
+|---|---|---|
+| Ficha, Grande Florianópolis, Saldo | −1.913 · "−4.639 vs estado" | −1.913 · "estado: 2.726" |
