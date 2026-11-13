@@ -581,3 +581,428 @@ e Sul Catarinense → Vale do Itajaí (Metalmecânica, Qualificado: lá −783 c
   diagrama), o rodapé da ficha da mesorregião e a string que o pipeline
   grava em `comparacao` (com o texto já gravado nos dois `.json`).
 - Teste: `test_auditoria_descreve_o_processo_real_dos_arquivos`.
+
+---
+
+# Lote D (P1 + ANA-04)
+
+Recorte de referência do Lote D: o padrão de abertura do painel, escopo
+**Indústria de transformação (C)**, set/25–ago/26, Santa Catarina inteira.
+
+---
+
+## TAX-02 · Selo "Expansão concentrada"
+
+- **Regra** (`regras.expansao_concentrada`, limiares em `regras.py`): num grupo
+  que abriu vagas, o selo acende quando **um mês responde por ≥ 40% do saldo
+  positivo** (com ≥ 6 meses no filtro) **ou um município por ≥ 80%** (com ≥ 2
+  municípios no grupo).
+- **Ajuste do plano:** o denominador é o **saldo positivo** (soma só dos
+  meses/municípios que abriram vagas), não o saldo líquido. Com o líquido, um
+  grupo de saldo 6 com um município em +44 e os demais em −38 daria 733%, e o
+  selo acendia em 14 dos 28 grupos que cresceram, sem discriminar nada.
+- Onde aparece: cartões de alerta e tabela de "Quem precisa de atenção"
+  (coluna "Selo"), achados do Panorama (substitui a frase do município),
+  "Onde" da resposta à pergunta central e ficha do território (por setor).
+- Cálculo em `comum.concentracao_saldo` / `anexar_concentracao`; frase em
+  `narrativa.texto_concentrada`. Testes em `tests/test_dashboard_lote_d.py`.
+
+| Indicador | Antes | Depois |
+|---|---|---|
+| Grupos mesorregião × setor com saldo > 0 e selo (transformação) | — | 5 de 28 |
+| Idem, Indústria B–F | — | 8 de 41 |
+| Autopeças – Vale do Itajaí | sem selo | **Expansão concentrada**: 43% do saldo positivo em jul/26; 95% em Navegantes |
+| Construção naval – Vale do Itajaí | sem selo | sem selo (18% num mês; 63% em Navegantes) |
+
+---
+
+## ANA-02 · Escolaridade além da média ordinal
+
+- **Novo bloco** em "Por que acontece": *"Escolaridade: o mercado contrata
+  mais instruídos e paga mais por isso?"*, com três cartões (admitidos com
+  médio completo ou mais, com superior completo, cada um contra os desligados,
+  e o **prêmio do diploma** = mediana de admissão com superior completo ÷ com
+  médio completo), uma frase calculada e um alerta onde o prêmio é baixo.
+  Em "Aprofundar", o gráfico do prêmio por macrofamília e a tabela por grupo
+  (mesorregião × setor).
+- **Prêmio baixo** (`regras.premio_baixo`): ≥ 20% abaixo do prêmio do estado
+  no mesmo escopo (`FATOR_PREMIO_BAIXO = 0,80`), com ≥ 30 salários em cada
+  faixa. É relativo ao estado, como a causa Salarial (ANA-01).
+- Cálculo em `comum.escolaridade_contratacao` (perfil, período inteiro);
+  frases em `narrativa.resposta_escolaridade_contratacao` e
+  `destaque_premio_baixo`; figura `figuras.construir_premio`.
+
+| Indicador (transformação, período inteiro) | Admitidos | Desligados |
+|---|---|---|
+| Com médio completo ou mais | 63,5% | 65,3% |
+| Com superior completo | 4,8% | 5,4% |
+| Prêmio do diploma (superior ÷ médio, mediana de admissão) | 1,48× | |
+| Grupos mesorregião × setor com prêmio baixo (≤ 1,18×) | 9 de 58 com amostra | |
+
+**Leitura para o pitch:** o mercado **não** está contratando gente mais
+instruída do que a que sai. Dentro das ocupações industriais de linha
+(Operação de linha, Têxtil, Alimentos) o diploma superior paga só 1,03× o
+médio na entrada: um sinal de baixa atratividade para qualificados.
+
+---
+
+## TAX-05 · O que a IA acrescentou à hierarquia da CBO
+
+- Nova aba **"O que a IA acrescentou"** na auditoria de "Que profissional
+  falta". Uma frase calculada (`narrativa.texto_decisoes_ia`) conta, no
+  recorte atual, em quantas ocupações a IA **contrariou** a família sugerida
+  pelo prefixo da CBO, em quantas o prefixo **não sugere família** e em
+  quantas ela **ajustou o nível**. Abaixo, as 5 de maior volume em que
+  contrariou o prefixo, com a justificativa.
+- Cálculo em `comum.decisoes_ia` (usa `src.cbo_ia.familia_sugerida` e
+  `nivel_cbo`, as mesmas regras B e C do prompt).
+
+| Transformação, set/25–ago/26 | Ocupações | % das movimentações |
+|---|---|---|
+| Ocupações com movimentação | 1.467 | 100% |
+| IA contrariou o prefixo (sempre com justificativa) | 97 | 2,2% |
+| Prefixo não sugere família (IA decidiu) | 148 | 1,3% |
+| IA ajustou o nível do grande grupo | 109 | **34,6%** |
+
+**Resposta para a banca ("por que IA se a CBO já tem hierarquia?"):** a
+família raramente muda (3,5% das movimentações), mas o **nível** muda em um
+terço delas. O maior caso é o Alimentador de linha de produção
+(Qualificado → Básico, 202.166 movimentações). É o nível que separa as
+alavancas de formação e de automação. Exemplos de família: Técnico em
+segurança do trabalho (prefixo: Administrativo → IA: Técnicos industriais) e
+CBO 766 (gráfica; o prefixo 76 sugere Têxtil).
+
+---
+
+## NAR-05 · O mapa abre em mesorregião
+
+- O Panorama abre o mapa em **Mesorregião**, com o **volume (círculos)
+  desligado**. Os dois continuam a um clique.
+- "Pior situação" diz o nível pintado ("entre as mesorregiões") e, em
+  município, só considera quem tem **≥ 500 movimentações**
+  (`regras.MIN_MOV_PIOR_MUNICIPIO`; `narrativa.minimo_pior_situacao`). O
+  modo apresentação usa a mesma regra no nível de microrregião.
+- **Hipótese parcialmente confirmada:** Campo Alegre não é um município de
+  pouco volume (4.683 movimentações, saldo −427 para 13.007 habitantes). Com
+  o mínimo de 500 ele continua sendo a pior situação **no nível de
+  município**; o que muda a abertura é o nível padrão.
+
+| Mapa, saldo por 10 mil hab. (transformação) | Antes | Depois |
+|---|---|---|
+| Nível de abertura | Município, com círculos | Mesorregião, sem círculos |
+| "Pior situação" na abertura | Campo Alegre (−328,3) | Sul Catarinense (−10,0) |
+| Municípios elegíveis à "pior situação" | 251 (≥ 100 mov.) | 165 (≥ 500 mov.) |
+
+---
+
+## ANA-03 · Proxy de demanda: taxa de admissão
+
+- Nova métrica `M_TAXA_ADM` = **admissões ÷ estoque de 31/12/2025** (RAIS),
+  derivada em `comum._derivar` como as demais, com definição, tooltip e
+  unidade. Aparece no **tooltip da matriz**, na **tabela de alertas** (com a
+  do estado ao lado), no tema "Movimentação" dos indicadores e na
+  **Metodologia** ("Demanda: a taxa de admissão", com a leitura "demanda
+  alta + retenção baixa = apagão").
+- Testes: `test_taxa_de_admissao_e_admissoes_sobre_estoque`,
+  `test_taxa_de_admissao_vai_para_a_tabela_de_alertas`.
+
+| Transformação, set/25–ago/26 | Taxa de admissão |
+|---|---|
+| Estado | 56,4% (418.511 admissões ÷ 741.818 empregos) |
+| Mediana dos grupos em **Apagão** | 66,4% |
+| Mediana dos grupos em Retração com rotatividade | 61,1% |
+| Mediana dos grupos em Expansão acelerada | 54,4% |
+| Mediana dos grupos em Estagnação | 51,4% |
+
+**Leitura:** os grupos em Apagão contratam mais que o resto, em proporção ao
+emprego que têm. A demanda existe; o problema é reter.
+
+---
+
+## REC-05 · Simulador de custo com a premissa citada
+
+- O simulador de "Quanto custa a saída voluntária?" usa o formatador único
+  (`fmt_brl_escala`) e, abaixo dos cartões, uma frase calculada
+  (`narrativa.texto_custo_reposicao`) com o **intervalo da premissa**, de 1 a
+  12 salários. A **fonte** diz "premissa do time, ajuste conforme a realidade
+  da empresa", porque não há fonte no repositório e nenhuma foi inventada. A
+  frase também traz a **limitação**: o cálculo assume que todo desligamento
+  a pedido é reposto.
+- Faixa e padrão da premissa em `regras.py` (`CUSTO_REPOSICAO_*`,
+  `FONTE_CUSTO_REPOSICAO`); cálculo em `comum.custo_reposicao`.
+
+| Transformação, set/25–ago/26 | Antes | Depois |
+|---|---|---|
+| Custo com 3 salários (212.533 a pedido × R$ 2.623) | R$ 1,7 bi | R$ 1,7 bi |
+| Intervalo da premissa na tela | — | R$ 557,5 mi a R$ 6,7 bi (1 a 12 salários) |
+| Fonte e limitação na tela | "premissa ajustável" | premissa do time; supõe que todo desligamento a pedido é reposto |
+
+---
+
+## REC-06 · Automação vira observação
+
+- **O que se viu:** a regra (nível Básico ≥ 50% e saldo ≤ 0) gera **1**
+  recomendação na transformação (Serviços de apoio · Norte, 68,6% Básico,
+  saldo −29), **1** em B–F e **0** na economia toda. Baixar o limiar não
+  resolve: com 40% são 2 casos e com 30%, 3. A condição que trava é
+  "saldo ≤ 0", porque os grupos de nível Básico (Operação de linha, apoio)
+  estão crescendo, em Apagão. Automação também depende de investimento e
+  produtividade, que o CAGED não mede.
+- **O que mudou:** a automação é **observação**
+  (`regras.ALAVANCAS_OBSERVACAO`, `eh_observacao`, `MOTIVO_OBSERVACAO`).
+  Fica fora do Top 3 e dos cartões de prioridade e aparece numa caixa
+  "Observação", com a evidência e o motivo. Na tabela e no CSV, a prioridade
+  é "Observação". A regra na Metodologia diz isso.
+- Teste: `test_automacao_e_observacao_e_fica_fora_do_top3`.
+
+| Transformação, set/25–ago/26 | Antes | Depois |
+|---|---|---|
+| Recomendações prioritárias | 20 | 19 (+ 1 observação) |
+| Top 3 | sem mudança | sem mudança |
+
+---
+
+## BUG-06 · Cliques em títulos
+
+- **O que se viu** (Streamlit 1.67, Playwright com permissão de área de
+  transferência): clicar no título ou no ícone de link ao lado dele **não
+  escreve na área de transferência**. O ícone é um link `#âncora`: o clique
+  muda a URL (ex.: `/ficha#grande-florianopolis`) e rola a página. No código
+  do Streamlit, só escrevem na área de transferência o Ctrl+C numa tabela
+  (`st.dataframe`) e o botão de copiar de bloco de código (aba do prompt).
+  Os dois são ações explícitas. Hipótese confirmada só em parte: o
+  efeito colateral do clique no título era a URL, não a área de transferência.
+- **O que mudou:** `anchor=False` em todas as 29 chamadas de
+  `st.title/header/subheader`, e CSS que esconde o link-âncora dos títulos
+  feitos em markdown (`####`). O ícone de ajuda continua.
+- Conferido em 5 páginas: 0 âncoras visíveis, e a URL não muda depois de
+  clicar em todos os títulos. Teste: `test_titulos_sem_link_ancora`.
+
+---
+
+## TAX-06 · Script reproduzível de classificação pela API
+
+- Novo `ia_cbo/classificar.py` (com `--help`): lê **os mesmos**
+  `ia_cbo/prompts/lote_NN.txt` usados no chat, chama a API (Anthropic ou
+  Gemini, pelos clientes de `src.cbo_ia`) lote a lote, com novas tentativas,
+  e grava `lote_NN.json` no **mesmo formato** das respostas do chat. A
+  saída padrão é `ia_cbo/respostas_api/`, separada das oficiais. A chave
+  vem só de `LLM_API_KEY`: sem ela, o script para antes de qualquer
+  chamada. O modelo padrão na Anthropic é o do chat, lido de
+  `cbo_macrofamilias.csv.meta.json`.
+- **Não foi executado.** O README tem uma seção nova: "Como a classificação
+  oficial foi feita, e como repeti-la pela API" (oficial = via chat, prompts
+  e respostas versionados; a API é o caminho reproduzível).
+- Testes: `test_script_de_classificacao_tem_help`,
+  `test_script_grava_respostas_no_formato_do_chat`,
+  `test_script_exige_a_chave_antes_de_qualquer_chamada`.
+
+---
+
+## ANA-01 (P1) · Razão salarial dentro da mesma CBO
+
+- **Nova medida** `comum.razao_mesma_cbo`: a razão salário de entrada ÷
+  salário de saída é calculada **em cada CBO do grupo** e depois ponderada
+  pelas movimentações, só com CBOs com ≥ 30 salários de cada lado. Sai de
+  `caged_cbo.parquet`, sem reprocessar. Assim a comparação é entre a mesma
+  função; não entra o efeito de contratar numa ocupação e perder gente
+  noutra.
+- **Ela decide a causa Salarial** (`comum.gap_causa`) quando as CBOs com
+  amostra cobrem **≥ 50% das movimentações** do grupo
+  (`regras.MIN_COBERTURA_CBO`); senão, vale a razão do grupo inteiro. Vale
+  também para a alavanca salarial e a de retenção, para o "Renda explica?"
+  da resposta central, os cartões, as tabelas (colunas novas "Na mesma
+  ocupação") e a legenda das causas. **Uma chave em `regras.py`
+  (`RAZAO_SALARIAL_MESMA_CBO`) volta tudo para a razão bruta.**
+- A Metodologia explica a medida e mostra, calculado no recorte: corte fixo
+  antigo → regra relativa → mesma ocupação.
+- Testes: `test_razao_dentro_da_mesma_cbo_tira_o_efeito_de_composicao`,
+  `test_media_ponderada_pelas_movimentacoes_e_so_cbos_com_amostra`,
+  `test_causa_salarial_usa_a_mesma_cbo_quando_ha_cobertura`,
+  `test_frase_do_cartao_diz_que_compara_a_mesma_ocupacao`.
+
+| Indicador | Antes (bruta, relativa) | Depois (mesma CBO) |
+|---|---|---|
+| Razão entrada/saída do estado, transformação | 0,93 (93%) | **0,96 (96%)** |
+| Grupos com causa Salarial, transformação | 8 de 63 | **2 de 63** |
+| Correlação salário × saída voluntária, transformação | −0,22 | **−0,39** (52 grupos com cobertura) |
+| "Renda explica?", transformação | explica em parte | explica em parte |
+| Razão do estado, B–F | 0,94 | 0,97 |
+| Grupos com causa Salarial, B–F | 16 de 86 | 10 de 86 |
+| Correlação, B–F | −0,33 | −0,49 |
+| Recomendações: retenção / salário, transformação | 6 / 1 | 5 / 1 |
+| Recomendações: retenção / salário, B–F | 11 / 1 | 6 / 3 |
+| Top 3 (transformação e B–F) | — | **sem mudança** |
+
+**Leitura para o pitch (pergunta 2 da banca, "quem sai não ganha mais só
+por ter mais tempo de casa?"):** comparando a mesma ocupação, quem entra
+ganha 96% do salário de quem sai. Só 2 dos 63 grupos ficam 3 p.p. ou mais
+abaixo disso. Mesmo assim, onde o salário de entrada é relativamente pior, a
+saída voluntária é maior (r = −0,39). Misturar ocupações diluía essa
+relação (−0,22).
+
+---
+
+## TAX-04 (P1) · Regra explícita de desempate entre as rodadas
+
+- **Regra** (`src.cbo_ia.desempatar`, aplicada por `mapeamento_final` depois
+  da saída da IA, no pipeline e no estoque da RAIS). Quando a 1ª rodada (a
+  que vale) e a 2ª (auditoria) divergem na família:
+  1. vale a rodada que concorda com a **família sugerida pelo prefixo da CBO**;
+  2. **exceção:** se a 1ª fugiu do prefixo **com justificativa registrada**,
+     vale a 1ª (o prompt só permitia o desvio assim; a decisão foi
+     explícita);
+  3. se o **prefixo não resolve** (não sugere família, ou nenhuma rodada
+     concorda com ele), o caso vai para **override manual**
+     (`ia_cbo/overrides.csv`, TAX-03); até lá, fica com a 1ª, marcado como
+     pendente.
+  O nível segue a 1ª rodada (ou o override).
+- **Hipótese do plano não adotada ao pé da letra.** "Prevalece sempre o
+  prefixo" reverteria **102 CBOs (108.629 movimentações)** em que a 1ª
+  rodada fugiu do prefixo com justificativa. Muitos desses desvios estão
+  certos e o prefixo errado: as CBOs 766 são da indústria **gráfica** e o
+  prefixo 76 manda para Têxtil; o Técnico em segurança do trabalho iria para
+  Administrativo; o Encanador, para Metalmecânica. Todos os 475 desvios da 1ª
+  rodada têm justificativa.
+- **Efeito nos dados:** nenhuma família muda pelo desempate. 2.016 CBOs têm
+  as rodadas de acordo; 27 se resolvem pelo prefixo (= 1ª rodada); 102 ficam
+  com a 1ª justificada; **61 dependem de revisão manual** (as de maior volume
+  são revisadas no TAX-03).
+- O pipeline grava `data_processed/cbo_classificacao_final.csv`, com a origem
+  de cada decisão. A auditoria de "Que profissional falta" descreve a regra e
+  conta os caminhos (`narrativa.texto_desempate`).
+- Testes: `test_regra_de_desempate`,
+  `test_mapeamento_final_aplica_o_desempate_e_sem_referencia_nao_muda`,
+  `test_auditoria_descreve_a_regra_e_conta_os_caminhos`.
+
+---
+
+## TAX-03 (P1) · Overrides manuais da classificação
+
+- **`ia_cbo/overrides.csv`** (colunas `cbo, macrofamilia, nivel,
+  justificativa, autor`), aplicado **depois** da saída da IA e do
+  desempate (`src.cbo_ia.mapeamento_final`), no CAGED e no estoque da RAIS.
+  `ler_overrides` valida família e nível nos conjuntos fechados, a CBO
+  única, a justificativa e o autor; com qualquer erro, o pipeline para.
+- **Revisão feita** (autor: "Claude Code (revisão assistida; a validar pela
+  equipe)"):
+  - **As 30 CBOs de maior volume** (economia toda e indústria): nenhuma
+    família claramente incoerente. As "exceções" seguem a taxonomia; por
+    exemplo, Engenheiro agrônomo está em apoio porque o agro fica em apoio
+    por regra.
+  - **521135 Frentista: hipótese do plano não confirmada na família.** A CBO
+    o põe na família 5211 (operadores do comércio em lojas e mercados), com
+    o vendedor do varejo, então "Administrativo e comercial" é coerente. O
+    que destoava era o **nível**: a IA o rebaixou para Básico, mas a 2ª
+    rodada e o grande grupo 5 dão Qualificado. **Override: nível
+    Qualificado.**
+  - **11 divergências em que o prefixo não resolve, todas com ≥ 600
+    movimentações:** 262410, 141510, 271105, 262425, 374405, 141515, 325205,
+    341220, 142360, 374110 e 766120. Todas **confirmam a 1ª rodada**, pelas
+    regras A (ofício) e D (liderança), e ficam registradas como override,
+    com a justificativa.
+- Na tela: aba **"Revisão manual (12)"** na auditoria de "Que profissional
+  falta", com o que a IA disse, o que ficou, a justificativa e o autor. O
+  explorador de ocupações mostra a classificação final e a coluna
+  "Decisão" (origem).
+- Testes: `test_overrides_do_repositorio_sao_validos_e_trazem_o_frentista`,
+  `test_override_invalido_para_o_pipeline`,
+  `test_override_e_aplicado_depois_do_desempate_e_aceita_nome_antigo`,
+  `test_auditoria_lista_os_overrides`.
+
+| Classificação (2.206 CBOs) | Antes | Depois |
+|---|---|---|
+| Overrides manuais | 0 | 12 (1 muda o nível; 11 confirmam a 1ª rodada) |
+| Pendentes de revisão manual (desempate) | 61 | 50 (todas com < 600 movimentações) |
+| Famílias diferentes da IA | 0 | 0 |
+| Níveis diferentes da IA | 0 | 1 (Frentista: Básico → Qualificado) |
+
+Os números do painel depois do reprocessamento estão em "TAX-03 + TAX-04
+(P1) · Reprocessamento".
+
+---
+
+## TAX-03 + TAX-04 (P1) · Reprocessamento do pipeline
+
+- **Uma execução** para os dois itens: `python -m src.rais --estoque` e o
+  notebook com `PULAR_UPLOAD=1`, com swap de 8 GB. Os microdados (72 `.7z`
+  do CAGED e a RAIS Sul) já estavam na máquina; não houve download.
+- **Regressão encontrada e corrigida antes de valer:** na 1ª execução, as
+  CBOs do grande grupo 0 ("10105" no CAGED × "010105" no mapeamento final)
+  ficaram sem família (201 movimentações). Correção no commit "TAX-04 P1
+  (correção)", com teste; o pipeline rodou de novo.
+- **Conferência:** 3.443.428 admissões, 3.328.264 desligamentos e estoque de
+  2.565.458, iguais aos de antes. `caged_cbo` e `caged_perfil` fecham com o
+  agregado. As 151 linhas sem macrofamília já existiam. `metadados.json`
+  aponta o commit `7245713`.
+- **O que mudou nos dados:** só o Frentista, Administrativo e comercial
+  Básico → Qualificado: 59.435 movimentações no CAGED (100 na indústria) e
+  13.974 vínculos no estoque da RAIS. Os artefatos agora trazem o nome novo
+  da família técnica de origem; antes, ele vinha pelo alias.
+- Novo artefato: `data_processed/cbo_classificacao_final.csv`
+  (2.206 CBOs, com a origem de cada decisão).
+
+| Transformação, set/25–ago/26 | Antes | Depois |
+|---|---|---|
+| Quadrantes (Apagão / Expansão / Retração / Estagnação) | 13 / 14 / 20 / 16 | 13 / 14 / 20 / 16 |
+| Top 3 | Retenção Oeste · Formação Oeste · Atração Vale | sem mudança |
+| "Renda" / "Escolaridade" | explica em parte / não explica | sem mudança |
+
+---
+
+## ANA-04 (P2, pedido pelo usuário) · Estrutural ou local? SC × Brasil
+
+- **Brasil sem fonte nova:** os 72 `.7z` do CAGED baixados são nacionais.
+  `src/caged_brasil.py` relê os arquivos (MOV + FOR − EXC, set/24–ago/26) e
+  soma, por abrangência (SC, Brasil) × seção × mês, admissões, desligamentos,
+  a pedido e descontados, **com as mesmas regras do agregado**. O resultado é
+  `data_processed/caged_brasil_secao.parquet`, 1.026 linhas. A linha de SC
+  **fecha exatamente** com o agregado do painel, seção por seção (teste
+  `test_tabela_nacional_fecha_com_o_agregado_de_sc`): 3.443.428 admissões e
+  3.328.264 desligamentos.
+- **Intervalo de confiança por bootstrap:** o IC de 95% da saída voluntária
+  de SC sai de reamostrar os **municípios** 1.000 vezes, com semente fixa
+  (`comum.ic_bootstrap_razao`, parâmetros em `regras.py`). O Brasil entra
+  como referência. Leitura: acima, abaixo ou igual ao Brasil
+  (`regras.leitura_benchmark`).
+- **Na tela:** "Por que acontece" → "Aprofundar: estrutural ou local? SC ×
+  Brasil por seção", com frase calculada (`narrativa.texto_benchmark`),
+  gráfico com o IC e tabela. A frase separa a parte da diferença que é do
+  estado (a economia toda de SC × Brasil) da que é própria da seção, e
+  compara a rotatividade da transformação com a taxa oficial que o painel já
+  citava.
+- **Não coube:** a rotatividade do Brasil **por seção** pede o estoque
+  nacional. Está registrada em `docs/ROADMAP.md`, com os IC para os grupos
+  da matriz. A Metodologia ("Próximos passos") aponta para lá.
+- Testes: `test_ic_bootstrap_contem_o_valor_e_e_reproduzivel`,
+  `test_leitura_do_benchmark`,
+  `test_benchmark_compara_sc_com_o_brasil_no_mesmo_periodo`,
+  `test_tabela_nacional_fecha_com_o_agregado_de_sc`.
+
+| Saída voluntária, set/25–ago/26 | SC (IC 95%) | Brasil | Diferença |
+|---|---|---|---|
+| Indústrias de transformação | 50,9% (49,4% a 52,8%) | 37,3% | **+13,6 p.p.** |
+| Construção | 38,3% (35,9% a 40,5%) | 23,5% | +14,8 p.p. |
+| Economia toda | 47,1% | 36,3% | +10,8 p.p. |
+| Seções com SC acima do Brasil (economia) | 18 de 20 | | |
+
+| Rotatividade descontada, transformação | SC (calculada, set/25–ago/26) | Brasil (oficial MTE, out/25–set/26) |
+|---|---|---|
+| | 27,4% | 27,6% |
+
+**Leitura para o pitch:** a indústria catarinense **não troca mais gente que
+a do Brasil** (rotatividade 27,4% × 27,6%). O que é local é **quem sai pedir
+para sair** (50,9% × 37,3%). Dos +13,6 p.p., cerca de +10,8 p.p. vêm do
+mercado de trabalho catarinense como um todo, que é aquecido, e +2,8 p.p.
+são próprios da transformação.
+
+---
+
+## BUG-05 (complemento) · Plural com o número 1
+
+- A verificação visual do Lote D achou "1 grupos em Apagão…" e "(1 ficaram
+  fora…)" em "Quem precisa de atenção" com um setor filtrado. Novo
+  formatador `comum.plural(n, singular, plural)`, usado na contagem dos
+  quadrantes, no rodapé da matriz, no resumo das causas, nos títulos das
+  tabelas e no total de recomendações (inclusive no modo apresentação).
+- Testes: `test_plural_com_um_e_com_varios`, `test_resumo_de_causas_no_singular`.

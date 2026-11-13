@@ -19,6 +19,9 @@ from dataclasses import dataclass
 
 MIN_MOVIMENTACOES = 100   # taxas e matriz: grupos com menos que isso ficam fora
 MIN_SALARIOS = 30         # gaps salariais: mínimo de salários de cada lado
+# NAR-05: "Pior situação" do mapa por município só entre os que têm volume (um
+# município de 120 movimentações não vira a manchete do estado).
+MIN_MOV_PIOR_MUNICIPIO = 500
 
 # ---------------------------------------------------------------------------
 # Escopos (NAR-03)
@@ -122,6 +125,15 @@ def salario_pior_que_estado(gap: float, gap_estado: float) -> bool:
     return gap == gap and gap_estado == gap_estado and gap <= gap_estado - MARGEM_SALARIAL_RELATIVA + 1e-9
 
 
+# ANA-01 (P1): a razão entrada/saída DENTRO DA MESMA CBO (média das razões por
+# ocupação, ponderada pelas movimentações, só CBOs com ≥ 30 salários de cada lado)
+# tira o efeito de composição: entrar e sair gente de ocupações diferentes. É ela
+# que decide a causa Salarial quando cobre ≥ 50% das movimentações do grupo; senão,
+# vale a razão bruta. `False` aqui volta tudo para a razão bruta.
+RAZAO_SALARIAL_MESMA_CBO = True
+MIN_COBERTURA_CBO = 0.5
+
+
 def salario_nao_explica(gap: float, gap_estado: float) -> bool:
     """O salário de entrada do grupo não é pior que o do estado (base da causa "Retenção")."""
     return gap == gap and gap_estado == gap_estado and gap >= gap_estado
@@ -131,6 +143,44 @@ MARGEM_SAIDA_VOLUNTARIA = 0.05    # saída voluntária ≥ referência + 5 p.p. 
 # DATA-01: gap de escolaridade de uma macrofamília que merece nota explicativa
 # (bem abaixo das demais, que ficam entre −0,12 e +0,07 no estado).
 LIMIAR_DESTAQUE_GAP_ESC = -0.30
+
+# ANA-02: escolaridade além da média ordinal. Faixas do perfil (src.mapeamentos.FAIXAS_ESCOLARIDADE).
+FAIXA_MEDIO = "Médio completo"
+FAIXA_SUPERIOR = "Superior completo ou mais"
+FAIXAS_MEDIO_OU_MAIS = (FAIXA_MEDIO, "Superior incompleto", FAIXA_SUPERIOR)
+# Prêmio do diploma = mediana de admissão com superior completo ÷ com médio completo.
+# "Baixo" é relativo ao estado (mesmo escopo), como a causa Salarial: ≥ 20% abaixo do
+# prêmio estadual. Com diploma que quase não paga, o grupo tende a não atrair qualificados.
+FATOR_PREMIO_BAIXO = 0.80
+
+
+def premio_baixo(premio: float, premio_estado: float) -> bool:
+    """ANA-02: o prêmio salarial do superior no grupo está ≥ 20% abaixo do prêmio do estado?"""
+    return premio == premio and premio_estado == premio_estado and premio <= premio_estado * FATOR_PREMIO_BAIXO + 1e-9
+
+
+# ---------------------------------------------------------------------------
+# ANA-04: SC × Brasil por seção e intervalos de confiança por bootstrap
+# ---------------------------------------------------------------------------
+# O IC de SC sai de reamostrar os MUNICÍPIOS com reposição (bootstrap por
+# conglomerado): a incerteza que importa é a da geografia, não a de contar
+# centenas de milhares de desligamentos. O Brasil entra como valor de referência.
+N_BOOTSTRAP = 1000
+SEMENTE_BOOTSTRAP = 42
+CONFIANCA = 0.95
+LEITURA_ACIMA, LEITURA_ABAIXO, LEITURA_IGUAL = "acima do Brasil", "abaixo do Brasil", "igual ao Brasil"
+
+
+def leitura_benchmark(ic_inf: float, ic_sup: float, brasil: float) -> str:
+    """SC está acima, abaixo ou igual ao Brasil? "Igual" = o Brasil cai dentro do IC de SC."""
+    if not (ic_inf == ic_inf and ic_sup == ic_sup and brasil == brasil):
+        return "—"
+    if ic_inf > brasil:
+        return LEITURA_ACIMA
+    if ic_sup < brasil:
+        return LEITURA_ABAIXO
+    return LEITURA_IGUAL
+
 
 # ---------------------------------------------------------------------------
 # Alavancas do motor de recomendações
@@ -167,6 +217,32 @@ CONTEXTO_SETOR = {
 }
 # Concentração que merece ser dita no achado de expansão (município com ≥ 50% do saldo).
 FRACAO_CONCENTRACAO_TEXTO = 0.5
+
+# ---------------------------------------------------------------------------
+# TAX-02: selo "Expansão concentrada" (projeto com data para acabar, não tendência)
+# ---------------------------------------------------------------------------
+# Num grupo (território × setor ou macrofamília) que abriu vagas, o selo acende
+# quando um único mês responde por ≥ 40% do saldo positivo OU um único município
+# por ≥ 80% dele. "Saldo positivo" = soma só dos meses (ou municípios) que
+# abriram vagas: com o saldo líquido no denominador, um grupo de saldo 6 com um
+# município +44 e outros −38 daria 733% e o selo acenderia em metade dos grupos.
+
+SELO_CONCENTRADA = "Expansão concentrada"
+LIMIAR_CONCENTRACAO_MES = 0.40
+LIMIAR_CONCENTRACAO_MUNICIPIO = 0.80
+# Com poucos meses no filtro, um mês ter 40% é o normal (3 meses = 33% cada).
+MIN_MESES_CONCENTRACAO = 6
+
+
+def expansao_concentrada(saldo: float, fracao_mes: float, n_meses: int,
+                         fracao_municipio: float, n_municipios: int) -> bool:
+    """TAX-02: o saldo positivo do grupo depende de um mês ou de um município?"""
+    if not saldo == saldo or saldo <= 0:
+        return False
+    por_mes = n_meses >= MIN_MESES_CONCENTRACAO and fracao_mes == fracao_mes and fracao_mes >= LIMIAR_CONCENTRACAO_MES
+    por_mun = (n_municipios >= 2 and fracao_municipio == fracao_municipio
+               and fracao_municipio >= LIMIAR_CONCENTRACAO_MUNICIPIO)
+    return bool(por_mes or por_mun)
 
 # ---------------------------------------------------------------------------
 # REC-01: regra da alavanca "Formação profissional direcionada"
@@ -213,8 +289,25 @@ REGRA_ALAVANCA = {
         "(fecha vagas por iniciativa do empregador, não por pedido de saída). Mostra o par origem → destino. O CAGED "
         "não mede vagas abertas nem desempregados: a origem indica onde há gente da mesma ocupação sendo "
         "dispensada."),
-    ALAVANCA_AUTOMACAO: "Nível Básico com 50% ou mais das movimentações do grupo e saldo ≤ 0.",
+    ALAVANCA_AUTOMACAO: "Nível Básico com 50% ou mais das movimentações do grupo e saldo ≤ 0. Aparece como "
+                        "observação, não como alavanca prioritária (ver abaixo).",
 }
+
+# REC-06: a regra de automação dispara 0–1 vez por escopo. Os grupos de nível Básico
+# (Operação de linha, apoio) estão crescendo, em Apagão: a condição "saldo ≤ 0" é a
+# que trava, e baixar o limiar de 50% não muda nada (com 30%, 3 casos). Automação
+# também depende de investimento e produtividade, que o CAGED não mede. Por isso ela
+# vira **observação**: fica fora do Top 3 e dos cartões de prioridade.
+ALAVANCAS_OBSERVACAO = (ALAVANCA_AUTOMACAO,)
+MOTIVO_OBSERVACAO = (
+    "A regra de automação (nível Básico ≥ 50% e saldo ≤ 0) quase nunca dispara: os grupos de nível Básico estão "
+    "crescendo. E automatizar depende de investimento e produtividade, que o CAGED não mede. Por isso é uma "
+    "observação para a empresa avaliar, não uma prioridade.")
+
+
+def eh_observacao(alavanca: str) -> bool:
+    """REC-06: a alavanca aparece como observação, fora do Top 3 e das prioridades?"""
+    return alavanca in ALAVANCAS_OBSERVACAO
 
 # ---------------------------------------------------------------------------
 # REC-02: quem age, horizonte e KPI de acompanhamento de cada alavanca
@@ -259,6 +352,11 @@ ACAO_ALAVANCA = {
     ALAVANCA_MOBILIDADE: "Atrair profissionais de {macro} para {regiao}",
 }
 TOP_EXECUTIVO = 3
+
+# REC-05: simulador de custo da saída voluntária. Não há fonte no repositório
+# para o custo de repor um trabalhador: é premissa do time, e a tela diz isso.
+CUSTO_REPOSICAO_MIN, CUSTO_REPOSICAO_MAX, CUSTO_REPOSICAO_PADRAO = 1, 12, 3   # em salários
+FONTE_CUSTO_REPOSICAO = "premissa do time, ajuste conforme a realidade da empresa"
 
 # ---------------------------------------------------------------------------
 # NAR-02: "renda / escolaridade explicam?" — limiares da resposta à pergunta central

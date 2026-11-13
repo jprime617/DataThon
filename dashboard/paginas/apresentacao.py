@@ -46,7 +46,7 @@ def _gancho(ctx: c.Contexto) -> None:
 
 def _onde(ctx: c.Contexto) -> None:
     dados = panorama.metricas_mapa(ctx.df, c.NIVEL_MICRO)
-    st.markdown(nar.legenda_mapa(dados.drop_duplicates("rotulo"), c.M_SAIDA_VOL, "rotulo"))
+    st.markdown(nar.legenda_mapa(dados.drop_duplicates("rotulo"), c.M_SAIDA_VOL, "rotulo", c.NIVEL_MICRO))
     st.plotly_chart(fig.construir_mapa(dados, c.geojson_cache(), c.M_SAIDA_VOL, rotulo_territorio="rotulo"),
                     width="stretch")
 
@@ -87,7 +87,7 @@ def _por_que(ctx: c.Contexto) -> None:
 def _o_que_fazer(ctx: c.Contexto) -> None:
     recs = c.gerar_recomendacoes(ctx.df, mediana_regional=recomendacoes.medianas_regionais(ctx),
                                   ref=c.total(ctx.ref), cbos=c.filtrar_cbo(ctx),
-                                  descricoes=c.descricoes_cbo_cache())
+                                  descricoes=c.descricoes_cbo_cache(), gap_ref_cbo=c.referencia_cbo(ctx)[1])
     if not recs:
         st.markdown("Nenhuma regra disparou com amostra suficiente.")
         return
@@ -96,7 +96,8 @@ def _o_que_fazer(ctx: c.Contexto) -> None:
     destaque = list({r.alavanca: r for r in reversed(recs)}.values())
     destaque = sorted(destaque, key=lambda r: r.prioridade, reverse=True)
     destaque += [r for r in recs if r not in destaque]
-    st.markdown(f"**{len(recs)} recomendações** em {len(alavancas)} alavancas, cada uma ligada a uma "
+    st.markdown(f"**{c.plural(len(recs), 'recomendação', 'recomendações')}** em "
+                f"{c.plural(len(alavancas), 'alavanca', 'alavancas')}, cada uma ligada a uma "
                 "macrofamília da IA. As prioritárias de cada alavanca:")
     cols = st.columns(3)
     for col, r in zip(cols, destaque[:3]):
@@ -128,7 +129,7 @@ def render(ctx_global: c.Contexto) -> None:
     chave = os.environ.get(VAR_CHAVE, "").strip()
     if not st.session_state.get("apresentacao_ok"):
         if not acesso_liberado(chave, st.query_params.get("chave")):
-            st.title("Página não encontrada")
+            st.title("Página não encontrada", anchor=False)
             st.caption("Use o menu lateral para navegar pelo painel.")
             return
         st.session_state["apresentacao_ok"] = True
@@ -137,7 +138,7 @@ def render(ctx_global: c.Contexto) -> None:
     passo = int(st.session_state.get("passo", 0)) % len(PASSOS)
 
     topo = st.columns([5, 1.4, 1.4, 1.1])
-    topo[0].title(f"{passo + 1}/{len(PASSOS)} · {PASSOS[passo]}")
+    topo[0].title(f"{passo + 1}/{len(PASSOS)} · {PASSOS[passo]}", anchor=False)
     if topo[1].button("Anterior", icon=":material/arrow_back:", disabled=passo == 0, width="stretch"):
         st.session_state["passo"] = passo - 1
         st.rerun()

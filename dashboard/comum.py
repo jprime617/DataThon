@@ -122,6 +122,33 @@ from dashboard.regras import (  # noqa: F401
     quadrante,
     salario_nao_explica,
     salario_pior_que_estado,
+    LIMIAR_CONCENTRACAO_MES,
+    LIMIAR_CONCENTRACAO_MUNICIPIO,
+    MIN_MESES_CONCENTRACAO,
+    SELO_CONCENTRADA,
+    expansao_concentrada,
+    FAIXA_MEDIO,
+    FAIXA_SUPERIOR,
+    FAIXAS_MEDIO_OU_MAIS,
+    FATOR_PREMIO_BAIXO,
+    premio_baixo,
+    MIN_MOV_PIOR_MUNICIPIO,
+    CUSTO_REPOSICAO_MAX,
+    CUSTO_REPOSICAO_MIN,
+    CUSTO_REPOSICAO_PADRAO,
+    FONTE_CUSTO_REPOSICAO,
+    ALAVANCAS_OBSERVACAO,
+    MOTIVO_OBSERVACAO,
+    eh_observacao,
+    MIN_COBERTURA_CBO,
+    RAZAO_SALARIAL_MESMA_CBO,
+    CONFIANCA,
+    LEITURA_ABAIXO,
+    LEITURA_ACIMA,
+    LEITURA_IGUAL,
+    N_BOOTSTRAP,
+    SEMENTE_BOOTSTRAP,
+    leitura_benchmark,
 )
 
 _ETAPA = "dashboard"
@@ -137,6 +164,8 @@ CAMINHO_CBO = _DIR_DADOS / "cbo_macrofamilias.csv"
 CAMINHO_DIVERGENCIAS = _DIR_DADOS / "cbo_divergencias.csv"
 CAMINHO_PROMPT = _DIR_DADOS / "cbo_macrofamilias.csv.prompt.txt"
 CAMINHO_META_RODADA2 = _DIR_DADOS / "cbo_macrofamilias_gemini.csv.meta.json"   # TAX-04: a classificação de auditoria
+CAMINHO_CBO_FINAL = _DIR_DADOS / "cbo_classificacao_final.csv"   # TAX-04 P1 / TAX-03: o que o pipeline aplicou
+CAMINHO_BRASIL = _DIR_DADOS / "caged_brasil_secao.parquet"   # ANA-04: SC × Brasil por seção (src.caged_brasil)
 
 VAR_CREDENCIAL_AZURE = "AZURE_STORAGE_CONNECTION_STRING"
 VAR_CONTAINER_AZURE = "AZURE_BLOB_CONTAINER"
@@ -522,11 +551,12 @@ def aplicar_filtros(
     return df[mascara].copy()
 
 
-def filtrar_cbo(ctx: "Contexto") -> pd.DataFrame | None:
+def filtrar_cbo(ctx: "Contexto", *, estado: bool = False) -> pd.DataFrame | None:
     """A tabela por CBO no recorte atual (escopo, período, setor, macrofamília, nível).
 
     A tabela não tem município: um filtro de micro/município usa as
-    mesorregiões que o contêm (como o perfil).
+    mesorregiões que o contêm (como o perfil). Com `estado=True`, só escopo e
+    período: a referência do estado, como `Contexto.ref`.
     """
     tabela = ctx.art.cbo
     if tabela is None or tabela.empty:
@@ -536,6 +566,8 @@ def filtrar_cbo(ctx: "Contexto") -> pd.DataFrame | None:
     if f.meses:
         meses = tabela[COLUNA_MES].astype(str)
         tabela = tabela[(meses >= f.meses[0]) & (meses <= f.meses[1])]
+    if estado:
+        return tabela
     regioes = sorted(ctx.df[COLUNA_REGIAO].astype(str).unique()) if f.territorios else []
     return aplicar_filtros(tabela, regiao=regioes, **{COLUNA_SETOR: f.setores, COLUNA_MACROFAMILIA_CBO: f.macrofamilias,
                                                       COLUNA_NIVEL_QUALIFICACAO: f.niveis})
@@ -612,6 +644,9 @@ M_PRECOCE = "precoce"
 M_ACEL = "aceleracao"
 M_AMOSTRA_OK = "amostra_ok"
 M_SALARIO_OK = "salario_ok"
+M_TAXA_ADM = "taxa_admissao"   # ANA-03: proxy de demanda
+M_GAP_SAL_CBO = "gap_salarial_cbo"   # ANA-01 P1: razão entrada/saída dentro da mesma CBO
+M_COBERTURA_CBO = "cobertura_cbo"     # fração das movimentações do grupo nas CBOs que entram na média
 
 
 @dataclass(frozen=True)
@@ -643,6 +678,13 @@ DEFINICOES: dict[str, Definicao] = {
         "mediana estadual (exclui zeros e valores de rescisão/digitação).",
         "gap",
     ),
+    M_GAP_SAL_CBO: Definicao(
+        "Salário de quem entra vs quem saiu, na mesma ocupação",
+        "média das razões salário médio de admissão ÷ de desligamento de cada CBO do grupo, ponderada pelas "
+        f"movimentações, só com CBOs com ≥ {MIN_SALARIOS} salários de cada lado. Compara a mesma função: tira o "
+        "efeito de entrar e sair gente de ocupações diferentes",
+        "gap",
+    ),
     M_GAP_ESC: Definicao(
         "Escolaridade de quem entra vs quem saiu",
         "escolaridade média dos admitidos − dos desligados (escala ordinal 1–11; "
@@ -659,6 +701,12 @@ DEFINICOES: dict[str, Definicao] = {
         "pct",
     ),
     M_VAR_REL: Definicao("Variação do emprego", "saldo ÷ estoque em 31/12/2025 (RAIS)", "pct"),
+    M_TAXA_ADM: Definicao(
+        "Taxa de admissão",
+        "admissões ÷ estoque em 31/12/2025 (RAIS): quantas contratações para cada 100 empregos existentes. "
+        "É o proxy de demanda: com menos de 12 meses no filtro, a taxa cobre só o período.",
+        "pct",
+    ),
     M_ACEL: Definicao(
         "Aceleração",
         "(saldo set/25–ago/26 − saldo set/24–ago/25) ÷ estoque em 31/12/2025: quanto o emprego cresceu a "
@@ -687,11 +735,13 @@ EXPLICACAO: dict[str, str] = {
     M_SALDO_10K: "Saldo de vagas proporcional à população: compara territórios de tamanhos diferentes.",
     M_SAIDA_VOL: "De cada 100 desligamentos, quantos foram pedido do próprio trabalhador.",
     M_GAP_SAL: "Quanto quem é contratado ganha em relação a quem saiu.",
+    M_GAP_SAL_CBO: "Quanto quem é contratado ganha em relação a quem saiu da mesma ocupação.",
     M_GAP_ESC: "Se quem entra estudou mais (positivo) ou menos (negativo) do que quem sai.",
     M_SALDO_REL: "Quanto do movimento virou vaga nova.",
     M_ESTOQUE: "Quantos empregos formais existiam em 31/12/2025.",
     M_ROT_DESC: "Quanto da equipe foi trocada no período, sem contar quem pediu para sair, se aposentou ou morreu.",
     M_VAR_REL: "Quanto o emprego cresceu ou encolheu, em % dos empregos existentes.",
+    M_TAXA_ADM: "Quantas contratações houve para cada 100 empregos existentes: mede a demanda por gente.",
     M_ACEL: "Se o emprego está crescendo mais rápido (ou mais devagar) do que no ano anterior.",
     M_PRECOCE: "De cada 100 desligados, quantos saíram antes de completar 1 ano na empresa.",
     M_SAL_ADM: "Salário médio de quem foi contratado.",
@@ -797,6 +847,7 @@ def _derivar(somas: pd.DataFrame, populacao) -> pd.DataFrame:
     desl_desc = r[COLUNA_DESLIGAMENTOS_DESCONTADOS].astype("float64")
     r[M_ROT_DESC] = _divisao(pd.concat([adm, desl_desc], axis=1).min(axis=1), r[M_ESTOQUE])
     r[M_VAR_REL] = _divisao(r[M_SALDO], r[M_ESTOQUE])
+    r[M_TAXA_ADM] = _divisao(adm, r[M_ESTOQUE])
     r[M_ACEL] = (
         _divisao(r[COLUNA_SALDO_RECENTE] - r[COLUNA_SALDO_ANTERIOR], r[M_ESTOQUE]) * 100  # p.p.
         if COLUNA_SALDO_RECENTE in r else sem
@@ -923,20 +974,90 @@ def matriz_diagnostico(
 
 
 
-def causas(linha: pd.Series, *, saida_ref: float, gap_ref: float, fracao_tecnica: float = 0.0) -> list[str]:
+_COLUNAS_SALARIO_CBO = ["soma_salario_admissao", "n_salario_admissao", "soma_salario_desligamento",
+                        "n_salario_desligamento", COLUNA_ADMISSOES, COLUNA_DESLIGAMENTOS]
+
+
+def razao_mesma_cbo(cbos: pd.DataFrame | None, por: list[str]) -> pd.DataFrame:
+    """ANA-01 (P1): razão salário de entrada ÷ de saída dentro da mesma CBO, por grupo.
+
+    Média das razões de cada CBO, ponderada pelas movimentações, só com as CBOs
+    que têm ≥ `MIN_SALARIOS` salários de admissão e de desligamento no grupo.
+    `cobertura_cbo` = fração das movimentações do grupo nessas CBOs. Índice =
+    chaves de `por` como texto (`por` vazio: uma linha, o total).
+    """
+    por = list(por or [])
+    chave = por or ["_todos"]
+    if cbos is None or cbos.empty or not {"cbo", *_COLUNAS_SALARIO_CBO} <= set(cbos.columns):
+        return pd.DataFrame(columns=[*chave, M_GAP_SAL_CBO, M_COBERTURA_CBO]).set_index(chave)
+    base = pd.DataFrame({**{k: (cbos[k].astype(str) if k in cbos else "") for k in chave},
+                         "cbo": cbos["cbo"].astype(str), **{col: cbos[col] for col in _COLUNAS_SALARIO_CBO}})
+    g = base.groupby([*chave, "cbo"], sort=False)[_COLUNAS_SALARIO_CBO].sum().reset_index()
+    peso = (g[COLUNA_ADMISSOES] + g[COLUNA_DESLIGAMENTOS]).astype("float64")
+    ok = (g["n_salario_admissao"] >= MIN_SALARIOS) & (g["n_salario_desligamento"] >= MIN_SALARIOS)
+    razao = _divisao(_divisao(g["soma_salario_admissao"], g["n_salario_admissao"]),
+                     _divisao(g["soma_salario_desligamento"], g["n_salario_desligamento"]))
+    ok &= razao.notna()
+    g["_pr"] = (razao * peso).where(ok, 0.0)
+    g["_pok"] = peso.where(ok, 0.0)
+    g["_peso"] = peso
+    soma = g.groupby(chave, sort=False)[["_pr", "_pok", "_peso"]].sum()
+    return pd.DataFrame({M_GAP_SAL_CBO: _divisao(soma["_pr"], soma["_pok"]),
+                         M_COBERTURA_CBO: _divisao(soma["_pok"], soma["_peso"])}, index=soma.index)
+
+
+def razao_estado_mesma_cbo(cbos_estado: pd.DataFrame | None) -> float:
+    """A razão dentro da mesma CBO do estado inteiro (mesmo escopo e período), ou NaN."""
+    r = razao_mesma_cbo(cbos_estado, [])
+    return float(r[M_GAP_SAL_CBO].iloc[0]) if not r.empty else float("nan")
+
+
+def anexar_razao_cbo(m: pd.DataFrame, cbos: pd.DataFrame | None, por: list[str]) -> pd.DataFrame:
+    """`m` com `gap_salarial_cbo` e `cobertura_cbo` por grupo (NaN onde não há dado por CBO)."""
+    resultado = m.copy()
+    if (m.empty or cbos is None or cbos.empty or not set(por) <= set(cbos.columns)
+            or not {"cbo", *_COLUNAS_SALARIO_CBO} <= set(cbos.columns)):
+        resultado[M_GAP_SAL_CBO] = float("nan")
+        resultado[M_COBERTURA_CBO] = float("nan")
+        return resultado
+    r = razao_mesma_cbo(cbos, por)
+    chaves = pd.MultiIndex.from_arrays([m[k].astype(str) for k in por]) if len(por) > 1 else m[por[0]].astype(str)
+    alinhado = r.reindex(chaves)
+    resultado[M_GAP_SAL_CBO] = alinhado[M_GAP_SAL_CBO].to_numpy(dtype="float64")
+    resultado[M_COBERTURA_CBO] = alinhado[M_COBERTURA_CBO].to_numpy(dtype="float64")
+    return resultado
+
+
+def gap_causa(linha: pd.Series, gap_ref: float, gap_ref_cbo: float = float("nan")) -> tuple[float, float, bool]:
+    """(razão do grupo, razão do estado, é dentro da mesma CBO?) que decide a causa Salarial (ANA-01).
+
+    Usa a razão dentro da mesma CBO quando ela existe, cobre ≥ `MIN_COBERTURA_CBO`
+    das movimentações do grupo e há a do estado; senão, a razão bruta.
+    """
+    g, cob = linha.get(M_GAP_SAL_CBO), linha.get(M_COBERTURA_CBO)
+    if (RAZAO_SALARIAL_MESMA_CBO and not _vazio(g) and not _vazio(cob) and not _vazio(gap_ref_cbo)
+            and float(cob) >= MIN_COBERTURA_CBO):
+        return float(g), float(gap_ref_cbo), True
+    return linha.get(M_GAP_SAL), gap_ref, False
+
+
+def causas(linha: pd.Series, *, saida_ref: float, gap_ref: float, fracao_tecnica: float = 0.0,
+           gap_ref_cbo: float = float("nan")) -> list[str]:
     """Selos de causa de uma unidade, a partir das métricas e da referência do estado.
 
     `saida_ref` e `gap_ref` são a saída voluntária e a razão salarial entrada/saída
     do estado inteiro no mesmo escopo e período (`Contexto.ref`).
 
-    - Salarial: razão entrada/saída ≥ 3 p.p. abaixo da do estado (ANA-01).
+    - Salarial: razão entrada/saída ≥ 3 p.p. abaixo da do estado (ANA-01); dentro
+      da mesma CBO quando há `gap_ref_cbo` e a linha traz `gap_salarial_cbo`
+      (`gap_causa`).
     - Qualificação: gap de escolaridade ≤ −0,10 numa unidade em que Técnico +
       Superior somam ao menos metade das movimentações.
     - Retenção: saída voluntária ≥ referência + 5 p.p. com salário de entrada
       não pior que o do estado (o salário não explica a saída).
     """
     selos = []
-    gap = linha.get(M_GAP_SAL)
+    gap, gap_ref, _ = gap_causa(linha, gap_ref, gap_ref_cbo)
     if pd.notna(gap) and salario_pior_que_estado(gap, gap_ref):
         selos.append(CAUSA_SALARIAL)
     gap_esc = linha.get(M_GAP_ESC)
@@ -946,6 +1067,61 @@ def causas(linha: pd.Series, *, saida_ref: float, gap_ref: float, fracao_tecnica
     if pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA and salario_nao_explica(gap, gap_ref):
         selos.append(CAUSA_RETENCAO)
     return selos
+
+
+# TAX-02: colunas que `concentracao_saldo` acrescenta a cada grupo.
+COLUNAS_CONCENTRACAO = ["fracao_mes", "mes_pico", "n_meses", "fracao_municipio", "municipio_pico",
+                        "n_municipios", "concentrada"]
+
+
+def _pico(df: pd.DataFrame, saldo: pd.Series, por: list[str], dimensao: str) -> pd.DataFrame:
+    """Por grupo: a unidade de `dimensao` com o maior saldo, a fração dela no saldo positivo e quantas há."""
+    t = pd.DataFrame({**{c: df[c].astype(str) for c in por}, "d": df[dimensao].astype(str), "s": saldo})
+    t = t.groupby([*por, "d"], sort=False)["s"].sum().reset_index()
+    t["positivo"] = t["s"].clip(lower=0)
+    t = t.sort_values("s", ascending=False, kind="stable")
+    r = t.groupby(por, sort=False).agg(pico=("d", "first"), maximo=("s", "first"),
+                                       soma_positiva=("positivo", "sum"), n=("d", "size"))
+    r["fracao"] = r["maximo"] / r["soma_positiva"].where(r["soma_positiva"] > 0)
+    return r
+
+
+def concentracao_saldo(df: pd.DataFrame, por: list[str]) -> pd.DataFrame:
+    """TAX-02: quanto do saldo positivo de cada grupo vem de um único mês e de um único município.
+
+    Índice = as chaves de `por` (como texto). `concentrada` aplica a regra de
+    `regras.expansao_concentrada` (limiares lá).
+    """
+    if df is None or df.empty:
+        return pd.DataFrame(columns=[*por, *COLUNAS_CONCENTRACAO]).set_index(por)
+    saldo = (df[COLUNA_ADMISSOES] - df[COLUNA_DESLIGAMENTOS]).astype("float64")
+    mes = _pico(df, saldo, por, COLUNA_MES)
+    mun = _pico(df, saldo, por, COLUNA_NOME_MUNICIPIO)
+    total = pd.DataFrame({c: df[c].astype(str) for c in por}).assign(s=saldo).groupby(por, sort=False)["s"].sum()
+    r = pd.DataFrame({
+        "fracao_mes": mes["fracao"], "mes_pico": mes["pico"], "n_meses": mes["n"],
+        "fracao_municipio": mun["fracao"], "municipio_pico": mun["pico"], "n_municipios": mun["n"],
+    })
+    r["concentrada"] = [expansao_concentrada(float(total.get(k, 0.0)), fm, int(nm), fu, int(nu))
+                        for k, fm, nm, fu, nu in zip(r.index, r["fracao_mes"], r["n_meses"],
+                                                     r["fracao_municipio"], r["n_municipios"])]
+    return r
+
+
+def anexar_concentracao(m: pd.DataFrame, df: pd.DataFrame, por: list[str]) -> pd.DataFrame:
+    """A matriz `m` com as colunas de `concentracao_saldo` (grupos sem dado: não concentrado)."""
+    resultado = m.copy()
+    if m.empty:
+        for coluna in COLUNAS_CONCENTRACAO:
+            resultado[coluna] = pd.Series(dtype="object")
+        return resultado
+    conc = concentracao_saldo(df, por)
+    chaves = pd.MultiIndex.from_arrays([m[c].astype(str) for c in por]) if len(por) > 1 else m[por[0]].astype(str)
+    alinhado = conc.reindex(chaves)
+    for coluna in COLUNAS_CONCENTRACAO:
+        resultado[coluna] = alinhado[coluna].to_numpy()
+    resultado["concentrada"] = resultado["concentrada"].fillna(False).astype(bool)
+    return resultado
 
 
 def fracao_nivel_por_movimento(df: pd.DataFrame, por: list[str],
@@ -1071,7 +1247,8 @@ def top_executivo(recs: list["Recomendacao"], n: int = TOP_EXECUTIVO) -> list["R
     """
     por_alavanca: dict[str, list[Recomendacao]] = {}
     for r in sorted(recs, key=lambda r: r.prioridade, reverse=True):
-        por_alavanca.setdefault(r.alavanca, []).append(r)
+        if not eh_observacao(r.alavanca):  # REC-06: observação não entra no Top 3
+            por_alavanca.setdefault(r.alavanca, []).append(r)
     ordem = sorted(por_alavanca, key=lambda a: por_alavanca[a][0].movimentacoes, reverse=True)
     escolhidas, grupos = [], set()
     for alavanca in ordem:
@@ -1099,6 +1276,7 @@ def gerar_recomendacoes(
     ref: pd.Series | None = None,
     cbos: pd.DataFrame | None = None,
     descricoes: dict[str, str] | None = None,
+    gap_ref_cbo: float = float("nan"),
 ) -> list[Recomendacao]:
     """Avalia as 5 regras por mesorregião × macrofamília (com guarda de amostra).
 
@@ -1112,7 +1290,7 @@ def gerar_recomendacoes(
     ref = total(df) if ref is None else ref
     saida_ref, gap_ref = ref[M_SAIDA_VOL], ref[M_GAP_SAL]
     por = [COLUNA_REGIAO, COLUNA_MACROFAMILIA_CBO]
-    m = matriz_diagnostico(df, por)
+    m = anexar_razao_cbo(matriz_diagnostico(df, por), cbos, por)  # ANA-01 P1
     if m.empty:
         return []
     frac_basico = fracao_por_nivel(df, por, ("Básico",))
@@ -1131,7 +1309,9 @@ def gerar_recomendacoes(
         regiao, macro = str(chave[0]), str(chave[1])
         nivel = nivel_dominante.get(chave, "—")
         mov = float(u[M_MOV])
-        saida, gap = u[M_SAIDA_VOL], u[M_GAP_SAL]
+        saida = u[M_SAIDA_VOL]
+        gap, gap_ref_u, mesma_cbo = gap_causa(u, gap_ref, gap_ref_cbo)
+        na_cbo = " na mesma ocupação" if mesma_cbo else ""
 
         def add(alavanca, regra, evidencia, severidade, alvo=nivel, **extras):
             extras.setdefault("acao", ACAO_ALAVANCA.get(alavanca, "").format(macro=macro, regiao=regiao))
@@ -1141,15 +1321,17 @@ def gerar_recomendacoes(
                                      quem_age=QUEM_AGE.get(alavanca, "—"), horizonte=HORIZONTE.get(alavanca, "—"),
                                      kpi=meta_kpi(alavanca, u, ref)))
 
-        if salario_pior_que_estado(gap, gap_ref) and pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA:
+        if (pd.notna(gap) and salario_pior_que_estado(gap, gap_ref_u) and pd.notna(saida)
+                and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA):
             ref_sal = mediana_regional.get(chave)
             texto_ref = f"; mediana regional de admissão {fmt_brl(ref_sal)}" if ref_sal else ""
             add(ALAVANCA_SALARIO,
-                f"razão salarial entrada/saída ≥ {fmt_num(MARGEM_SALARIAL_RELATIVA * 100, 0)} p.p. pior que a do estado "
-                f"e saída voluntária ≥ estado + {fmt_num(MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p.",
-                f"quem entra ganha {fmt_pct(gap, 0)} do salário de quem saiu (estado: {fmt_pct(gap_ref, 0)}); "
-                f"saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)} no estado{texto_ref}",
-                (gap_ref - gap) + (saida - saida_ref))
+                f"razão salarial entrada/saída{na_cbo} ≥ {fmt_num(MARGEM_SALARIAL_RELATIVA * 100, 0)} p.p. pior que a "
+                f"do estado e saída voluntária ≥ estado + {fmt_num(MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p.",
+                f"{na_cbo.strip().capitalize() + ', q' if na_cbo else 'Q'}uem entra ganha {fmt_pct(gap, 0)} do salário "
+                f"de quem saiu (estado: {fmt_pct(gap_ref_u, 0)}); saída voluntária {fmt_pct(saida)} vs "
+                f"{fmt_pct(saida_ref)} no estado{texto_ref}",
+                (gap_ref_u - gap) + (saida - saida_ref))
         # REC-01: formação profissional direcionada (regra em `regras.py`).
         if (u["quadrante"] in QUADRANTES_FORMACAO and nivel in NIVEIS_ALVO_FORMACAO
                 and macro not in MACROFAMILIAS_FORA_FORMACAO):
@@ -1195,16 +1377,21 @@ def gerar_recomendacoes(
                 "nível Básico ≥ 50% e saldo ≤ 0",
                 f"{fmt_pct(f_bas)} em nível Básico; saldo {fmt_int(u[M_SALDO])}",
                 f_bas - 0.5, alvo="Básico")
-        if pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA and salario_nao_explica(gap, gap_ref):
+        if pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA and salario_nao_explica(gap, gap_ref_u):
             add(ALAVANCA_RETENCAO,
-                f"saída voluntária ≥ estado + {fmt_num(MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p. com salário de entrada "
-                "não pior que o do estado (o salário não explica)",
-                f"saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)}; quem entra ganha {fmt_pct(gap, 0)} do "
-                f"salário de quem saiu (estado: {fmt_pct(gap_ref, 0)})",
+                f"saída voluntária ≥ estado + {fmt_num(MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p. com salário de entrada"
+                f"{na_cbo} não pior que o do estado (o salário não explica)",
+                f"saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)}; quem entra ganha{na_cbo} {fmt_pct(gap, 0)} "
+                f"do salário de quem saiu (estado: {fmt_pct(gap_ref_u, 0)})",
                 saida - saida_ref)
     for r in recs:
         r.prioridade = r.severidade * r.movimentacoes
     return sorted(recs, key=lambda r: r.prioridade, reverse=True)
+
+
+def custo_reposicao(t: pd.Series, salarios: float) -> float:
+    """REC-05: desligamentos a pedido × salário médio de desligamento × `salarios` (custo de repor cada um)."""
+    return float(t[COLUNA_DESLIGAMENTOS_A_PEDIDO]) * float(t[M_SAL_DESL]) * float(salarios)
 
 
 def _nivel_dominante(df: pd.DataFrame, por: list[str]) -> dict:
@@ -1244,6 +1431,127 @@ def medianas_perfil(perfil: pd.DataFrame, por: list[str]) -> pd.DataFrame:
             "n_desligamento": int(g["n_salario_desligamento"].sum()),
         })
     return pd.DataFrame(linhas, columns=[*por, "mediana_admissao", "mediana_desligamento", "n_admissao", "n_desligamento"])
+
+
+COLUNAS_ESCOLARIDADE_CONTRATACAO = [
+    "admissoes", "desligamentos", "medio_adm", "medio_desl", "superior_adm", "superior_desl",
+    "mediana_medio", "n_medio", "mediana_superior", "n_superior", "premio"]
+
+
+def escolaridade_contratacao(perfil: pd.DataFrame | None, por: list[str] | None = None) -> pd.DataFrame:
+    """ANA-02: o mercado contrata mais instruídos e paga mais por isso?
+
+    Por grupo (`por`; vazio = uma linha com o total): a fração de admitidos e de
+    desligados com médio completo ou mais e com superior completo, e o prêmio do
+    diploma = mediana de admissão com superior completo ÷ com médio completo
+    (só com ≥ `MIN_SALARIOS` salários de cada faixa; senão NaN).
+    """
+    por = list(por or [])
+    if perfil is None or perfil.empty:
+        return pd.DataFrame(columns=[*por, *COLUNAS_ESCOLARIDADE_CONTRATACAO])
+    base = perfil.assign(_todos="") if not por else perfil
+    chave = por or ["_todos"]
+    faixa = base[COLUNA_FAIXA_ESCOLARIDADE].astype(str)
+    medio, superior = faixa.isin(FAIXAS_MEDIO_OU_MAIS), faixa == FAIXA_SUPERIOR
+    contagens = pd.DataFrame({
+        **{k: base[k].astype(str) for k in chave},
+        "admissoes": base[COLUNA_ADMISSOES], "desligamentos": base[COLUNA_DESLIGAMENTOS],
+        "medio_adm": base[COLUNA_ADMISSOES].where(medio, 0), "medio_desl": base[COLUNA_DESLIGAMENTOS].where(medio, 0),
+        "superior_adm": base[COLUNA_ADMISSOES].where(superior, 0),
+        "superior_desl": base[COLUNA_DESLIGAMENTOS].where(superior, 0),
+    }).groupby(chave, sort=False).sum()
+    for lado in ("adm", "desl"):
+        total_lado = contagens["admissoes" if lado == "adm" else "desligamentos"]
+        for nome in ("medio", "superior"):
+            contagens[f"{nome}_{lado}"] = contagens[f"{nome}_{lado}"] / total_lado.where(total_lado > 0)
+    faixas = base[faixa.isin([FAIXA_MEDIO, FAIXA_SUPERIOR])].copy()
+    for k in chave:
+        faixas[k] = faixas[k].astype(str)
+    med = medianas_perfil(faixas, [*chave, COLUNA_FAIXA_ESCOLARIDADE]) if not faixas.empty else pd.DataFrame(
+        columns=[*chave, COLUNA_FAIXA_ESCOLARIDADE, "mediana_admissao", "n_admissao"])
+    for nome, rotulo in (("medio", FAIXA_MEDIO), ("superior", FAIXA_SUPERIOR)):
+        m = med[med[COLUNA_FAIXA_ESCOLARIDADE].astype(str) == rotulo].set_index(chave)
+        contagens[f"mediana_{nome}"] = m["mediana_admissao"].reindex(contagens.index).astype("float64")
+        contagens[f"n_{nome}"] = m["n_admissao"].reindex(contagens.index).fillna(0).astype("int64")
+    ok = (contagens["n_medio"] >= MIN_SALARIOS) & (contagens["n_superior"] >= MIN_SALARIOS)
+    contagens["premio"] = (contagens["mediana_superior"] / contagens["mediana_medio"]).where(ok)
+    resultado = contagens.reset_index()
+    return resultado.drop(columns="_todos") if not por else resultado
+
+
+# ---------------------------------------------------------------------------
+# ANA-04: SC × Brasil por seção, com IC por bootstrap
+# ---------------------------------------------------------------------------
+
+
+def ic_bootstrap_razao(numerador, denominador, *, n: int = N_BOOTSTRAP, semente: int = SEMENTE_BOOTSTRAP,
+                       confianca: float = CONFIANCA) -> tuple[float, float]:
+    """IC de Σ numerador ÷ Σ denominador reamostrando as unidades (municípios) com reposição.
+
+    Com menos de 2 unidades com denominador > 0 devolve (NaN, NaN).
+    """
+    import numpy as np
+
+    num = np.asarray(numerador, dtype="float64")
+    den = np.asarray(denominador, dtype="float64")
+    ok = den > 0
+    num, den = num[ok], den[ok]
+    if len(den) < 2:
+        return float("nan"), float("nan")
+    idx = np.random.default_rng(semente).integers(0, len(den), size=(n, len(den)))
+    razoes = num[idx].sum(axis=1) / den[idx].sum(axis=1)
+    alfa = (1 - confianca) / 2
+    return float(np.quantile(razoes, alfa)), float(np.quantile(razoes, 1 - alfa))
+
+
+def saida_voluntaria_economia(brasil: pd.DataFrame | None, meses: tuple[str, str] | None) -> tuple[float, float]:
+    """(SC, Brasil): saída voluntária da economia toda no período, da tabela nacional (referência do "estado")."""
+    if brasil is None or brasil.empty:
+        return float("nan"), float("nan")
+    t = brasil
+    if meses:
+        t = t[(t["mes"].astype(str) >= meses[0]) & (t["mes"].astype(str) <= meses[1])]
+    soma = t.groupby("abrangencia")[[COLUNA_DESLIGAMENTOS, COLUNA_DESLIGAMENTOS_A_PEDIDO]].sum()
+
+    def _taxa(abrangencia):
+        if abrangencia not in soma.index or not soma.loc[abrangencia, COLUNA_DESLIGAMENTOS]:
+            return float("nan")
+        return float(soma.loc[abrangencia, COLUNA_DESLIGAMENTOS_A_PEDIDO] / soma.loc[abrangencia, COLUNA_DESLIGAMENTOS])
+
+    return _taxa("SC"), _taxa("Brasil")
+
+
+def benchmark_brasil(sc: pd.DataFrame, brasil: pd.DataFrame | None, meses: tuple[str, str] | None,
+                     minimo_desligamentos: int = MIN_MOVIMENTACOES) -> pd.DataFrame:
+    """ANA-04: saída voluntária de SC (com IC por bootstrap de municípios) × Brasil, por seção CNAE.
+
+    `sc` = o agregado no recorte (escopo e período) — de onde saem as seções e os
+    municípios; `brasil` = a tabela de `src.caged_brasil`, cortada no mesmo
+    período. A coluna `leitura` diz se SC está acima, abaixo ou igual ao Brasil.
+    """
+    colunas = ["secao", "desligamentos", "sc", "ic_inf", "ic_sup", "brasil", "diferenca_pp", "leitura"]
+    if sc is None or sc.empty or brasil is None or brasil.empty:
+        return pd.DataFrame(columns=colunas)
+    br = brasil[brasil["abrangencia"] == "Brasil"]
+    if meses:
+        br = br[(br["mes"].astype(str) >= meses[0]) & (br["mes"].astype(str) <= meses[1])]
+    br = br.groupby("secao_industrial")[[COLUNA_DESLIGAMENTOS, COLUNA_DESLIGAMENTOS_A_PEDIDO]].sum()
+    por_mun = (sc.groupby([COLUNA_SECAO_INDUSTRIAL, COLUNA_MUNICIPIO], observed=True)
+               [[COLUNA_DESLIGAMENTOS, COLUNA_DESLIGAMENTOS_A_PEDIDO]].sum().reset_index())
+    linhas = []
+    for secao, g in por_mun.groupby(COLUNA_SECAO_INDUSTRIAL, observed=True):
+        desl = float(g[COLUNA_DESLIGAMENTOS].sum())
+        if desl < minimo_desligamentos or str(secao) not in br.index:
+            continue
+        valor = float(g[COLUNA_DESLIGAMENTOS_A_PEDIDO].sum()) / desl
+        inf, sup = ic_bootstrap_razao(g[COLUNA_DESLIGAMENTOS_A_PEDIDO], g[COLUNA_DESLIGAMENTOS])
+        b = br.loc[str(secao)]
+        ref = float(b[COLUNA_DESLIGAMENTOS_A_PEDIDO]) / float(b[COLUNA_DESLIGAMENTOS]) if b[COLUNA_DESLIGAMENTOS] else float("nan")
+        linhas.append({"secao": str(secao), "desligamentos": desl, "sc": valor, "ic_inf": inf, "ic_sup": sup,
+                       "brasil": ref, "diferenca_pp": (valor - ref) * 100, "leitura": leitura_benchmark(inf, sup, ref)})
+    if not linhas:
+        return pd.DataFrame(columns=colunas)
+    return pd.DataFrame(linhas, columns=colunas).sort_values("desligamentos", ascending=False).reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
@@ -1427,6 +1735,22 @@ def carregar_cbo() -> tuple[pd.DataFrame | None, pd.DataFrame | None, str | None
     return mapa, div, prompt
 
 
+def carregar_cbo_final() -> pd.DataFrame | None:
+    """A classificação final (IA → desempate → overrides), com a origem de cada CBO, ou ``None``."""
+    try:
+        return pd.read_csv(CAMINHO_CBO_FINAL, dtype={"cbo": str}, keep_default_na=False)
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def carregar_brasil() -> pd.DataFrame | None:
+    """ANA-04: contagens por abrangência (SC, Brasil) × seção × mês, ou ``None`` se o arquivo não existe."""
+    try:
+        return pd.read_parquet(CAMINHO_BRASIL)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def carregar_meta_rodada2() -> dict:
     """Procedência da classificação usada como 2ª rodada (auditoria)."""
     try:
@@ -1444,6 +1768,44 @@ def descricoes_cbo(mapa: pd.DataFrame | None = None) -> dict[str, str]:
     codigos = mapa["cbo2002ocupação"].astype(str).str.strip().str.zfill(6)
     return dict(zip(codigos, mapa["descricao"].astype(str)))
 
+
+
+# TAX-05: o que a IA acrescentou à hierarquia da CBO.
+DECISAO_SEGUIU = "seguiu o prefixo"
+DECISAO_CONTRARIOU = "contrariou o prefixo"
+DECISAO_SEM_PREFIXO = "prefixo não sugere família"
+
+
+def decisoes_ia(mapa: pd.DataFrame | None, cbos: pd.DataFrame | None) -> pd.DataFrame:
+    """Cada CBO com movimentação no recorte, a família da IA × a sugerida pelo prefixo e o nível × o do grande grupo.
+
+    `mapa` = `cbo_macrofamilias.csv` (a saída da IA); `cbos` = a tabela por CBO
+    do recorte (`filtrar_cbo`). `decisao` diz se a IA seguiu ou contrariou o
+    prefixo da tabela de desempate, ou se o prefixo não sugere família.
+    """
+    from src.cbo_ia import familia_sugerida, nivel_cbo
+
+    colunas = ["cbo", "descricao", "macrofamilia", "familia_prefixo", "nivel", "nivel_grande_grupo",
+               "justificativa", "movimentacoes", "decisao", "nivel_ajustado"]
+    if mapa is None or mapa.empty or cbos is None or cbos.empty:
+        return pd.DataFrame(columns=colunas)
+    codigos = cbos["cbo"].astype(str).str.strip().str.zfill(6)
+    mov = (cbos[COLUNA_ADMISSOES] + cbos[COLUNA_DESLIGAMENTOS]).groupby(codigos).sum()
+    d = pd.DataFrame({
+        "cbo": mapa["cbo2002ocupação"].astype(str).str.strip().str.zfill(6),
+        "descricao": mapa["descricao"].astype(str),
+        "macrofamilia": mapa["macrofamilia"].astype(str),
+        "nivel": mapa["nivel_qualificacao"].astype(str),
+        "justificativa": mapa["justificativa"].fillna("").astype(str) if "justificativa" in mapa else "",
+    })
+    d["movimentacoes"] = d["cbo"].map(mov).fillna(0)
+    d = d[d["movimentacoes"] > 0].copy()
+    d["familia_prefixo"] = d["cbo"].map(familia_sugerida)
+    d["nivel_grande_grupo"] = d["cbo"].map(nivel_cbo)
+    d["decisao"] = [DECISAO_SEM_PREFIXO if pd.isna(p) else DECISAO_SEGUIU if f == p else DECISAO_CONTRARIOU
+                    for f, p in zip(d["macrofamilia"], d["familia_prefixo"])]
+    d["nivel_ajustado"] = d["nivel"] != d["nivel_grande_grupo"]
+    return d[colunas].sort_values("movimentacoes", ascending=False).reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
@@ -1464,6 +1826,11 @@ class Contexto:
     def tem_recorte(self) -> bool:
         f = self.filtros
         return bool(f.territorios or f.setores or f.macrofamilias or f.niveis)
+
+
+def referencia_cbo(ctx: Contexto) -> tuple[pd.DataFrame | None, float]:
+    """(tabela por CBO do recorte, razão entrada/saída dentro da mesma CBO do estado) — ANA-01 P1."""
+    return filtrar_cbo(ctx), razao_estado_mesma_cbo(filtrar_cbo(ctx, estado=True))
 
 
 _CHAVES_FILTRO = ("f_escopo", "f_meses", "f_nivel", "f_terr", "f_setor", "f_macro", "f_niv")
@@ -1496,6 +1863,26 @@ def cbo_cache():
     @st.cache_resource
     def _ler():
         return carregar_cbo()
+
+    return _ler()
+
+
+def cbo_final_cache() -> pd.DataFrame | None:
+    import streamlit as st
+
+    @st.cache_resource
+    def _ler():
+        return carregar_cbo_final()
+
+    return _ler()
+
+
+def brasil_cache() -> pd.DataFrame | None:
+    import streamlit as st
+
+    @st.cache_resource
+    def _ler():
+        return carregar_brasil()
 
     return _ler()
 
@@ -1627,6 +2014,10 @@ _CSS = """
 
 /* Foco visível no conteúdo */
 [data-testid="stMain"] :focus-visible {outline: 2px solid var(--rx-foco) !important; outline-offset: 2px;}
+
+/* BUG-06: sem o link-âncora nos títulos de markdown (clicar no título mudava a URL);
+   st.title/header/subheader já usam anchor=False. O ícone de ajuda (help=) continua. */
+[data-testid="stMain"] [data-testid="stHeaderActionElements"] a[href^="#"] {display: none;}
 
 /* Títulos institucionais, sem sombra, borda fina */
 [data-testid="stMain"] h1, [data-testid="stMain"] h2, [data-testid="stMain"] h3 {font-weight: 700; letter-spacing: 0;}
@@ -1771,7 +2162,7 @@ METRICAS_INVERSAS = {M_SAIDA_VOL, M_ROT_DESC, M_PRECOCE}
 
 # Temas da coluna de indicadores (sanfona do Panorama): título, ícone e métricas.
 TEMAS_KPI = [
-    ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K, M_VAR_REL, M_ACEL]),
+    ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K, M_VAR_REL, M_ACEL, M_TAXA_ADM]),
     ("Renda", ":material/payments:", [M_GAP_SAL, M_SAL_ADM, M_SAL_DESL]),
     ("Escolaridade", ":material/school:", [M_GAP_ESC]),
     ("Perda de gente", ":material/crisis_alert:", [M_ROT_DESC, M_SAIDA_VOL, M_PRECOCE]),
@@ -1787,6 +2178,7 @@ UNIDADES = {
     M_SAIDA_VOL: "dos desligamentos, a pedido",
     M_ROT_DESC: "oficial (MTE): SC 33,6% · Brasil 34,2% · Transformação 27,6%",
     M_VAR_REL: "do estoque de 31/12/2025",
+    M_TAXA_ADM: "admissões por 100 empregos de 31/12/2025",
     M_ACEL: "vs o ano anterior (blocos de 12 meses)",
     M_PRECOCE: "dos desligados, com < 12 meses de casa",
     M_GAP_SAL: "do salário de quem saiu",
@@ -1857,6 +2249,11 @@ def posicao_ranking(por: pd.DataFrame, coluna: str, metrica: str, alvo: str) -> 
 
 # BUG-05: plural dos níveis territoriais (nunca acrescentar um "s": "Mesorregiãos").
 PLURAL_NIVEL = {NIVEL_MESO: "mesorregiões", NIVEL_MICRO: "microrregiões", NIVEL_MUNICIPIO: "municípios"}
+
+
+def plural(n, singular: str, plural_: str) -> str:
+    """BUG-05: "1 grupo", "3 grupos" (nunca "1 grupos")."""
+    return f"{fmt_int(n)} {singular if int(n) == 1 else plural_}"
 
 
 def plural_nivel(nivel: str, maiuscula: bool = False) -> str:

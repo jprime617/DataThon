@@ -46,8 +46,10 @@ LIMITES = """
 """
 
 PROXIMOS = """
-- **SC × Brasil** por seção (Tabelas 6.1 e 10 do CAGED) para separar o que é estrutural do que é local.
-- Intervalos de confiança por bootstrap; RAIS 2024 e estoque mensal rolado.
+- **Feito:** a saída voluntária de SC × Brasil por seção, com intervalo de confiança por bootstrap de municípios (Por que acontece → "Estrutural ou local?").
+- **Rotatividade do Brasil por seção:** pede o estoque nacional (RAIS de todas as regiões ou as tabelas oficiais do MTE); hoje só a da transformação é comparada, com a taxa oficial.
+- Intervalos de confiança também para os grupos da matriz e para as causas; RAIS 2024 e estoque mensal rolado.
+- Lista completa em `docs/ROADMAP.md`.
 """
 
 # NAR-04: onde conferir cada um dos 5 critérios oficiais da banca (e, à parte, a engenharia).
@@ -136,22 +138,29 @@ def _comparacao_regra_salarial(ctx: c.Contexto) -> str:
         return ""
     gap_ref = c.total(ctx.ref)[c.M_GAP_SAL]
     antigo = int((m[c.M_GAP_SAL] < c.LIMIAR_COMPRESSAO).sum())
-    novo = int(sum(c.salario_pior_que_estado(g, gap_ref) for g in m[c.M_GAP_SAL]))
-    return (f"Neste recorte, o corte fixo antigo (< {c.fmt_num(c.LIMIAR_COMPRESSAO, 2)}) daria o selo a {antigo} "
-            f"dos {len(m)} grupos mesorregião × setor, sem separar nada; a regra relativa dá a {novo}.")
+    relativo = int(sum(c.salario_pior_que_estado(g, gap_ref) for g in m[c.M_GAP_SAL]))
+    texto = (f"Neste recorte, o corte fixo antigo (< {c.fmt_num(c.LIMIAR_COMPRESSAO, 2)}) daria o selo a {antigo} "
+             f"dos {len(m)} grupos mesorregião × setor, sem separar nada; a regra relativa, a {relativo}.")
+    cbos, gap_ref_cbo = c.referencia_cbo(ctx)
+    if c.RAZAO_SALARIAL_MESMA_CBO and pd.notna(gap_ref_cbo):
+        m = c.anexar_razao_cbo(m, cbos, [c.COLUNA_REGIAO, c.COLUNA_SETOR])
+        final = int(sum(c.salario_pior_que_estado(*c.gap_causa(u, gap_ref, gap_ref_cbo)[:2]) for _, u in m.iterrows()))
+        texto += (f" Comparando dentro da mesma ocupação, a do estado sobe de {c.fmt_pct(gap_ref, 0)} para "
+                  f"{c.fmt_pct(gap_ref_cbo, 0)} e o selo fica com {final}.")
+    return texto
 
 
 def render(ctx: c.Contexto) -> None:
-    st.title("Metodologia e sistema")
+    st.title("Metodologia e sistema", anchor=False)
     c.cabecalho(ctx)
     meta = ctx.art.metadados or {}
 
-    st.subheader("Arquitetura")
+    st.subheader("Arquitetura", anchor=False)
     _, centro, _ = st.columns([1, 2, 1])
     centro.graphviz_chart(ARQUITETURA, width="stretch")
     st.caption("O LLM roda só no pipeline local; o painel lê tabelas pré-agregadas de poucos MB, nunca microdados.")
 
-    st.subheader("Procedência dos dados")
+    st.subheader("Procedência dos dados", anchor=False)
     linhas = meta.get("linhas", {})
     periodo = meta.get("periodo", {})
     st.markdown(
@@ -172,14 +181,14 @@ def render(ctx: c.Contexto) -> None:
         st.caption(nar.texto_funil(etapas) + f" Agregado: {c.fmt_int(linhas.get('agregado', 0))} linhas; "
                    f"perfil: {c.fmt_int(linhas.get('perfil', 0))} linhas.")
 
-    st.subheader("Definições")
+    st.subheader("Definições", anchor=False)
     st.table(pd.DataFrame([{"Indicador": d.rotulo, "Fórmula": d.formula} for d in c.DEFINICOES.values()])
              .set_index("Indicador"))
     st.caption(f"Guarda de amostra: taxas exigem ≥ {c.MIN_MOVIMENTACOES} movimentações; gaps salariais, "
                f"≥ {c.MIN_SALARIOS} salários de admissão e de desligamento. Abaixo disso a célula fica em cinza "
                "e sai de rankings e da matriz.")
 
-    st.subheader("Resposta à pergunta central: quando renda e escolaridade \"explicam\"")
+    st.subheader("Resposta à pergunta central: quando renda e escolaridade \"explicam\"", anchor=False)
     st.markdown(
         "Entre os grupos mesorregião × setor com amostra, medimos (1) a **correlação** entre o fator e a saída "
         "voluntária (negativa = quanto pior o fator, mais gente pede para sair) e (2) a **fração de grupos** com a "
@@ -192,19 +201,19 @@ def render(ctx: c.Contexto) -> None:
         "- **Não explica:** abaixo disso. Uma macrofamília com gap de escolaridade fora da curva aparece como exceção.\n"
         "Correlação não é causalidade: o veredito diz se o fator acompanha a saída, não se a provoca.")
 
-    st.subheader("Regras das recomendações")
+    st.subheader("Regras das recomendações", anchor=False)
     st.markdown("Cada recomendação de O que fazer sai de uma regra explícita, avaliada por mesorregião × "
                 "macrofamília (IA), só em grupos com ≥ 100 movimentações. A referência é o estado inteiro no "
                 "mesmo escopo e período.")
     st.table(pd.DataFrame([{"Alavanca": a, "Quando dispara": r} for a, r in c.REGRA_ALAVANCA.items()])
              .set_index("Alavanca"))
 
-    st.subheader("Setores: divisão CNAE → setor")
+    st.subheader("Setores: divisão CNAE → setor", anchor=False)
     st.markdown("Na indústria de transformação (seção C), o setor agrupa divisões CNAE 2.0 (dois primeiros dígitos "
                 "da subclasse). Nas demais seções, o setor é a própria seção.")
     st.table(tabela_setores().set_index("Setor"))
 
-    st.subheader("Como a matriz é calculada: Dinamismo (cresce?) e Tensão (perde gente?)")
+    st.subheader("Como a matriz é calculada: Dinamismo (cresce?) e Tensão (perde gente?)", anchor=False)
     st.markdown(
         "- **Dinamismo** = média dos z-scores da **variação do emprego** (saldo ÷ estoque de 31/12/2025) e da **aceleração** "
         "(saldo de set/25–ago/26 menos o de set/24–ago/25, ÷ estoque), entre as unidades com amostra. Blocos de 12 "
@@ -220,10 +229,22 @@ def render(ctx: c.Contexto) -> None:
         f"{c.fmt_pct(c.total(ctx.ref)[c.M_GAP_SAL], 0)} do salário de quem sai. Por isso a causa **Salarial** é relativa: "
         f"só acende quando a razão entrada/saída do grupo fica **{c.fmt_num(c.MARGEM_SALARIAL_RELATIVA * 100, 0)} p.p. "
         "ou mais abaixo da razão do estado** (mesmo escopo e período). "
+        "**Dentro da mesma ocupação:** a razão é calculada em cada CBO do grupo e depois ponderada pelas "
+        f"movimentações (só CBOs com ≥ {c.MIN_SALARIOS} salários de cada lado). Assim a comparação é entre a mesma "
+        "função, e não entra o efeito de contratar numa ocupação e perder gente noutra. Ela decide o selo quando as "
+        f"CBOs com amostra cobrem ≥ {c.fmt_pct(c.MIN_COBERTURA_CBO, 0)} das movimentações do grupo; senão, vale a "
+        "razão do grupo inteiro. "
         + _comparacao_regra_salarial(ctx) + "\n"
         "- **Saíram:** o giro (função exata do saldo relativo) e a aceleração entre semestres (media o calendário: "
         "dezembro concentra desligamentos); ela voltou na forma de blocos de 12 meses."
     )
+
+    st.markdown(
+        "**Demanda: a taxa de admissão.** O CAGED não tem vagas abertas; o proxy de demanda é a **taxa de admissão** "
+        "(admissões ÷ estoque de 31/12/2025): quantas contratações o grupo fez para cada 100 empregos que tinha. "
+        f"No recorte, a do estado é {c.fmt_pct(c.total(ctx.ref)[c.M_TAXA_ADM])}. **Demanda alta + retenção baixa** "
+        "(contrata muito e perde a equipe) é o sinal de apagão do guia: o grupo precisa de gente e não consegue "
+        "segurá-la. A taxa aparece no tooltip da matriz e na tabela de alertas de Quem precisa de atenção.")
 
     st.markdown("**Os quatro quadrantes** (Dinamismo ≥ 0 = cresce mais que a média dos grupos; Tensão ≥ 0 = perde "
                 "a equipe mais que a média). Os eixos são relativos: um grupo pode estar do lado \"cresce\" com saldo "
@@ -234,15 +255,15 @@ def render(ctx: c.Contexto) -> None:
 
     _sensibilidade(ctx)
 
-    st.subheader("Onde conferir cada critério da banca")
+    st.subheader("Onde conferir cada critério da banca", anchor=False)
     st.table(pd.DataFrame(CRITERIOS_BANCA, columns=["Critério", "Onde conferir"]).set_index("Critério"))
     st.markdown("**Engenharia**")
     st.table(pd.DataFrame(ENGENHARIA, columns=["Item", "Onde conferir"]).set_index("Item"))
 
-    st.subheader("Premissas e limites")
+    st.subheader("Premissas e limites", anchor=False)
     st.markdown(LIMITES)
 
-    st.subheader("Qualidade do código")
+    st.subheader("Qualidade do código", anchor=False)
     testes = meta.get("testes")
     repo = os.environ.get("DASHBOARD_REPO_URL", "").strip()
     st.markdown(
@@ -252,8 +273,8 @@ def render(ctx: c.Contexto) -> None:
         + (f" (commit `{meta.get('commit')}`)." if meta.get("commit") else ".")
     )
 
-    st.subheader("Próximos passos")
+    st.subheader("Próximos passos", anchor=False)
     st.markdown(PROXIMOS)
 
-    st.subheader("Glossário")
+    st.subheader("Glossário", anchor=False)
     st.markdown("\n".join(f"- **{termo}**: {texto}" for termo, texto in GLOSSARIO))

@@ -63,7 +63,7 @@ def main() -> None:
 
     art = c.carregar_artefatos_cache()
     if not art.disponivel:
-        st.title("Raio-X da Indústria SC")
+        st.title("Raio-X da Indústria SC", anchor=False)
         st.error(f"{art.motivo} {' '.join(art.avisos)}", icon=":material/cloud_off:")
         return
 

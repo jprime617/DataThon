@@ -1,19 +1,19 @@
 {
-  "gerado_em": "2026-11-12T23:29:12-03:00",
+  "gerado_em": "2026-11-13T01:37:56-03:00",
   "periodo": {
     "inicio": "202409",
     "fim": "202608",
     "meses": 24
   },
-  "commit": "e7f9699",
+  "commit": "7245713",
   "linhas": {
     "brutas": 6782144,
     "excluidas_competencia": 0,
     "apos_limpeza": 6782144,
     "movimentacoes_agregadas": 6771692,
     "movimentacoes_industria": 2282348,
-    "agregado": 512548,
-    "perfil": 18975,
+    "agregado": 512025,
+    "perfil": 18955,
     "por_tipo": {
       "MOV": 6715601,
       "FOR": 61317,

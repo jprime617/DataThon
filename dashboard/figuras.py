@@ -237,8 +237,10 @@ def construir_matriz(matriz: pd.DataFrame, rotulo: pd.Series) -> go.Figure:
             customdata=list(zip(rot, [c.fmt_int(v) for v in parte[c.M_MOV]],
                                 [c.fmt_pct(v) for v in parte[c.M_SAIDA_VOL]],
                                 [c.fmt_gap(v) for v in parte[c.M_GAP_SAL]],
-                                parte["motor"])),
+                                parte["motor"],
+                                [c.fmt_pct(v) for v in parte.get(c.M_TAXA_ADM, pd.Series(index=parte.index))])),
             hovertemplate=("<b>%{customdata[0]}</b><br>n = %{customdata[1]} movimentações"
+                           "<br>taxa de admissão (demanda): %{customdata[5]} do estoque"
                            "<br>saem a pedido: %{customdata[2]} · salário de entrada: %{customdata[3]} de quem saiu"
                            "<extra>%{fullData.name}</extra>"),
         )
@@ -407,3 +409,59 @@ def construir_funil(etapas: list) -> go.Figure:
     ))
     figura.update_yaxes(categoryorder="array", categoryarray=rotulos, autorange="reversed")
     return _layout(figura, "Do arquivo bruto à indústria: volume em cada etapa", 340)
+
+
+def construir_premio(tabela: pd.DataFrame, categoria: str, premio_estado: float) -> go.Figure:
+    """ANA-02: prêmio do diploma (mediana superior ÷ médio) por categoria; vermelho = prêmio baixo."""
+    dados = tabela.dropna(subset=["premio"]) if tabela is not None and not tabela.empty else None
+    if dados is None or dados.empty:
+        return c.figura_vazia(f"Nenhuma categoria com ≥ {c.MIN_SALARIOS} salários de médio e de superior completo.")
+    dados = dados.sort_values("premio")
+    baixo = [c.premio_baixo(p, premio_estado) for p in dados["premio"]]
+    figura = go.Figure(go.Bar(
+        y=dados[categoria].astype(str), x=dados["premio"], orientation="h",
+        marker_color=[c.COR_TENSAO if b else c.COR_EXPANSAO for b in baixo],
+        marker_pattern_shape=["/" if b else "" for b in baixo],
+        text=[f"{c.fmt_num(v, 2)}×" for v in dados["premio"]], textposition="outside",
+        customdata=list(zip([c.fmt_brl(v) for v in dados["mediana_superior"]], [c.fmt_int(v) for v in dados["n_superior"]],
+                            [c.fmt_brl(v) for v in dados["mediana_medio"]], [c.fmt_int(v) for v in dados["n_medio"]])),
+        hovertemplate="%{y}<br>superior completo: %{customdata[0]} (n = %{customdata[1]})<br>"
+                      "médio completo: %{customdata[2]} (n = %{customdata[3]})<extra></extra>",
+    ))
+    if pd.notna(premio_estado):
+        figura.add_vline(x=premio_estado, line_dash="dot", line_color=c.COR_NEUTRA,
+                         annotation_text=f"estado {c.fmt_num(premio_estado, 2)}×", annotation_position="top")
+    figura.add_vline(x=1, line_color=c.COR_NEUTRA)
+    figura.update_traces(cliponaxis=False)
+    return _layout(figura, "Quanto a mais o diploma superior paga na entrada?", 160 + 42 * len(dados),
+                   xaxis={"title": "Mediana de admissão: superior completo ÷ médio completo",
+                          "range": [0, float(dados["premio"].max()) * 1.25]})
+
+
+def construir_benchmark(tab: pd.DataFrame) -> go.Figure:
+    """ANA-04: saída voluntária de SC (com o IC) × Brasil, por seção."""
+    if tab is None or tab.empty:
+        return c.figura_vazia("Sem a tabela nacional do CAGED nesta seleção.")
+    dados = tab.sort_values("sc")
+    rotulo = [s if len(s) <= 40 else s[:38] + "…" for s in dados["secao"]]
+    figura = go.Figure()
+    figura.add_scatter(
+        x=dados["sc"], y=rotulo, mode="markers", name="Santa Catarina (IC 95%)",
+        marker={"size": 12, "color": c.COR_TENSAO},
+        error_x={"type": "data", "symmetric": False, "array": dados["ic_sup"] - dados["sc"],
+                 "arrayminus": dados["sc"] - dados["ic_inf"], "color": c.COR_TENSAO, "thickness": 2},
+        customdata=list(zip([c.fmt_pct(v) for v in dados["sc"]], [c.fmt_pct(v) for v in dados["ic_inf"]],
+                            [c.fmt_pct(v) for v in dados["ic_sup"]], [c.fmt_int(v) for v in dados["desligamentos"]])),
+        hovertemplate="%{y}<br>SC: %{customdata[0]} (IC %{customdata[1]}–%{customdata[2]}; "
+                      "%{customdata[3]} desligamentos)<extra></extra>")
+    figura.add_scatter(
+        x=dados["brasil"], y=rotulo, mode="markers", name="Brasil",
+        marker={"size": 12, "color": c.COR_EXPANSAO, "symbol": "diamond"},
+        customdata=[c.fmt_pct(v) for v in dados["brasil"]], hovertemplate="%{y}<br>Brasil: %{customdata}<extra></extra>")
+    minimo = float(min(dados["ic_inf"].min(), dados["brasil"].min()))
+    maximo = float(max(dados["ic_sup"].max(), dados["brasil"].max()))
+    folga = max(0.02, 0.08 * (maximo - minimo))
+    return _layout(figura, "Em SC, quem sai pede mais para sair do que no Brasil?", 230 + 44 * len(dados),
+                   xaxis={"title": "Desligamentos a pedido ÷ desligamentos", "tickformat": ".0%",
+                          "range": [max(0.0, minimo - folga), min(1.0, maximo + folga)]},
+                   legend={"orientation": "h", "y": 1.02, "yanchor": "bottom", "x": 1, "xanchor": "right"})

@@ -203,6 +203,8 @@ def estoque_rais(
     destino: str | os.PathLike[str] | None = ESTOQUE_PADRAO,
     *,
     caminho_cbo: str = CAMINHO_CSV_PADRAO,
+    caminho_referencia: str | os.PathLike[str] | None = None,
+    caminho_overrides: str | os.PathLike[str] | None = None,
 ) -> pd.DataFrame:
     """Estoque de 31/12 e desligados da RAIS por recorte do agregado (M4.C3).
 
@@ -217,7 +219,9 @@ def estoque_rais(
     secao = letra.map(lambda l: mapeamentos.SECAO_CNAE.get(l, l))
     setor = divisao.map(mapeamentos.SETOR_POR_DIVISAO_TRANSFORMACAO).where(letra == "C")
 
-    cbos = aplicar_mapeamento(vinculos[[COLUNA_CBO]].rename(columns={COLUNA_CBO: COLUNA_CBO_CAGED}), caminho_cbo)
+    # A mesma classificação final do CAGED (desempate e overrides), para o estoque casar com o agregado.
+    cbos = aplicar_mapeamento(vinculos[[COLUNA_CBO]].rename(columns={COLUNA_CBO: COLUNA_CBO_CAGED}), caminho_cbo,
+                              caminho_referencia=caminho_referencia, caminho_overrides=caminho_overrides)
 
     ativo = vinculos[COLUNA_ATIVO_31DEZ] == 1
     esc = vinculos[COLUNA_ESCOLARIDADE]
@@ -259,6 +263,10 @@ if __name__ == "__main__":
     import sys
 
     if "--estoque" in sys.argv:
-        estoque_rais(pd.read_parquet(DESTINO_PADRAO))
+        from src.cbo_ia import CAMINHO_OVERRIDES, NOME_CSV_REFERENCIA
+
+        estoque_rais(pd.read_parquet(DESTINO_PADRAO),
+                     caminho_referencia=Path(CAMINHO_CSV_PADRAO).with_name(NOME_CSV_REFERENCIA),
+                     caminho_overrides=CAMINHO_OVERRIDES)
     else:
         ler_rais_sc()

@@ -45,6 +45,7 @@ def unidades(df: pd.DataFrame, *, relevantes: bool = False) -> pd.DataFrame:
     # NAR-03: transformação (seção C) e construção (seção F) identificadas.
     m["transformacao"] = c.marcar_secao(m, df, por, c.SECAO_TRANSFORMACAO)
     m["construcao"] = c.marcar_secao(m, df, por, c.SECAO_CONSTRUCAO)
+    m = c.anexar_concentracao(m, df, por)  # TAX-02
     if relevantes and not m.empty:
         piso = max(c.MIN_MOVIMENTACOES, FRACAO_RELEVANCIA * float(m[c.M_MOV].sum()))
         m = m[m[c.M_MOV] >= piso]
@@ -126,11 +127,34 @@ def concentracao_municipio(df: pd.DataFrame, regiao: str, setor: str) -> tuple[s
     return str(saldo.idxmax()), float(saldo.max()) / total
 
 
-def nota_expansao(df: pd.DataFrame, regiao: str, setor: str) -> str:
-    """TAX-01: concentração municipal do saldo (calculada) e contexto externo com fonte, se houver."""
+def texto_concentrada(u: pd.Series, com_rotulo: bool = True) -> str:
+    """TAX-02: "**Expansão concentrada**: 43% do saldo positivo veio de jul/26 e 95%, de Navegantes. …" ou ""."""
+    if not bool(u.get("concentrada", False)):
+        return ""
+    partes = []
+    fm, fu = u.get("fracao_mes"), u.get("fracao_municipio")
+    if (int(u.get("n_meses") or 0) >= c.MIN_MESES_CONCENTRACAO and pd.notna(fm)
+            and fm >= c.LIMIAR_CONCENTRACAO_MES):
+        partes.append(f"{c.fmt_pct(fm, 0)} do saldo positivo veio de {c.rotulo_mes(u['mes_pico'])}")
+    if int(u.get("n_municipios") or 0) >= 2 and pd.notna(fu) and fu >= c.LIMIAR_CONCENTRACAO_MUNICIPIO:
+        partes.append(f"{c.fmt_pct(fu, 0)}" + (", de " if partes else " do saldo positivo veio de ")
+                      + str(u["municipio_pico"]))
+    frase = " e ".join(partes)
+    frase = f"**{c.SELO_CONCENTRADA}**: {frase}" if com_rotulo else frase[0].upper() + frase[1:]
+    return (frase
+            + ". Pode ser um projeto com data para acabar, não uma tendência do setor.")
+
+
+def nota_expansao(df: pd.DataFrame, regiao: str, setor: str, selo: str = "") -> str:
+    """TAX-01: concentração municipal do saldo (calculada) e contexto externo com fonte, se houver.
+
+    Com o selo de expansão concentrada (TAX-02), ele substitui a frase do município.
+    """
     partes = []
     conc = concentracao_municipio(df, regiao, setor)
-    if conc and conc[1] >= c.FRACAO_CONCENTRACAO_TEXTO:
+    if selo:
+        partes.append(" " + selo)
+    elif conc and conc[1] >= c.FRACAO_CONCENTRACAO_TEXTO:
         partes.append(f" {c.fmt_pct(min(conc[1], 1.0), 0)} do saldo vem de **{conc[0]}**"
                       + (" (os demais municípios somam saldo negativo)." if conc[1] > 1 else "."))
     if setor in c.CONTEXTO_SETOR:
@@ -192,7 +216,7 @@ def principais_achados(df: pd.DataFrame, limite: int = 6) -> list[Achado]:
                    "que no ano anterior."
                    if pd.notna(e[c.M_VAR_REL]) and pd.notna(e[c.M_ACEL])
                    else f" ({c.fmt_pct(e[c.M_SALDO_REL])} das movimentações).")
-                + nota_expansao(df, str(e[c.COLUNA_REGIAO]), str(e[c.COLUNA_SETOR])),
+                + nota_expansao(df, str(e[c.COLUNA_REGIAO]), str(e[c.COLUNA_SETOR]), texto_concentrada(e)),
                 _filtro_unidade(e[c.COLUNA_REGIAO], e[c.COLUNA_SETOR]), float(e["dinamismo"]),
             ))
         # TAX-01: setor com contexto externo documentado (ex.: construção naval) ganha um
@@ -207,7 +231,8 @@ def principais_achados(df: pd.DataFrame, limite: int = 6) -> list[Achado]:
                 f"Expansão puxada por encomendas: {setor}",
                 f"**{setor}** em **{n[c.COLUNA_REGIAO]}**: saldo {c.fmt_int(n[c.M_SALDO])}"
                 + (f", emprego {c.fmt_pct(n[c.M_VAR_REL])} maior no ano" if pd.notna(n[c.M_VAR_REL]) else "")
-                + f"; está em **{n['quadrante']}**." + nota_expansao(df, str(n[c.COLUNA_REGIAO]), setor),
+                + f"; está em **{n['quadrante']}**."
+                + nota_expansao(df, str(n[c.COLUNA_REGIAO]), setor, texto_concentrada(n)),
                 _filtro_unidade(n[c.COLUNA_REGIAO], setor), float(n["dinamismo"]) * 0.9,
             ))
         z_comp = c.zscore(1 - m[c.M_GAP_SAL])
@@ -281,16 +306,30 @@ LEITURA_MAPA = {
 _MENOR_E_PIOR = {c.M_GAP_SAL, c.M_GAP_ESC, c.M_SALDO_10K, c.M_SALDO_REL}
 
 
-def legenda_mapa(metricas: pd.DataFrame, metrica: str, rotulo: str) -> str:
-    """Legenda do mapa: como ler a cor e a unidade em pior situação (com amostra)."""
+def minimo_pior_situacao(nivel: str) -> int:
+    """NAR-05: movimentações mínimas para uma unidade do nível ser a "pior situação" do mapa."""
+    return c.MIN_MOV_PIOR_MUNICIPIO if nivel == c.NIVEL_MUNICIPIO else c.MIN_MOVIMENTACOES
+
+
+def legenda_mapa(metricas: pd.DataFrame, metrica: str, rotulo: str, nivel: str | None = None) -> str:
+    """Legenda do mapa: como ler a cor e a unidade em pior situação, no nível pintado (NAR-05).
+
+    Com `nivel`, a pior situação é a do nível escolhido; em município, só entre
+    os que têm ≥ `MIN_MOV_PIOR_MUNICIPIO` movimentações.
+    """
     leitura = LEITURA_MAPA.get(metrica, "")
-    validas = metricas[metricas[c.M_AMOSTRA_OK]].dropna(subset=[metrica])
+    minimo = minimo_pior_situacao(nivel) if nivel else c.MIN_MOVIMENTACOES
+    validas = metricas[metricas[c.M_AMOSTRA_OK] & (metricas[c.M_MOV] >= minimo)].dropna(subset=[metrica])
     if validas.empty:
         return f"{leitura} Nenhuma região com dados suficientes nesta seleção.".strip()
     pior = metrica in _MENOR_E_PIOR
     extremo = validas.loc[validas[metrica].idxmin() if pior else validas[metrica].idxmax()]
     definicao = c.DEFINICOES[metrica]
-    return (f"{leitura} Pior situação: **{extremo[rotulo]}** "
+    entre = ""
+    if nivel:
+        entre = f" entre as {c.plural_nivel(nivel)}" if nivel != c.NIVEL_MUNICIPIO else \
+            f" entre os municípios com ≥ {c.fmt_int(minimo)} movimentações"
+    return (f"{leitura} Pior situação{entre}: **{extremo[rotulo]}** "
             f"({definicao.rotulo.lower()}: {c.fmt_metrica(metrica, extremo[metrica])}). "
             f"Cinza = poucos dados.")
 
@@ -415,7 +454,7 @@ def contagem_quadrantes(contagem, quadrantes=None) -> str:
     partes = [f"{int(contagem.get(q, 0))} em **{q}**" for q in quadrantes]
     if not partes:
         return ""
-    partes[0] = partes[0].replace(" em ", " grupos em ", 1)
+    partes[0] = f"{c.plural(contagem.get(quadrantes[0], 0), 'grupo', 'grupos')} em **{quadrantes[0]}**"
     return ", ".join(partes[:-1]) + " e " + partes[-1] if len(partes) > 1 else partes[0]
 
 
@@ -435,14 +474,21 @@ def rotulo_lista_principal(demais: pd.DataFrame, df: pd.DataFrame, por: list[str
 
 # --- ANA-01: critério das causas, em texto gerado dos limiares --------------------
 
-def legenda_causas(ref: pd.Series | None = None) -> str:
+def legenda_causas(ref: pd.Series | None = None, gap_ref_cbo: float = float("nan")) -> str:
     """Como cada causa é decidida, com a referência do estado quando houver."""
     gap_ref = ref[c.M_GAP_SAL] if ref is not None else float("nan")
-    estado = f" (no estado, quem entra ganha {c.fmt_pct(gap_ref, 0)} do salário de quem sai)" if pd.notna(gap_ref) else ""
+    usa_cbo = c.RAZAO_SALARIAL_MESMA_CBO and pd.notna(gap_ref_cbo)
+    valor = gap_ref_cbo if usa_cbo else gap_ref
+    onde = " na mesma ocupação" if usa_cbo else ""
+    estado = (f" (no estado, quem entra ganha{onde} {c.fmt_pct(valor, 0)} do salário de quem sai)"
+              if pd.notna(valor) else "")
     margem = c.fmt_num(c.MARGEM_SALARIAL_RELATIVA * 100, 0)
+    cbo = (f" A razão é calculada dentro de cada ocupação (CBO) e depois ponderada pelas movimentações, quando as "
+           f"CBOs com amostra cobrem ≥ {c.fmt_pct(c.MIN_COBERTURA_CBO, 0)} das movimentações do grupo; senão, vale a "
+           "razão do grupo inteiro." if usa_cbo else "")
     return (f"Salarial = a razão entre o salário de quem entra e o de quem sai fica {margem} p.p. ou mais abaixo da "
             f"razão do estado{estado}. Quem sai tem mais tempo de casa, então ganhar um pouco menos na entrada é "
-            f"normal; o selo só acende quando a diferença é pior que a do estado. Qualificação = entra gente menos "
+            f"normal; o selo só acende quando a diferença é pior que a do estado.{cbo} Qualificação = entra gente menos "
             f"escolarizada numa área técnica. Retenção = saída a pedido "
             f"{c.fmt_num(c.MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p. acima do estado, com salário de entrada não pior "
             "que o do estado.")
@@ -462,10 +508,13 @@ class RespostaCentral:
 def _lista_grupos(grupos: pd.DataFrame) -> str:
     return " e ".join(
         f"**{g[c.COLUNA_SETOR]} – {g[c.COLUNA_REGIAO]}** (saldo {c.fmt_int(g[c.M_SALDO])}, "
-        f"rotatividade {c.fmt_pct(g[c.M_ROT_DESC])})" for _, g in grupos.iterrows())
+        f"rotatividade {c.fmt_pct(g[c.M_ROT_DESC])}"
+        + ("; " + c.SELO_CONCENTRADA.lower() if bool(g.get("concentrada", False)) else "") + ")"
+        for _, g in grupos.iterrows())
 
 
-def resposta_central(df: pd.DataFrame, ref: pd.Series | None = None, n: int = 2) -> RespostaCentral | None:
+def resposta_central(df: pd.DataFrame, ref: pd.Series | None = None, n: int = 2, *,
+                     cbos: pd.DataFrame | None = None, gap_ref_cbo: float = float("nan")) -> RespostaCentral | None:
     """Onde está o apagão e a expansão; se renda e escolaridade explicam (limiares em `regras`).
 
     Tudo calculado no recorte: grupos mesorregião × setor com amostra. `ref` é o
@@ -497,24 +546,36 @@ def resposta_central(df: pd.DataFrame, ref: pd.Series | None = None, n: int = 2)
     onde = ". ".join(partes) + "." if partes else "Nenhum grupo com amostra suficiente em Apagão ou Expansão acelerada."
 
     # Causas por grupo (as mesmas regras de Quem precisa de atenção).
-    frac_tec = c.fracao_por_nivel(df, [c.COLUNA_REGIAO, c.COLUNA_SETOR], c.NIVEIS_QUALIFICADOS)
+    por = [c.COLUNA_REGIAO, c.COLUNA_SETOR]
+    todas = c.anexar_razao_cbo(todas, cbos, por)  # ANA-01 P1
+    frac_tec = c.fracao_por_nivel(df, por, c.NIVEIS_QUALIFICADOS)
     selos = [c.causas(u, saida_ref=ref[c.M_SAIDA_VOL], gap_ref=ref[c.M_GAP_SAL],
-                      fracao_tecnica=float(frac_tec.get((u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), 0.0)))
+                      fracao_tecnica=float(frac_tec.get((u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), 0.0)),
+                      gap_ref_cbo=gap_ref_cbo)
              for _, u in todas.iterrows()]
     n_grupos = len(todas)
     n_sal = sum(c.CAUSA_SALARIAL in s for s in selos)
     n_qual = sum(c.CAUSA_QUALIFICACAO in s for s in selos)
 
-    def _corr(coluna):
-        v = todas.dropna(subset=[coluna, c.M_SAIDA_VOL])
+    def _corr(coluna, base=todas):
+        v = base.dropna(subset=[coluna, c.M_SAIDA_VOL])
         return float(v[coluna].corr(v[c.M_SAIDA_VOL])) if len(v) >= 3 else float("nan")
 
-    r_sal, r_esc = _corr(c.M_GAP_SAL), _corr(c.M_GAP_ESC)
+    r_bruto, r_esc = _corr(c.M_GAP_SAL), _corr(c.M_GAP_ESC)
+    # ANA-01 P1: a correlação usa a mesma medida da causa: dentro da mesma CBO, nos grupos com cobertura.
+    cobertos = todas[todas[c.M_COBERTURA_CBO] >= c.MIN_COBERTURA_CBO]
+    usa_cbo = c.RAZAO_SALARIAL_MESMA_CBO and pd.notna(gap_ref_cbo) and len(cobertos) >= 3
+    r_sal = _corr(c.M_GAP_SAL_CBO, cobertos) if usa_cbo else r_bruto
     v_renda = c.veredito(r_sal, n_sal / n_grupos)
     v_esc = c.veredito(r_esc, n_qual / n_grupos)
-    renda = (f"**Renda {v_renda}.** Correlação de {c.fmt_num(r_sal, 2)} entre o salário de entrada (vs o de quem "
-             f"saiu) e a saída voluntária; {n_sal} de {n_grupos} grupos têm causa salarial (entrada "
-             f"{c.fmt_num(c.MARGEM_SALARIAL_RELATIVA * 100, 0)} p.p. pior que a do estado).")
+    na_cbo = " na mesma ocupação" if usa_cbo else ""
+    renda = (f"**Renda {v_renda}.** Correlação de {c.fmt_num(r_sal, 2)} entre o salário de entrada{na_cbo} (vs o de "
+             f"quem saiu) e a saída voluntária; {n_sal} de {n_grupos} grupos têm causa salarial (entrada "
+             f"{c.fmt_num(c.MARGEM_SALARIAL_RELATIVA * 100, 0)} p.p. pior que a do estado{na_cbo}).")
+    if usa_cbo and pd.notna(r_bruto) and pd.notna(r_sal):
+        leitura = ("misturar ocupações diferentes dilui a relação" if abs(r_sal) > abs(r_bruto)
+                   else "parte da relação vinha de entrar e sair gente de ocupações diferentes")
+        renda += f" Sem separar por ocupação, a correlação seria {c.fmt_num(r_bruto, 2)}: {leitura}."
     gap = ref[c.M_GAP_ESC]
     diferenca = (f"quem entra tem em média {c.fmt_num(abs(gap), 2)} nível de escolaridade "
                  f"{'a menos' if gap < 0 else 'a mais'} que quem sai" if pd.notna(gap) else "sem dado de escolaridade")
@@ -575,7 +636,29 @@ def _data(valor) -> str:
     return f"{texto[8:10]}/{texto[5:7]}/{texto[:4]}" if len(texto) == 10 else "—"
 
 
-def auditoria_ia(meta: dict, meta_r2: dict, divergencias: pd.DataFrame | None = None) -> str:
+def texto_desempate(final: pd.DataFrame | None) -> str:
+    """TAX-04 P1: a regra explícita de desempate e, com o mapeamento final, quantas CBOs cada caminho decidiu."""
+    from src import cbo_ia
+
+    texto = ("**Desempate (regra explícita):** quando as rodadas divergem na família, vale a que concorda com a "
+             "família sugerida pelo prefixo da CBO. Exceção: se a 1ª fugiu do prefixo com justificativa registrada "
+             "(o prompt só permitia o desvio assim), vale a 1ª. Se o prefixo não resolve (não sugere família ou "
+             "nenhuma rodada concorda com ele), o caso vai para revisão manual em `ia_cbo/overrides.csv`; até lá, "
+             "vale a 1ª. Os overrides manuais são a palavra final.")
+    if final is None or final.empty or "origem" not in final:
+        return texto
+    cont = final["origem"].value_counts()
+    partes = [(cbo_ia.ORIGEM_PREFIXO, "pelo prefixo"), (cbo_ia.ORIGEM_JUSTIFICADA, "pela 1ª rodada justificada"),
+              (cbo_ia.ORIGEM_PENDENTE, "aguardando revisão manual (vale a 1ª)"),
+              (cbo_ia.ORIGEM_OVERRIDE, "por override manual")]
+    lista = [f"{c.fmt_int(int(cont.get(o, 0)))} {rotulo}" for o, rotulo in partes if cont.get(o, 0)]
+    mudou = int((final["macrofamilia"] != final["macrofamilia_ia"]).sum()) if "macrofamilia_ia" in final else 0
+    return (texto + f" Nas {c.fmt_int(len(final))} CBOs: " + ", ".join(lista)
+            + f". A família final difere da que a IA deu em {c.fmt_int(mudou)} CBO{'' if mudou == 1 else 's'}.")
+
+
+def auditoria_ia(meta: dict, meta_r2: dict, divergencias: pd.DataFrame | None = None,
+                 final: pd.DataFrame | None = None) -> str:
     """Como a classificação foi feita e auditada: um processo só, coerente com `ia_cbo/` e os metadados."""
     meta, meta_r2 = meta or {}, meta_r2 or {}
     modelo = meta.get("modelo") or "modelo informado no pipeline"
@@ -597,7 +680,130 @@ def auditoria_ia(meta: dict, meta_r2: dict, divergencias: pd.DataFrame | None = 
     if divergencias is not None and not divergencias.empty:
         so_nivel = int((divergencias["macrofamilia_r1"] == divergencias["macrofamilia_r2"]).sum())
         linhas.append(f"{so_nivel} das {len(divergencias)} divergências são só de nível (a família coincide).")
-    linhas.append(
-        "**Desempate:** quando as rodadas divergem, vale a 1ª. Ela usou o modelo mais capaz e exigiu justificativa "
-        "sempre que a família fugiu da sugerida pelo prefixo da CBO; a 2ª rodada serve só para medir a estabilidade.")
+    linhas.append(texto_desempate(final))
     return "\n\n".join(linhas)
+
+
+# --- ANA-02: o mercado contrata mais instruídos e paga mais por isso? ---------------
+
+def fmt_premio(valor) -> str:
+    """1.481 → "1,48×"."""
+    return "—" if pd.isna(valor) else f"{c.fmt_num(valor, 2)}×"
+
+
+def resposta_escolaridade_contratacao(t: pd.Series | None) -> str:
+    """Uma frase com as participações de admitidos × desligados e o prêmio do diploma (linha de `escolaridade_contratacao`)."""
+    if t is None or pd.isna(t.get("medio_adm")) or pd.isna(t.get("medio_desl")):
+        return "Sem dados de escolaridade suficientes nesta seleção."
+    mais_medio = t["medio_adm"] >= t["medio_desl"]
+    mais_sup = t["superior_adm"] >= t["superior_desl"]
+    if mais_medio and mais_sup:
+        leitura = "o mercado está contratando gente mais instruída do que a que sai"
+    elif not mais_medio and not mais_sup:
+        leitura = "o mercado não está contratando gente mais instruída do que a que sai"
+    else:
+        leitura = "a contratação não sobe de escolaridade de forma clara"
+    texto = (f"Entre os admitidos, {c.fmt_pct(t['medio_adm'])} têm médio completo ou mais (desligados: "
+             f"{c.fmt_pct(t['medio_desl'])}) e {c.fmt_pct(t['superior_adm'])} têm superior completo (desligados: "
+             f"{c.fmt_pct(t['superior_desl'])}): {leitura}.")
+    if pd.notna(t.get("premio")):
+        texto += (f" Quem entra com superior completo ganha {fmt_premio(t['premio'])} o salário de entrada de quem "
+                  "tem médio completo (medianas).")
+    return texto
+
+
+def destaque_premio_baixo(tabela: pd.DataFrame, premio_estado: float, rotulo, n: int = 4) -> str | None:
+    """Onde o diploma superior quase não paga a mais (prêmio ≥ 20% abaixo do estado), dos grupos com mais admissões.
+
+    `rotulo` é o nome de uma coluna ou uma função linha → texto.
+    """
+    if tabela is None or tabela.empty or pd.isna(premio_estado):
+        return None
+    baixo = tabela[[c.premio_baixo(p, premio_estado) for p in tabela["premio"]]]
+    if baixo.empty:
+        return None
+    nome = rotulo if callable(rotulo) else (lambda linha: str(linha[rotulo]))
+    topo = baixo.sort_values("admissoes", ascending=False).head(n)
+    itens = [f"**{nome(linha)}** ({fmt_premio(linha['premio'])})" for _, linha in topo.iterrows()]
+    resto = len(baixo) - len(topo)
+    return (f"Prêmio do diploma baixo (até {fmt_premio(premio_estado * c.FATOR_PREMIO_BAIXO)}; estado: "
+            f"{fmt_premio(premio_estado)}) em "
+            + (", ".join(itens) + f" e mais {resto} grupo{'s' if resto > 1 else ''}" if resto > 0 else _lista(itens))
+            + ". Quando o superior completo quase não paga a mais na entrada, a área tende a não atrair qualificados.")
+
+
+# --- TAX-05: o que a IA acrescentou à hierarquia da CBO --------------------------------
+
+def texto_decisoes_ia(dec: pd.DataFrame) -> str:
+    """"Em 97 das 1.467 ocupações (2,2% das movimentações) a IA contrariou o prefixo…", tudo calculado."""
+    if dec is None or dec.empty:
+        return "Sem ocupações com movimentação nesta seleção."
+    total_mov = float(dec["movimentacoes"].sum()) or 1.0
+
+    def _parte(mascara) -> tuple[str, str]:
+        return c.fmt_int(int(mascara.sum())), c.fmt_pct(dec.loc[mascara, "movimentacoes"].sum() / total_mov)
+
+    contrariou, mov_c = _parte(dec["decisao"] == c.DECISAO_CONTRARIOU)
+    sem, mov_s = _parte(dec["decisao"] == c.DECISAO_SEM_PREFIXO)
+    nivel, mov_n = _parte(dec["nivel_ajustado"])
+    sem_just = int(((dec["decisao"] == c.DECISAO_CONTRARIOU) & (dec["justificativa"].str.strip() == "")).sum())
+    justificativa = "sempre com justificativa" if sem_just == 0 else f"{sem_just} delas sem justificativa"
+    texto = (f"Das **{c.fmt_int(len(dec))} ocupações** com movimentação nesta seleção, a IA **contrariou a família "
+             f"sugerida pelo prefixo da CBO em {contrariou}** ({mov_c} das movimentações), {justificativa}, e "
+             f"**decidiu sozinha em {sem}** cujo prefixo não sugere família ({mov_s}). Também **ajustou o nível de "
+             f"qualificação em {nivel}** ocupações ({mov_n} das movimentações): o grande grupo da CBO dá só o ponto "
+             "de partida.")
+    ajustes = dec[dec["nivel_ajustado"]]
+    if not ajustes.empty:
+        a = ajustes.iloc[0]  # `dec` vem ordenada por movimentações
+        texto += (f" O maior caso é **{a['descricao']}** ({a['nivel_grande_grupo']} → {a['nivel']}, "
+                  f"{c.fmt_int(a['movimentacoes'])} movimentações).")
+    return texto + " É o nível que separa as alavancas de formação e de automação em O que fazer."
+
+
+# --- REC-05: simulador de custo com a premissa e a limitação na tela ------------------
+
+def texto_custo_reposicao(t: pd.Series, salarios: int) -> str:
+    """Intervalo do custo na faixa da premissa, a fonte da premissa e o que o cálculo assume."""
+    minimo = c.custo_reposicao(t, c.CUSTO_REPOSICAO_MIN)
+    maximo = c.custo_reposicao(t, c.CUSTO_REPOSICAO_MAX)
+    return (f"Com {salarios} {'salário' if salarios == 1 else 'salários'} por reposição: "
+            f"{c.fmt_brl_escala(c.custo_reposicao(t, salarios))}. Na faixa da premissa "
+            f"({c.CUSTO_REPOSICAO_MIN} a {c.CUSTO_REPOSICAO_MAX} salários), de {c.fmt_brl_escala(minimo)} a "
+            f"{c.fmt_brl_escala(maximo)}. **Premissa:** o custo de repor um trabalhador em salários é "
+            f"{c.FONTE_CUSTO_REPOSICAO}; não há fonte citada. **O cálculo assume que todo desligamento a pedido é "
+            "reposto** por uma nova contratação. É ordem de grandeza para a seleção atual, não valor contábil.")
+
+
+# --- ANA-04: estrutural ou local? SC × Brasil -----------------------------------------------
+
+def texto_benchmark(tab: pd.DataFrame, economia: tuple[float, float],
+                    rotatividade_transformacao: float = float("nan")) -> str:
+    """A saída voluntária de SC contra a do Brasil, seção a seção, e o que é do estado × do setor."""
+    if tab is None or tab.empty:
+        return "Sem a tabela nacional do CAGED ou sem seções com amostra nesta seleção."
+    principal = tab.iloc[0]
+    texto = (f"Na seção **{principal['secao']}**, {c.fmt_pct(principal['sc'])} dos desligamentos em SC são a pedido, "
+             f"contra {c.fmt_pct(principal['brasil'])} no Brasil ({c.fmt_pp(principal['diferenca_pp'])}; intervalo "
+             f"de {c.fmt_num(c.CONFIANCA * 100, 0)}% de SC: {c.fmt_pct(principal['ic_inf'])} a "
+             f"{c.fmt_pct(principal['ic_sup'])}): **{principal['leitura']}**.")
+    if len(tab) > 1:
+        acima = int((tab["leitura"] == c.LEITURA_ACIMA).sum())
+        texto += f" SC fica acima do Brasil em {acima} das {len(tab)} seções com amostra."
+    sc_eco, br_eco = economia
+    if pd.notna(sc_eco) and pd.notna(br_eco):
+        dif_eco = (sc_eco - br_eco) * 100
+        texto += (f" Na economia toda, SC tem {c.fmt_pct(sc_eco)} contra {c.fmt_pct(br_eco)} do Brasil "
+                  f"({c.fmt_pp(dif_eco)}): esta parte da diferença é do mercado de trabalho catarinense, não do setor")
+        resto = principal["diferenca_pp"] - dif_eco
+        texto += (f"; o que passa disso ({c.fmt_pp(resto)}) é próprio da seção." if resto > 1
+                  else "; a seção não destoa do estado.")
+    rot_br = c.ROTATIVIDADE_OFICIAL.get("Transformação (Brasil)")
+    if pd.notna(rotatividade_transformacao) and rot_br and principal["secao"] == c.SECAO_TRANSFORMACAO:
+        diferenca = rotatividade_transformacao - rot_br
+        comparacao = ("parecida com a" if abs(diferenca) <= 0.02 else "maior que a" if diferenca > 0 else "menor que a")
+        texto += (f" Já a **rotatividade descontada** da transformação em SC ({c.fmt_pct(rotatividade_transformacao)}, "
+                  f"calculada) é {comparacao} do Brasil ({c.fmt_pct(rot_br)}, taxa oficial do MTE de out/25–set/26)"
+                  + (": trocar a equipe é estrutural; o que é local é o pedido de saída." if abs(diferenca) <= 0.02
+                     else "."))
+    return texto

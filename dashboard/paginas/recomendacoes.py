@@ -106,18 +106,22 @@ def ficha_mesorregiao(ctx: c.Contexto, regiao: str, recs: list[c.Recomendacao]) 
 
 
 def render(ctx: c.Contexto) -> None:
-    st.title("O que fazer?")
+    st.title("O que fazer?", anchor=False)
     c.cabecalho(ctx)
     if ctx.df.empty:
         st.info("Nenhuma movimentação com estes filtros.")
         return
-    recs = c.gerar_recomendacoes(ctx.df, mediana_regional=medianas_regionais(ctx), ref=c.total(ctx.ref),
-                                  cbos=c.filtrar_cbo(ctx), descricoes=c.descricoes_cbo_cache())
+    todas = c.gerar_recomendacoes(ctx.df, mediana_regional=medianas_regionais(ctx), ref=c.total(ctx.ref),
+                                   cbos=c.filtrar_cbo(ctx), descricoes=c.descricoes_cbo_cache(),
+                                   gap_ref_cbo=c.referencia_cbo(ctx)[1])
+    # REC-06: alavancas de observação ficam fora das prioridades e do Top 3.
+    recs = [r for r in todas if not c.eh_observacao(r.alavanca)]
+    observacoes = [r for r in todas if c.eh_observacao(r.alavanca)]
     prioridades = classificar_prioridade(recs)
-    ref = c.total(ctx.df)
     st.markdown(
         "Cada problema encontrado no diagnóstico aponta para uma **ação** que a empresa pode tomar. "
-        f"Ao todo, **{len(recs)} recomendações**, agrupadas abaixo por ação."
+        f"Ao todo, **{c.plural(len(recs), 'recomendação', 'recomendações')}**, agrupadas abaixo por ação"
+        + (f", e {len(observacoes)} {'observação' if len(observacoes) == 1 else 'observações'}." if observacoes else ".")
     )
     if not recs:
         st.info("Nenhuma regra disparou com dados suficientes nesta seleção.")
@@ -128,7 +132,7 @@ def render(ctx: c.Contexto) -> None:
             st.markdown(texto_top3(top3))
             st.caption("Uma por alavanca: a de maior prioridade (severidade × movimentações) dentro de cada uma; "
                        "entre as alavancas, as de mais movimentações afetadas. Muda com os filtros.")
-        st.subheader("Prioridades")
+        st.subheader("Prioridades", anchor=False)
         grupos = agrupar_por_alavanca(recs)
         colunas = st.columns(min(3, len(grupos)))
         for i, (alavanca, itens) in enumerate(grupos.items()):
@@ -144,15 +148,23 @@ def render(ctx: c.Contexto) -> None:
                 st.markdown(f"**{len(itens)}** {'recomendação' if len(itens) == 1 else 'recomendações'} · "
                             f"{c.fmt_int(sum(r.movimentacoes for r in itens))} movimentações")
 
+        if observacoes:
+            o = observacoes[0]
+            st.info(f"**Observação: {o.alavanca.lower()}.** "
+                    + "; ".join(f"{r.macrofamilia} · {r.regiao} ({r.evidencia})" for r in observacoes[:3])
+                    + f". {c.MOTIVO_OBSERVACAO}", icon=":material/visibility:")
+
+        prioridades_todas = {**{i: p for i, p in prioridades.items()},
+                             **{len(recs) + j: "Observação" for j in range(len(observacoes))}}
         tabela = pd.DataFrame([{
-            "Prioridade": prioridades[i], "Alavanca": r.alavanca, "Mesorregião": r.regiao,
+            "Prioridade": prioridades_todas[i], "Alavanca": r.alavanca, "Mesorregião": r.regiao,
             "Macrofamília (IA)": r.macrofamilia, "Nível-alvo": r.nivel_alvo, "Movimentações": int(r.movimentacoes),
             "Ação": r.extras.get("acao", ""),
             "Quem age": r.quem_age, "Horizonte": r.horizonte, "KPI e meta": r.kpi,
             "O que formar (CBOs de maior volume)": "; ".join(f"{cod} {d}" for cod, d, _ in r.extras.get("cbos", [])),
             "Evidência": r.evidencia, "Gatilho": r.regra,
-        } for i, r in enumerate(recs)])
-        with st.expander(f"Ver as {len(recs)} recomendações numa tabela (com a evidência de cada uma)"):
+        } for i, r in enumerate(recs + observacoes)])
+        with st.expander(f"Ver as {len(tabela)} recomendações e observações numa tabela (com a evidência de cada uma)"):
             col1, col2 = st.columns(2)
             alavancas = col1.multiselect("Alavanca", sorted(tabela["Alavanca"].unique()), placeholder="Todas")
             regioes = col2.multiselect("Mesorregião", sorted(tabela["Mesorregião"].unique()), placeholder="Todas")
@@ -171,16 +183,18 @@ def render(ctx: c.Contexto) -> None:
         st.download_button("Baixar ficha (Markdown)", texto.encode("utf-8"),
                            file_name=f"ficha_{escolhida.lower().replace(' ', '_')}.md", icon=":material/download:")
 
-    st.subheader("Quanto custa a saída voluntária?")
-    n = st.slider("Custo de repor um trabalhador, em salários (premissa ajustável)", 1, 12, 3, 1,
+    st.subheader("Quanto custa a saída voluntária?", anchor=False)
+    n = st.slider("Custo de repor um trabalhador, em salários (premissa ajustável)", c.CUSTO_REPOSICAO_MIN,
+                  c.CUSTO_REPOSICAO_MAX, c.CUSTO_REPOSICAO_PADRAO, 1,
                   help="Inclui recrutamento, seleção, treinamento e produtividade perdida até o novo "
-                       "contratado render plenamente. É uma premissa: ajuste à realidade da empresa.")
+                       f"contratado render plenamente. Fonte: {c.FONTE_CUSTO_REPOSICAO}.")
     t = c.total(ctx.df)
-    custo = t[c.COLUNA_DESLIGAMENTOS_A_PEDIDO] * t[c.M_SAL_DESL] * n
+    custo = c.custo_reposicao(t, n)
     col1, col2, col3 = st.columns(3)
     col1.metric("Desligamentos a pedido", c.fmt_int(t[c.COLUNA_DESLIGAMENTOS_A_PEDIDO]), border=True,
                 help="Quantas pessoas pediram para sair no período (tipo de desligamento 40 do CAGED).")
     col2.metric("Salário médio de quem sai", c.fmt_brl(t[c.M_SAL_DESL]), border=True, help=c.ajuda(c.M_SAL_DESL))
     col3.metric("Custo estimado de reposição", c.fmt_brl_escala(custo), border=True,
-                help="desligamentos a pedido × salário médio de desligamento × N salários")
-    st.caption("Estimativa de ordem de grandeza para a seleção atual, não um valor contábil.")
+                help="desligamentos a pedido × salário médio de desligamento × N salários; supõe que cada "
+                     "desligamento a pedido é reposto.")
+    st.caption(nar.texto_custo_reposicao(t, n))

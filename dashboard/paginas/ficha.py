@@ -48,7 +48,7 @@ def semelhantes(ctx: c.Contexto, nivel: str, nome: str, n: int = 5) -> pd.DataFr
 
 
 def render(ctx: c.Contexto) -> None:
-    st.title("Ficha do território")
+    st.title("Ficha do território", anchor=False)
     c.cabecalho(ctx)
     base = c.filtrar(ctx.art.agregado, ctx.filtros, ignorar=("territorio",))
     if base.empty:
@@ -69,7 +69,7 @@ def render(ctx: c.Contexto) -> None:
     nome = col2.selectbox(nivel, opcoes, key="ficha_nome")
 
     dados = base[base[coluna].astype(str) == nome]
-    st.subheader(nome)
+    st.subheader(nome, anchor=False)
     socio = contexto_socioeconomico(dados)
     nota = "" if nivel == c.NIVEL_MUNICIPIO else f" (média dos {socio['municipios']} municípios ponderada pela população)"
     st.caption(f"População 2026: {c.fmt_int(socio['populacao'])} · IDHM 2010: {c.fmt_num(socio['idhm'], 3)} · "
@@ -97,6 +97,11 @@ def render(ctx: c.Contexto) -> None:
         principal = setores.sort_values(c.M_MOV, ascending=False).iloc[0]
         col1.caption(f"**{principal[c.COLUNA_SETOR]}** concentra {c.fmt_pct(principal[c.M_MOV] / setores[c.M_MOV].sum())} "
                      "das movimentações.")
+        # TAX-02: setor do território cujo saldo depende de um mês ou de um município.
+        for _, u in c.anexar_concentracao(setores[setores[c.M_AMOSTRA_OK]], dados, [c.COLUNA_SETOR]).iterrows():
+            if u["concentrada"]:
+                col1.caption(f":material/my_location: {u[c.COLUNA_SETOR]} (saldo {c.fmt_int(u[c.M_SALDO])}): "
+                             + nar.texto_concentrada(u))
     mensal = c.agregar_metricas(dados, [c.COLUNA_MES])
     col2.plotly_chart(fig.construir_serie_mensal(mensal, "Mês a mês"), width="stretch")
     col2.caption(nar.legenda_serie(mensal))

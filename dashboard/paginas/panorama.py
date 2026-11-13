@@ -73,8 +73,8 @@ def _mapa(ctx: c.Contexto) -> None:
         metrica = escolha.selectbox("O que mostrar no mapa", METRICAS_MAPA,
                                     format_func=lambda m: c.DEFINICOES[m].rotulo, key="mapa_metrica")
         nivel = nivel_col.segmented_control("Pintar por", [c.NIVEL_MESO, c.NIVEL_MICRO, c.NIVEL_MUNICIPIO],
-                                            default=c.NIVEL_MUNICIPIO, key="mapa_nivel") or c.NIVEL_MUNICIPIO
-        bolhas = bolha_col.toggle("Volume", value=True, key="mapa_bolhas",
+                                            default=c.NIVEL_MESO, key="mapa_nivel") or c.NIVEL_MESO
+        bolhas = bolha_col.toggle("Volume", value=False, key="mapa_bolhas",
                                   help="Círculo em cada município, do tamanho das suas movimentações.")
         dados_mapa = metricas_mapa(ctx.df, nivel)
         destaque = ctx.filtros.territorios if ctx.filtros.nivel_territorial == nivel else ()
@@ -87,7 +87,7 @@ def _mapa(ctx: c.Contexto) -> None:
                 width="stretch", on_select="rerun", selection_mode="points", key="mapa")
         with lado:
             c.cartao_destaque(ctx, metrica)
-            st.caption(nar.legenda_mapa(dados_mapa.drop_duplicates("rotulo"), metrica, "rotulo")
+            st.caption(nar.legenda_mapa(dados_mapa.drop_duplicates("rotulo"), metrica, "rotulo", nivel)
                        + " Clique num território para abrir a ficha.")
     pontos = getattr(getattr(evento, "selection", None), "points", None) or []
     if pontos:
@@ -138,7 +138,8 @@ def _secoes_e_meses(ctx: c.Contexto) -> None:
 def _resposta_central(ctx: c.Contexto) -> None:
     """NAR-02: a pergunta do desafio respondida em três linhas calculadas, sem rolar a página."""
     manchete = nar.resposta_principal(ctx.df, ctx.filtros.escopo).partition("\n\n")[0]
-    resposta = nar.resposta_central(ctx.df, c.total(ctx.ref))
+    cbos, gap_ref_cbo = c.referencia_cbo(ctx)
+    resposta = nar.resposta_central(ctx.df, c.total(ctx.ref), cbos=cbos, gap_ref_cbo=gap_ref_cbo)
     t = c.total(ctx.df)
     with st.container(border=True, key="rx-resposta"):
         st.caption("RESPOSTA À PERGUNTA CENTRAL · onde há apagão ou expansão, e se renda e escolaridade explicam")
@@ -151,7 +152,7 @@ def _resposta_central(ctx: c.Contexto) -> None:
 
 
 def render(ctx: c.Contexto) -> None:
-    st.title("Onde está o problema?")
+    st.title("Onde está o problema?", anchor=False)
     c.cabecalho(ctx)
     if ctx.df.empty:
         st.info("Nenhuma movimentação com estes filtros. Use **Limpar filtros** na barra lateral.")
