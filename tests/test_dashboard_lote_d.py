@@ -136,3 +136,43 @@ def test_destaque_cita_so_os_grupos_de_premio_baixo():
 def test_escolaridade_contratacao_de_perfil_vazio():
     assert c.escolaridade_contratacao(None).empty
     assert "Sem dados" in nar.resposta_escolaridade_contratacao(None)
+
+
+# --- TAX-05: decisões da IA além do prefixo da CBO -------------------------------------
+
+
+def _mapa_ia() -> pd.DataFrame:
+    return pd.DataFrame({
+        "cbo2002ocupação": ["784205", "766315", "141510", "724315"],
+        "descricao": ["Alimentador de Linha de Producao", "Operador de Acabamento (Industria Grafica)",
+                      "Gerente de Restaurante", "Soldador"],
+        "macrofamilia": ["Operação de linha e processo", "Operação de linha e processo",
+                         "Serviços de apoio e outros", "Metalmecânica e eletroeletrônica"],
+        "nivel_qualificacao": ["Básico", "Qualificado", "Superior", "Qualificado"],
+        "justificativa": ["Ocupação elementar.", "766 é gráfica.", "Serviço de alimentação.", None],
+    })
+
+
+def _cbos_recorte() -> pd.DataFrame:
+    return pd.DataFrame({"cbo": ["784205", "766315", "141510", "724315", "999999"],
+                         "admissoes": [500, 30, 10, 50, 7], "desligamentos": [400, 20, 10, 50, 3]})
+
+
+def test_decisoes_da_ia_separam_seguiu_contrariou_e_sem_prefixo():
+    dec = c.decisoes_ia(_mapa_ia(), _cbos_recorte()).set_index("cbo")
+    assert dec.loc["784205", "decisao"] == c.DECISAO_SEGUIU and bool(dec.loc["784205", "nivel_ajustado"])
+    assert dec.loc["766315", "decisao"] == c.DECISAO_CONTRARIOU       # 76 → Têxtil pelo prefixo
+    assert dec.loc["766315", "familia_prefixo"] == "Têxtil, confecção, couro e calçados"
+    assert dec.loc["141510", "decisao"] == c.DECISAO_SEM_PREFIXO      # grande grupo 1 não tem prefixo
+    assert dec.loc["724315", "decisao"] == c.DECISAO_SEGUIU and not bool(dec.loc["724315", "nivel_ajustado"])
+    assert "999999" not in dec.index                                  # sem classificação: fora
+
+
+def test_texto_das_decisoes_da_ia_e_calculado():
+    dec = c.decisoes_ia(_mapa_ia(), _cbos_recorte())
+    texto = nar.texto_decisoes_ia(dec)
+    assert "**4 ocupações**" in texto
+    assert "contrariou a família sugerida pelo prefixo da CBO em 1** (4,7% das movimentações)" in texto
+    assert "sempre com justificativa" in texto
+    assert "**Alimentador de Linha de Producao** (Qualificado → Básico, 900 movimentações)" in texto
+    assert "Sem ocupações" in nar.texto_decisoes_ia(c.decisoes_ia(_mapa_ia(), _cbos_recorte().iloc[0:0]))

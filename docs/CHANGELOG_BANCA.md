@@ -643,3 +643,31 @@ Recorte de referência do Lote D: o padrão de abertura do painel, escopo
 instruída do que a que sai. Dentro das ocupações industriais de linha
 (Operação de linha, Têxtil, Alimentos) o diploma superior paga só 1,03× o
 médio na entrada: um sinal de baixa atratividade para qualificados.
+
+---
+
+## TAX-05 · O que a IA acrescentou à hierarquia da CBO
+
+- Nova aba **"O que a IA acrescentou"** na auditoria de "Que profissional
+  falta". Uma frase calculada (`narrativa.texto_decisoes_ia`) conta, no
+  recorte atual, em quantas ocupações a IA **contrariou** a família sugerida
+  pelo prefixo da CBO, em quantas o prefixo **não sugere família** e em
+  quantas ela **ajustou o nível**. Abaixo, as 5 de maior volume em que
+  contrariou o prefixo, com a justificativa.
+- Cálculo em `comum.decisoes_ia` (usa `src.cbo_ia.familia_sugerida` e
+  `nivel_cbo`, as mesmas regras B e C do prompt).
+
+| Transformação, set/25–ago/26 | Ocupações | % das movimentações |
+|---|---|---|
+| Ocupações com movimentação | 1.467 | 100% |
+| IA contrariou o prefixo (sempre com justificativa) | 97 | 2,2% |
+| Prefixo não sugere família (IA decidiu) | 148 | 1,3% |
+| IA ajustou o nível do grande grupo | 109 | **34,6%** |
+
+**Resposta para a banca ("por que IA se a CBO já tem hierarquia?"):** a
+família raramente muda (3,5% das movimentações), mas o **nível** muda em um
+terço delas. O maior caso é o Alimentador de linha de produção
+(Qualificado → Básico, 202.166 movimentações). É o nível que separa as
+alavancas de formação e de automação. Exemplos de família: Técnico em
+segurança do trabalho (prefixo: Administrativo → IA: Técnicos industriais) e
+CBO 766 (gráfica; o prefixo 76 sugere Têxtil).

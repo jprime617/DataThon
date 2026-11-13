@@ -676,3 +676,32 @@ def destaque_premio_baixo(tabela: pd.DataFrame, premio_estado: float, rotulo, n:
             f"{fmt_premio(premio_estado)}) em "
             + (", ".join(itens) + f" e mais {resto} grupo{'s' if resto > 1 else ''}" if resto > 0 else _lista(itens))
             + ". Quando o superior completo quase não paga a mais na entrada, a área tende a não atrair qualificados.")
+
+
+# --- TAX-05: o que a IA acrescentou à hierarquia da CBO --------------------------------
+
+def texto_decisoes_ia(dec: pd.DataFrame) -> str:
+    """"Em 97 das 1.467 ocupações (2,2% das movimentações) a IA contrariou o prefixo…", tudo calculado."""
+    if dec is None or dec.empty:
+        return "Sem ocupações com movimentação nesta seleção."
+    total_mov = float(dec["movimentacoes"].sum()) or 1.0
+
+    def _parte(mascara) -> tuple[str, str]:
+        return c.fmt_int(int(mascara.sum())), c.fmt_pct(dec.loc[mascara, "movimentacoes"].sum() / total_mov)
+
+    contrariou, mov_c = _parte(dec["decisao"] == c.DECISAO_CONTRARIOU)
+    sem, mov_s = _parte(dec["decisao"] == c.DECISAO_SEM_PREFIXO)
+    nivel, mov_n = _parte(dec["nivel_ajustado"])
+    sem_just = int(((dec["decisao"] == c.DECISAO_CONTRARIOU) & (dec["justificativa"].str.strip() == "")).sum())
+    justificativa = "sempre com justificativa" if sem_just == 0 else f"{sem_just} delas sem justificativa"
+    texto = (f"Das **{c.fmt_int(len(dec))} ocupações** com movimentação nesta seleção, a IA **contrariou a família "
+             f"sugerida pelo prefixo da CBO em {contrariou}** ({mov_c} das movimentações), {justificativa}, e "
+             f"**decidiu sozinha em {sem}** cujo prefixo não sugere família ({mov_s}). Também **ajustou o nível de "
+             f"qualificação em {nivel}** ocupações ({mov_n} das movimentações): o grande grupo da CBO dá só o ponto "
+             "de partida.")
+    ajustes = dec[dec["nivel_ajustado"]]
+    if not ajustes.empty:
+        a = ajustes.iloc[0]  # `dec` vem ordenada por movimentações
+        texto += (f" O maior caso é **{a['descricao']}** ({a['nivel_grande_grupo']} → {a['nivel']}, "
+                  f"{c.fmt_int(a['movimentacoes'])} movimentações).")
+    return texto + " É o nível que separa as alavancas de formação e de automação em O que fazer."

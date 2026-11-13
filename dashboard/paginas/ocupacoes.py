@@ -36,6 +36,25 @@ def buscar_cbo(mapa: pd.DataFrame, termo: str) -> pd.DataFrame:
                 | mapa["descricao"].map(_normalizar).str.contains(alvo, regex=False)]
 
 
+def _alem_do_prefixo(ctx: c.Contexto, mapa: pd.DataFrame | None) -> None:
+    """TAX-05: por que usar IA se a CBO já tem hierarquia? As decisões da IA além do prefixo, contadas."""
+    dec = c.decisoes_ia(mapa, c.filtrar_cbo(ctx))
+    st.markdown(nar.texto_decisoes_ia(dec))
+    if dec.empty:
+        return
+    contrariou = dec[dec["decisao"] == c.DECISAO_CONTRARIOU].head(5)
+    st.markdown("**As 5 de maior volume em que a IA contrariou o prefixo**")
+    st.dataframe(pd.DataFrame({
+        "CBO": contrariou["cbo"], "Descrição": contrariou["descricao"],
+        "Família pelo prefixo": contrariou["familia_prefixo"], "Família da IA": contrariou["macrofamilia"],
+        "Movimentações": contrariou["movimentacoes"].astype("int64"),
+        "Justificativa da IA": contrariou["justificativa"],
+    }), hide_index=True, width="stretch",
+        column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
+    st.caption("Prefixo = a família que a tabela de desempate da regra B sugere pelos primeiros dígitos da CBO. "
+               "Movimentações no recorte atual (escopo, período e filtros de setor, macrofamília e nível).")
+
+
 def render(ctx: c.Contexto) -> None:
     st.title("Que profissional falta?")
     c.cabecalho(ctx)
@@ -76,7 +95,10 @@ def render(ctx: c.Contexto) -> None:
 
     # Auditoria da IA é assunto técnico: fica recolhida (M3.C8).
     with st.expander("Aprofundar: como a IA classificou as ocupações (auditoria)"):
-        aba_conc, regras, aba_prompt = st.tabs(["Concordância", "Regras da taxonomia", "Prompt enviado à IA"])
+        aba_conc, aba_alem, regras, aba_prompt = st.tabs(
+            ["Concordância", "O que a IA acrescentou", "Regras da taxonomia", "Prompt enviado à IA"])
+        with aba_alem:
+            _alem_do_prefixo(ctx, mapa)
         with aba_conc:
             meta = (ctx.art.metadados or {}).get("ia", {})
             col1, col2, col3, col4 = st.columns(4)

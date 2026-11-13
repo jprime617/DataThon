@@ -1557,6 +1557,44 @@ def descricoes_cbo(mapa: pd.DataFrame | None = None) -> dict[str, str]:
 
 
 
+# TAX-05: o que a IA acrescentou à hierarquia da CBO.
+DECISAO_SEGUIU = "seguiu o prefixo"
+DECISAO_CONTRARIOU = "contrariou o prefixo"
+DECISAO_SEM_PREFIXO = "prefixo não sugere família"
+
+
+def decisoes_ia(mapa: pd.DataFrame | None, cbos: pd.DataFrame | None) -> pd.DataFrame:
+    """Cada CBO com movimentação no recorte, a família da IA × a sugerida pelo prefixo e o nível × o do grande grupo.
+
+    `mapa` = `cbo_macrofamilias.csv` (a saída da IA); `cbos` = a tabela por CBO
+    do recorte (`filtrar_cbo`). `decisao` diz se a IA seguiu ou contrariou o
+    prefixo da tabela de desempate, ou se o prefixo não sugere família.
+    """
+    from src.cbo_ia import familia_sugerida, nivel_cbo
+
+    colunas = ["cbo", "descricao", "macrofamilia", "familia_prefixo", "nivel", "nivel_grande_grupo",
+               "justificativa", "movimentacoes", "decisao", "nivel_ajustado"]
+    if mapa is None or mapa.empty or cbos is None or cbos.empty:
+        return pd.DataFrame(columns=colunas)
+    codigos = cbos["cbo"].astype(str).str.strip().str.zfill(6)
+    mov = (cbos[COLUNA_ADMISSOES] + cbos[COLUNA_DESLIGAMENTOS]).groupby(codigos).sum()
+    d = pd.DataFrame({
+        "cbo": mapa["cbo2002ocupação"].astype(str).str.strip().str.zfill(6),
+        "descricao": mapa["descricao"].astype(str),
+        "macrofamilia": mapa["macrofamilia"].astype(str),
+        "nivel": mapa["nivel_qualificacao"].astype(str),
+        "justificativa": mapa["justificativa"].fillna("").astype(str) if "justificativa" in mapa else "",
+    })
+    d["movimentacoes"] = d["cbo"].map(mov).fillna(0)
+    d = d[d["movimentacoes"] > 0].copy()
+    d["familia_prefixo"] = d["cbo"].map(familia_sugerida)
+    d["nivel_grande_grupo"] = d["cbo"].map(nivel_cbo)
+    d["decisao"] = [DECISAO_SEM_PREFIXO if pd.isna(p) else DECISAO_SEGUIU if f == p else DECISAO_CONTRARIOU
+                    for f, p in zip(d["macrofamilia"], d["familia_prefixo"])]
+    d["nivel_ajustado"] = d["nivel"] != d["nivel_grande_grupo"]
+    return d[colunas].sort_values("movimentacoes", ascending=False).reset_index(drop=True)
+
+
 # ---------------------------------------------------------------------------
 # Camada Streamlit (import tardio): contexto, filtros, cartões e proteção
 # ---------------------------------------------------------------------------
