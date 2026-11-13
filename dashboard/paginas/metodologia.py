@@ -106,6 +106,17 @@ def _sensibilidade(ctx: c.Contexto) -> None:
                                   index=range(1, max(len(base10), len(alt10)) + 1)), width="stretch")
 
 
+def tabela_setores() -> pd.DataFrame:
+    """TAX-01: o mapeamento CNAE → setor usado no pipeline, direto de `src.mapeamentos`."""
+    from src.mapeamentos import SETOR_POR_DIVISAO_TRANSFORMACAO
+
+    por_setor: dict[str, list[int]] = {}
+    for divisao, setor in sorted(SETOR_POR_DIVISAO_TRANSFORMACAO.items()):
+        por_setor.setdefault(setor, []).append(divisao)
+    return pd.DataFrame([{"Setor": s, "Divisões CNAE": ", ".join(f"{d:02d}" for d in ds)}
+                         for s, ds in sorted(por_setor.items(), key=lambda x: x[1][0])])
+
+
 def render(ctx: c.Contexto) -> None:
     st.title("Metodologia e sistema")
     c.cabecalho(ctx)
@@ -143,6 +154,11 @@ def render(ctx: c.Contexto) -> None:
     st.caption(f"Guarda de amostra: taxas exigem ≥ {c.MIN_MOVIMENTACOES} movimentações; gaps salariais, "
                f"≥ {c.MIN_SALARIOS} salários de admissão e de desligamento. Abaixo disso a célula fica em cinza "
                "e sai de rankings e da matriz.")
+
+    st.subheader("Setores: divisão CNAE → setor")
+    st.markdown("Na indústria de transformação (seção C), o setor agrupa divisões CNAE 2.0 (dois primeiros dígitos "
+                "da subclasse). Nas demais seções, o setor é a própria seção.")
+    st.table(tabela_setores().set_index("Setor"))
 
     st.subheader("Índice: Tensão = sintomas; causas ficam no diagnóstico")
     st.markdown(

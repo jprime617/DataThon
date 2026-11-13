@@ -141,3 +141,28 @@ ALAVANCA_FORMACAO = "Formação técnica e parcerias de qualificação"
 ALAVANCA_MOBILIDADE = "Recrutamento inter-regional e mobilidade"
 ALAVANCA_AUTOMACAO = "Automação e redesenho de postos"
 ALAVANCA_RETENCAO = "Retenção não salarial"
+
+# ---------------------------------------------------------------------------
+# TAX-01: contexto externo de setores (só com fonte citada na tela)
+# ---------------------------------------------------------------------------
+# Fatos conferidos nas próprias matérias (13/11/2026). As fragatas da Marinha /
+# Estaleiro Brasil Sul não aparecem nessas fontes e por isso não entram.
+
+from src.mapeamentos import SETOR_POR_DIVISAO_TRANSFORMACAO as _SETOR_DIV  # noqa: E402
+
+SETOR_NAVAL = _SETOR_DIV[30]
+SETOR_VEICULOS = _SETOR_DIV[29]
+CONTEXTO_SETOR = {
+    SETOR_NAVAL: (
+        "Contexto (fonte externa): em 26/06/2026 a Petrobras anunciou R$ 12 bilhões para 42 embarcações em "
+        "Santa Catarina (Programa Mar Aberto), com 16 já em construção nos estaleiros Detroit Brasil (Itajaí) e "
+        "Navship (Navegantes) — [Click Petróleo e Gás, 30/06/2026]"
+        "(https://clickpetroleoegas.com.br/petrobras-despeja-r-12-bilhoes-no-litoral-de-santa-catarina-para-construir-"
+        "42-embarcacoes-reacender-estaleiros-em-itajai-e-navegantes-gerar-mais-de-5-mil-empregos-e-transformar-a-indu-"
+        "asaf04/). Antes, em 12/12/2024, contratos para 12 navios de apoio em Itajaí e Navegantes — "
+        "[NSC Total](https://www.nsctotal.com.br/economia/contrato-bilionario-com-a-petrobras-traz-producao-de-navios-a-sc). "
+        "Expansão puxada por encomendas tem data para acabar: não é tendência do setor."
+    ),
+}
+# Concentração que merece ser dita no achado de expansão (município com ≥ 50% do saldo).
+FRACAO_CONCENTRACAO_TEXTO = 0.5

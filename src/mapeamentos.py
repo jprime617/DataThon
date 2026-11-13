@@ -735,7 +735,11 @@ SETOR_POR_DIVISAO_TRANSFORMACAO: dict[int, str] = {
     **dict.fromkeys([24, 25], "Metalurgia e produtos de metal"),
     **dict.fromkeys([26, 27], "Eletroeletrônico"),
     **dict.fromkeys([28, 33], "Máquinas e equipamentos"),
-    **dict.fromkeys([29, 30], "Veículos"),
+    # TAX-01: 29 e 30 separadas. A expansão do Vale do Itajaí mistura autopeças
+    # (29, Navegantes) e construção naval (30, Itajaí/Navegantes); juntas, o
+    # rótulo "Veículos" escondia os estaleiros.
+    29: "Veículos automotores e autopeças",
+    30: "Construção naval e outros equipamentos de transporte",
     **dict.fromkeys([12, 18, 32], "Outras indústrias de transformação"),
 }
 

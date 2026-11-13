@@ -71,8 +71,9 @@ O CAGED não mostra a causa.
 - **Onde saíam as 10.452 linhas:** o bruto tem MOV + FOR + EXC. Cada linha
   EXC (exclusão declarada) tem peso −1 em `agregador.preparar_base`: ela sai
   e anula a declaração que corrige. A queda entre as linhas no período e as
-  movimentações é, portanto, 2 × EXC (10.452 = 2 × 5.226). *Conferência com
-  os microdados: ver a nota de verificação abaixo.*
+  movimentações é, portanto, 2 × EXC (10.452 = 2 × 5.226). **Conferido nos
+  microdados:** o consolidado de 24 meses tem exatamente 5.226 linhas EXC
+  (MOV 6.715.601 + FOR 61.317 + EXC 5.226 = 6.782.144).
 - **Pipeline:** `montar_metadados(linhas_por_tipo=...)` grava
   `linhas.por_tipo` (MOV, FOR, EXC) no `metadados.json`, e o notebook passa a
   contagem por `tipo_arquivo`. Com isso, o funil confere `perda == 2 × EXC`

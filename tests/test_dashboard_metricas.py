@@ -596,3 +596,35 @@ def test_marcar_secao_por_fracao_das_movimentacoes():
     marca = c.marcar_secao(m, df, [c.COLUNA_REGIAO], c.SECAO_CONSTRUCAO)
     assert dict(zip(m[c.COLUNA_REGIAO], marca)) == {
         "Grande Florianópolis": True, "Vale do Itajaí": False, "Oeste Catarinense": False}
+
+
+# --- TAX-01: Veículos (29) e construção naval (30) separados ------------------
+
+def test_divisoes_29_e_30_sao_setores_distintos():
+    from src.mapeamentos import SETOR_POR_DIVISAO_TRANSFORMACAO as setor
+
+    assert setor[29] == "Veículos automotores e autopeças"
+    assert setor[30] == "Construção naval e outros equipamentos de transporte"
+    assert "Veículos" not in setor.values()
+
+
+def test_metodologia_documenta_o_mapeamento_cnae():
+    from dashboard.paginas.metodologia import tabela_setores
+
+    t = tabela_setores().set_index("Setor")["Divisões CNAE"]
+    assert t["Veículos automotores e autopeças"] == "29"
+    assert t["Construção naval e outros equipamentos de transporte"] == "30"
+
+
+def test_nota_de_expansao_cita_concentracao_e_fonte_do_setor_naval():
+    naval = c.SETOR_NAVAL
+    df = _df(
+        _celula(setor=naval, regiao="Vale do Itajaí", municipio_nome="Navegantes", admissoes=700, desligamentos=75),
+        _celula(setor=naval, regiao="Vale do Itajaí", municipio_nome="Itajaí", admissoes=400, desligamentos=97),
+    )
+    nota = nar.nota_expansao(df, "Vale do Itajaí", naval)
+    assert "67% do saldo vem de **Navegantes**" in nota       # 625 de 928
+    assert "nsctotal.com.br" in nota and "clickpetroleoegas.com.br" in nota
+    assert "fragata" not in nota.lower()                      # fato sem fonte não entra
+    outro = nar.nota_expansao(df.assign(setor="Têxtil"), "Vale do Itajaí", "Têxtil")
+    assert "fonte externa" not in outro

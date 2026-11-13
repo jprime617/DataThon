@@ -113,6 +113,31 @@ def rotulo_tensa(m: pd.DataFrame) -> str:
     return ""
 
 
+def concentracao_municipio(df: pd.DataFrame, regiao: str, setor: str) -> tuple[str, float] | None:
+    """(município, fração do saldo) do município que mais pesa no saldo positivo do grupo."""
+    sub = df[(df[c.COLUNA_REGIAO].astype(str) == regiao) & (df[c.COLUNA_SETOR].astype(str) == setor)]
+    if sub.empty:
+        return None
+    saldo = (sub[c.COLUNA_ADMISSOES] - sub[c.COLUNA_DESLIGAMENTOS]).groupby(
+        sub[c.COLUNA_NOME_MUNICIPIO].astype(str)).sum()
+    total = float(saldo.sum())
+    if total <= 0:
+        return None
+    return str(saldo.idxmax()), float(saldo.max()) / total
+
+
+def nota_expansao(df: pd.DataFrame, regiao: str, setor: str) -> str:
+    """TAX-01: concentração municipal do saldo (calculada) e contexto externo com fonte, se houver."""
+    partes = []
+    conc = concentracao_municipio(df, regiao, setor)
+    if conc and conc[1] >= c.FRACAO_CONCENTRACAO_TEXTO:
+        partes.append(f" {c.fmt_pct(min(conc[1], 1.0), 0)} do saldo vem de **{conc[0]}**"
+                      + (" (os demais municípios somam saldo negativo)." if conc[1] > 1 else "."))
+    if setor in c.CONTEXTO_SETOR:
+        partes.append(" " + c.CONTEXTO_SETOR[setor])
+    return "".join(partes)
+
+
 def _filtro_unidade(regiao: str, setor: str | None = None, macro: str | None = None) -> dict:
     filtros = {"f_nivel": c.NIVEL_MESO, "f_terr": [regiao]}
     if setor:
@@ -166,7 +191,8 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
                    f"{c.fmt_num(abs(e[c.M_ACEL]), 1)} pontos {'a mais' if e[c.M_ACEL] >= 0 else 'a menos'} "
                    "que no ano anterior."
                    if pd.notna(e[c.M_VAR_REL]) and pd.notna(e[c.M_ACEL])
-                   else f" ({c.fmt_pct(e[c.M_SALDO_REL])} das movimentações)."),
+                   else f" ({c.fmt_pct(e[c.M_SALDO_REL])} das movimentações).")
+                + nota_expansao(df, str(e[c.COLUNA_REGIAO]), str(e[c.COLUNA_SETOR])),
                 _filtro_unidade(e[c.COLUNA_REGIAO], e[c.COLUNA_SETOR]), float(e["dinamismo"]),
             ))
         z_comp = c.zscore(1 - m[c.M_GAP_SAL])
