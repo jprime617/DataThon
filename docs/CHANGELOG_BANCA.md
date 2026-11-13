@@ -1046,3 +1046,19 @@ são próprios da transformação.
 e conferir, em qualquer página, que **não há aviso amarelo no topo**, e na
 Metodologia: "Origem em uso: Azure Blob Storage" e "commit do pipeline:
 7245713".
+
+### ENT-01 · Link do repositório público
+
+- `REPO_URL` em `comum.py` (padrão `https://github.com/jprime617/DataThon`,
+  público, confirmado com `gh repo view`; `DASHBOARD_REPO_URL` sobrepõe).
+- Barra lateral: link "repositório no GitHub" no rodapé.
+- Metodologia: o link do repositório sempre aparece, e o commit do pipeline
+  aponta para `<repo>/commit/<hash>`.
+
+### ENT-02 · Disponibilidade no Azure
+
+- O App Service `datathon-caged-sc-br` está no plano **Free (F1)**, que **não
+  permite Always On** (`alwaysOn: false`). Subir para B1 custa crédito da
+  assinatura e não foi feito sem decisão do time.
+- Mitigação: checklist do pitch (`docs/PITCH_APOIO.md`): abrir o painel
+  **10 minutos antes** e navegar pelas 7 páginas para aquecer o cache.

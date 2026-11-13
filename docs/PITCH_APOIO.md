@@ -400,7 +400,7 @@ As falas para as notas do apresentador estão na seção 3 (blocos "Fala").
 
 ## 8. Checklist do dia
 
-- [ ] Painel aberto **10 minutos antes** (`[[URL_PAINEL]]`), conferir se carregou. Checar se o App Service está com Always On (ENT-02).
+- [ ] Painel aberto **10 minutos antes** (`[[URL_PAINEL]]`), conferir se carregou. O plano Free não tem Always On (ENT-02): abrir e passar pelas 7 páginas para aquecer o cache.
 - [ ] Segunda aba com "O que fazer" já aberta, para o caso de pergunta.
 - [ ] Prints de todas as telas no notebook (plano B sem rede).
 - [ ] Cronômetro visível para quem apresenta; ensaio cronometrado ≤ 2:50.
@@ -416,8 +416,8 @@ As falas para as notas do apresentador estão na seção 3 (blocos "Fala").
 |---|---|---|
 | `[[NOME_EQUIPE]]`, `[[LOGO_EQUIPE]]` | identidade do grupo | — |
 | `[[APRESENTADOR_1..5]]`, `[[QUEM_PASSA_SLIDES]]` | divisão das falas | — |
-| `[[URL_PAINEL]]` | endereço público do painel | `https://datathon-caged-sc-br.azurewebsites.net/` (confirmar após o deploy) |
+| `[[URL_PAINEL]]` | endereço público do painel | `https://datathon-caged-sc-br.azurewebsites.net/` (confirmado em 13/11) |
 | `[[URL_REPOSITORIO]]` | repositório público | `https://github.com/jprime617/DataThon` (confirmar que está público) |
 | `[[QR_CODE_PAINEL]]` | QR para `[[URL_PAINEL]]` | gerar depois do deploy |
-| `[[COMMIT_PUBLICADO]]` | hash mostrado na Metodologia | depois do deploy |
+| `[[COMMIT_PUBLICADO]]` | hash mostrado na Metodologia | pipeline `7245713`; painel `c8d6954` |
 | `[[PRINT_PANORAMA_RESPOSTA]]`, `[[PRINT_MATRIZ]]`, `[[PRINT_SC_BRASIL]]`, `[[PRINT_TOP3]]` | prints do painel publicado | tirar depois do deploy, na resolução do projetor |

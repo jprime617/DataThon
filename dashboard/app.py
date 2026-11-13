@@ -83,6 +83,7 @@ def main() -> None:
         st.sidebar.html(f'<style>[data-testid="stSidebar"] a[data-testid="stPageLink-NavLink"][href="{href}"]'
                         "{background:#17809A;font-weight:700}</style>")
     filtros = c.barra_lateral(art.agregado)
+    st.sidebar.caption(f"Código-fonte: [repositório no GitHub]({c.REPO_URL})")   # ENT-01
     st.session_state["_ctx"] = c.montar_contexto_cache(art, filtros)
     navegacao.run()
 

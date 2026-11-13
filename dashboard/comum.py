@@ -175,6 +175,8 @@ NOME_BLOB_PERFIL = "caged_perfil.parquet"
 NOME_BLOB_METADADOS = "metadados.json"
 NOME_BLOB_ESTOQUE = "rais_estoque.parquet"
 NOME_BLOB_CBO = "caged_cbo.parquet"   # Lote B: tabela por ocupação (opcional)
+# ENT-01: repositório público (entregável); a variável de ambiente sobrepõe.
+REPO_URL = os.environ.get("DASHBOARD_REPO_URL", "").strip() or "https://github.com/jprime617/DataThon"
 
 # Colunas que o painel v2 exige no agregado. Uma cópia do Blob gerada pelo
 # pipeline antigo não as tem: nesse caso o painel usa a cópia local e avisa.
