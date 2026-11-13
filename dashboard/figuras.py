@@ -42,9 +42,23 @@ ESCALAS_MAPA = {
     c.M_GAP_SAL: ("divergente", 1.0),
     c.M_GAP_ESC: ("divergente", 0.0),
     c.M_SAIDA_VOL: ("tensao", None),
+    c.M_ROT_DESC: ("tensao", None),
 }
-PERCENTIL_LIMITE_ESCALA = 98
+# Cada indicador tem a sua paleta, para a troca de filtro ficar evidente no mapa.
+# Divergentes vão do "ruim" (esquerda) ao "bom" (direita); sequenciais, do claro ao escuro.
+PALETAS_MAPA = {
+    c.M_SALDO_10K: c.CLASSES_DIVERGENTE,
+    c.M_SALDO_REL: c.CLASSES_DIVERGENTE,
+    c.M_GAP_SAL: ["#8C510A", "#D8B365", "#F6E8C3", "#C7EAE5", "#5AB4AC", "#01665E"],
+    c.M_GAP_ESC: ["#762A83", "#AF8DC3", "#E7D4E8", "#D9F0D3", "#7FBF7B", "#1B7837"],
+    c.M_SAIDA_VOL: ["#FEE6CE", "#FDAE6B", "#E6550D", "#8C2D04"],
+    c.M_ROT_DESC: ["#EFE3F5", "#C3A4D6", "#8E63B5", "#4A2377"],
+}
+COR_BOLHA = "rgba(20, 20, 20, 0.12)"
+COR_BOLHA_BORDA = "rgba(20, 20, 20, 0.75)"
+PERCENTIL_LIMITE_ESCALA = 90  # mais cor nas classes do meio; extremos saturam
 COR_SEM_DADO = "#D9D9D9"
+LIMITES_SC = ([-53.9, -48.1], [-29.4, -25.9])  # (lon, lat) com folga; o mapa sempre mostra o estado inteiro
 COR_REALCE = "#C2185B"  # magenta: território filtrado
 
 
@@ -66,6 +80,8 @@ def construir_mapa(
     *,
     rotulo_territorio: str = c.COLUNA_NOME_MUNICIPIO,
     destaque: list[str] | tuple[str, ...] = (),
+    bolhas: pd.DataFrame | None = None,
+    altura: int = 400,
 ) -> go.Figure:
     """Coroplético por município, em classes, colorido pela `metrica` da unidade territorial.
 
@@ -75,6 +91,8 @@ def construir_mapa(
     métrica e ``movimentacoes``. Taxas de tensão usam 4 quantis na escala
     sequencial; métricas com sinal, 6 classes simétricas na divergente. Unidades
     sem amostra suficiente ficam em cinza; as de ``destaque`` ganham contorno magenta.
+    ``bolhas`` (``municipio``, nome e ``movimentacoes``) acrescenta a segunda
+    camada: um círculo por município, com área proporcional ao volume.
     """
     if geojson is None:
         return c.figura_vazia("Mapa indisponível: malha de municípios não encontrada.")
@@ -112,13 +130,13 @@ def construir_mapa(
             desvio = (valores - centro).abs()
             limite = float(desvio.quantile(PERCENTIL_LIMITE_ESCALA / 100)) or float(desvio.max()) or 1.0
             zmin, zmax = centro - limite, centro + limite
-            cores = c.CLASSES_DIVERGENTE
+            cores = PALETAS_MAPA.get(metrica, c.CLASSES_DIVERGENTE)
             passo = (zmax - zmin) / len(cores)
             bordas = [zmin + passo * (i + 1) for i in range(len(cores) - 1)]
             z, ticks = valores, [zmin + passo * (i + 0.5) for i in range(len(cores))]
         else:
             bordas = sorted(set(float(valores.quantile(q)) for q in (0.25, 0.5, 0.75)))
-            cores = c.CLASSES_SEQUENCIAL[-(len(bordas) + 1):]
+            cores = PALETAS_MAPA.get(metrica, c.CLASSES_SEQUENCIAL)[-(len(bordas) + 1):]
             z = valores.map(lambda v: sum(v > b for b in bordas))
             zmin, zmax = -0.5, len(cores) - 0.5
             ticks = list(range(len(cores)))
@@ -144,10 +162,35 @@ def construir_mapa(
             marker_line_width=2, marker_line_color=COR_REALCE, hoverinfo="skip",
             customdata=alvo[rotulo_territorio].astype(str), name="Território filtrado", showlegend=True,
         ))
-    figura.update_geos(fitbounds="locations", visible=False, bgcolor="rgba(0,0,0,0)")
-    return _layout(figura, f"{definicao.rotulo} por território", 400,
+    if bolhas is not None and not bolhas.empty:
+        centros = centroides(geojson)
+        b = bolhas[bolhas[c.COLUNA_MUNICIPIO].astype(str).isin(centros) & (bolhas[c.M_MOV] > 0)]
+        if not b.empty:
+            lon, lat = zip(*(centros[str(m)] for m in b[c.COLUNA_MUNICIPIO]))
+            figura.add_trace(go.Scattergeo(
+                lon=lon, lat=lat, mode="markers", name="Volume de movimentações (tamanho do círculo)",
+                marker={"size": b[c.M_MOV], "sizemode": "area", "sizeref": 2 * float(b[c.M_MOV].max()) / 38 ** 2,
+                        "sizemin": 2, "color": COR_BOLHA, "line": {"width": 1.2, "color": COR_BOLHA_BORDA}},
+                text=[f"<b>{n}</b><br>{c.fmt_int(v)} movimentações"
+                      for n, v in zip(b[c.COLUNA_NOME_MUNICIPIO], b[c.M_MOV])],
+                hoverinfo="text", customdata=b[rotulo_territorio if rotulo_territorio in b else c.COLUNA_NOME_MUNICIPIO].astype(str),
+            ))
+    figura.update_geos(visible=False, bgcolor="rgba(0,0,0,0)", lonaxis_range=LIMITES_SC[0], lataxis_range=LIMITES_SC[1])
+    return _layout(figura, f"{definicao.rotulo} por território", altura,
                    margin={"l": 0, "r": 0, "t": 50, "b": 90}, dragmode=False,
                    legend={"orientation": "h", "x": 0, "y": -0.2, "yanchor": "top", "font": {"size": 13}})
+
+
+def centroides(geojson: dict) -> dict[str, tuple[float, float]]:
+    """Chave municipal → (lon, lat): média dos vértices do maior anel do município."""
+    centros = {}
+    for f in geojson.get("features", []):
+        g = f["geometry"]
+        poligonos = g["coordinates"] if g["type"] == "MultiPolygon" else [g["coordinates"]]
+        anel = max((p[0] for p in poligonos), key=len)
+        centros[str(f["properties"]["chave_municipal"])] = (
+            sum(x for x, _ in anel) / len(anel), sum(y for _, y in anel) / len(anel))
+    return centros
 
 
 # --- Série mensal ---------------------------------------------------------------
@@ -341,7 +384,7 @@ def construir_barras(metricas: pd.DataFrame, categoria: str, metrica: str, titul
     ))
     figura.update_traces(cliponaxis=False)
     return _layout(figura, titulo, 140 + 38 * len(dados), yaxis={"autorange": "reversed"},
-                   xaxis={"title": c.DEFINICOES[metrica].rotulo, "range": _folga_x(dados[metrica])})
+                   xaxis={"title": c.DEFINICOES[metrica].rotulo, "range": _folga_x(dados[metrica], 0.45)})
 
 
 def construir_funil(etapas: list[tuple[str, int]]) -> go.Figure:

@@ -55,11 +55,11 @@ def sintoma_principal(u: pd.Series) -> str:
 _CLASSE_QUADRANTE = {c.Q_APAGAO: "apagao", c.Q_PRESSAO: "pressao"}
 
 
-def frase_porque(u: pd.Series, selos: list[str], saida_ref: float, ref: pd.Series | None = None) -> str:
+def frase_porque(u: pd.Series, selos: list[str], saida_ref: float) -> str:
     """O "por quê" de uma unidade em alerta, numa frase sem jargão.
 
-    Sem causa isolada, cita o sintoma que mais puxa a tensão (com ``ref``, o
-    total do recorte); sem ``ref``, a saída voluntária.
+    Sem causa isolada devolve "": o cartão já mostra o sintoma que mais pesa,
+    e a frase repetida em todos os cartões só poluía (M3.C8).
     """
     saida, gap = u[c.M_SAIDA_VOL], u[c.M_GAP_SAL]
     if c.CAUSA_SALARIAL in selos:
@@ -70,18 +70,7 @@ def frase_porque(u: pd.Series, selos: list[str], saida_ref: float, ref: pd.Serie
                 "e o salário de entrada não é menor: o problema é reter.")
     if c.CAUSA_QUALIFICACAO in selos:
         return "Contrata gente menos escolarizada do que a que sai, numa área que pede técnico ou superior."
-    if ref is not None:
-        nome = sintoma_principal(u)
-        valor, base = u[nome], ref[nome]
-        if pd.notna(valor) and pd.notna(base):
-            comparacao = "acima" if valor >= base else "abaixo"
-            return (f"{c.DEFINICOES[nome].rotulo}: {c.fmt_pct(valor, 0)}, {comparacao} dos {c.fmt_pct(base, 0)} "
-                    "do estado; nenhuma causa isolada se destaca.")
-    if pd.notna(saida) and pd.notna(saida_ref):
-        comparacao = "acima" if saida >= saida_ref else "abaixo"
-        return (f"{c.fmt_pct(saida, 0)} dos desligamentos são a pedido, {comparacao} dos "
-                f"{c.fmt_pct(saida_ref, 0)} do estado; nenhuma causa isolada se destaca.")
-    return "Sem causa isolada identificada com os dados disponíveis."
+    return ""
 
 
 def _cartao(u: pd.Series, segunda: str, selos: list[str], ref: pd.Series, i: int) -> None:
@@ -89,7 +78,9 @@ def _cartao(u: pd.Series, segunda: str, selos: list[str], ref: pd.Series, i: int
     with st.container(border=True, key=f"rx-alerta-{_CLASSE_QUADRANTE[quadrante]}-{i}"):
         st.markdown(f"**{u[segunda]}**  \n{u[c.COLUNA_REGIAO]}")
         st.html(f'<span class="rx-semaforo rx-{_CLASSE_QUADRANTE[quadrante]}">{quadrante}</span>')
-        st.markdown(frase_porque(u, selos, ref[c.M_SAIDA_VOL], ref))
+        frase = frase_porque(u, selos, ref[c.M_SAIDA_VOL])
+        if frase:
+            st.markdown(frase)
         a, b = st.columns(2)
         nome = sintoma_principal(u)
         a.metric(ROTULO_SINTOMA[nome], c.fmt_pct(u[nome], 0),
@@ -114,9 +105,10 @@ def render(ctx: c.Contexto) -> None:
     contagem = m["quadrante"].value_counts()
     excluidas = len(c.agregar_metricas(ctx.df, por).query(f"{c.M_MOV} > 0")) - len(m)
     st.caption(
-        f"{contagem.get(c.Q_APAGAO, 0)} unidades em **{c.Q_APAGAO}** e {contagem.get(c.Q_PRESSAO, 0)} em "
-        f"**{c.Q_PRESSAO}**, de {len(m)} com amostra suficiente ({excluidas} com < 100 movimentações ficaram "
-        "fora). As linhas pontilhadas marcam a média do recorte; quanto maior a bolha, mais movimentações."
+        f"{contagem.get(c.Q_APAGAO, 0)} grupos em **{c.Q_APAGAO}** e {contagem.get(c.Q_PRESSAO, 0)} em "
+        f"**{c.Q_PRESSAO}**, de {len(m)} analisados"
+        + (f" ({excluidas} ficaram fora por ter poucos dados)" if excluidas else "")
+        + ". As linhas pontilhadas marcam a média; quanto maior a bolha, mais movimentações."
     )
 
     st.subheader("Alertas, do mais tenso ao menos tenso")
@@ -136,32 +128,15 @@ def render(ctx: c.Contexto) -> None:
                              fracao_tecnica=float(frac_tecnica.get((u[c.COLUNA_REGIAO], u[segunda]), 0.0)))
             with colunas[i % 3]:
                 _cartao(u, segunda, selos, ref, i)
-        st.caption(f"Vermelho = {c.Q_APAGAO}: perde gente e cresce pouco. Laranja = {c.Q_PRESSAO}: cresce, "
-                   "mas perde gente. Primeiro as unidades com ao menos 1% das movimentações.")
+        st.caption(f"Laranja-escuro = {c.Q_APAGAO}: perde gente e cresce pouco. Amarelo = {c.Q_PRESSAO}: "
+                   "cresce, mas perde gente. Cartão sem frase = salário, qualificação e retenção não explicam "
+                   "sozinhos a tensão; o número mostra o sintoma que mais pesa.")
         with st.expander(f"Ver as {len(tabela)} unidades em alerta numa tabela"):
             st.dataframe(tabela, hide_index=True, width="stretch",
                          column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
             st.caption("Causas: Salarial = quem entra ganha mais de 5% menos que quem saiu; Qualificação = entra gente "
                        "menos escolarizada numa área técnica; Retenção = saída a pedido 5 p.p. acima do estado sem que o "
                        "salário de entrada seja menor.")
-
-    if len(c.PESOS_TENSAO_PADRAO) > 1:
-        with st.expander("Sensibilidade: o top 10 muda com outros pesos?"):
-            st.caption("Pesos iniciais iguais (PLANEJAMENTO §7.1). Mude-os e veja quantas unidades permanecem "
-                       "no top 10 de tensão.")
-            cols = st.columns(len(c.PESOS_TENSAO_PADRAO))
-            pesos = {nome: col.slider(f"Peso: {c.ROTULO_COMPONENTE[nome]}", 0.0, 3.0, 1.0, 0.5)
-                     for col, nome in zip(cols, c.PESOS_TENSAO_PADRAO)}
-            if sum(pesos.values()) == 0:
-                st.warning("Ao menos um peso precisa ser maior que zero.")
-            else:
-                alt = c.matriz_diagnostico(ctx.df, por, pesos_tensao=pesos)
-                base10 = list(rotulo_unidade(m, segunda).head(10))
-                alt10 = list(rotulo_unidade(alt, segunda).head(10))
-                mantidas = len(set(base10) & set(alt10))
-                st.markdown(f"**{mantidas} de {min(10, len(base10))}** unidades permanecem no top 10.")
-                st.dataframe(pd.DataFrame({"Pesos iguais": pd.Series(base10), "Pesos escolhidos": pd.Series(alt10)},
-                                          index=range(1, max(len(base10), len(alt10)) + 1)), width="stretch")
 
     c.baixar_csv(m.drop(columns=[col for col in m.columns if col.startswith(("soma_", "n_"))]),
                  "diagnostico_matriz.csv")

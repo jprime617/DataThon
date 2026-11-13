@@ -48,6 +48,42 @@ def legenda_compressao(medianas: pd.DataFrame, categoria: str) -> str:
             f"{c.fmt_brl(pior['mediana_desligamento'])}).")
 
 
+LEGENDA_CAUSAS = ("Salarial = quem entra ganha mais de 5% menos que quem saiu; Qualificação = entra gente menos "
+                  "escolarizada numa área técnica; Retenção = muito mais gente pede para sair do que no estado, "
+                  "sem que o salário de entrada seja menor.")
+
+
+def selos_por_unidade(ctx: c.Contexto, unidades: pd.DataFrame) -> pd.DataFrame:
+    """Mesorregião × setor com ao menos uma causa (Salarial, Qualificação, Retenção), da maior para a menor."""
+    ref = c.total(ctx.df)
+    frac = c.fracao_por_nivel(ctx.df, [c.COLUNA_REGIAO, c.COLUNA_SETOR], c.NIVEIS_QUALIFICADOS)
+    linhas = []
+    for _, u in unidades.iterrows():
+        selos = c.causas(u, saida_ref=ref[c.M_SAIDA_VOL],
+                         fracao_tecnica=float(frac.get((u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), 0.0)))
+        if selos:
+            linhas.append({"Grupo": f"{u[c.COLUNA_SETOR]} – {u[c.COLUNA_REGIAO]}", "Causas": " · ".join(selos),
+                           "Movimentações": int(u[c.M_MOV]),
+                           "Salário de quem entra vs quem saiu": c.fmt_gap(u[c.M_GAP_SAL]),
+                           "Saem a pedido": c.fmt_pct(u[c.M_SAIDA_VOL])})
+    if not linhas:
+        return pd.DataFrame(columns=["Grupo", "Causas", "Movimentações"])
+    return pd.DataFrame(linhas).sort_values("Movimentações", ascending=False)
+
+
+def resumo_causas(selos: pd.DataFrame, total: int) -> str:
+    """Quantos grupos têm cada causa, em linguagem leiga."""
+    if selos.empty:
+        return f"Nenhum dos {total} grupos analisados tem uma causa clara nos dados."
+    textos = {c.CAUSA_SALARIAL: "o salário de entrada é menor que o de quem saiu",
+              c.CAUSA_RETENCAO: "o problema é reter (o salário não é menor)",
+              c.CAUSA_QUALIFICACAO: "entra gente com menos estudo numa área técnica"}
+    linhas = [f"- **{selos['Causas'].str.contains(causa).sum()}** grupos: {texto}"
+              for causa, texto in textos.items() if selos["Causas"].str.contains(causa).any()]
+    return (f"Dos {total} grupos (setor × mesorregião) analisados:\n\n" + "\n".join(linhas)
+            + "\n\nUm grupo pode ter mais de uma causa.")
+
+
 def render(ctx: c.Contexto) -> None:
     st.title("Por quê: salário, qualificação ou estrutura?")
     c.cabecalho(ctx)
@@ -57,26 +93,33 @@ def render(ctx: c.Contexto) -> None:
     c.cartoes_kpi(ctx, [c.M_GAP_SAL, c.M_SAL_ADM, c.M_SAL_DESL, c.M_GAP_ESC, c.M_SAIDA_VOL])
 
     perfil, nota = perfil_filtrado(ctx)
+    unidades = c.agregar_metricas(ctx.df, [c.COLUNA_REGIAO, c.COLUNA_SETOR])
+    unidades = unidades[unidades[c.M_AMOSTRA_OK]]
+    selos = selos_por_unidade(ctx, unidades)
+
     st.subheader("Salário: quem entra ganha menos do que quem sai?")
+    grafico, resumo = st.columns([3, 2], gap="large")
+    por_macro = None
     if perfil is None or perfil.empty:
-        st.info("Perfil de causa raiz indisponível para esta seleção.")
+        grafico.info("Perfil de causa raiz indisponível para esta seleção.")
     else:
-        col1, col2 = st.columns(2)
         por_faixa = c.medianas_perfil(perfil, [c.COLUNA_FAIXA_ESCOLARIDADE])
         por_faixa = por_faixa.set_index(c.COLUNA_FAIXA_ESCOLARIDADE).reindex(
             [f for f in ORDEM_FAIXAS if f in set(por_faixa[c.COLUNA_FAIXA_ESCOLARIDADE])]).reset_index()
-        col1.plotly_chart(fig.construir_salario_por_categoria(
+        grafico.plotly_chart(fig.construir_salario_por_categoria(
             por_faixa, c.COLUNA_FAIXA_ESCOLARIDADE, "Mediana salarial por escolaridade"), width="stretch")
-        col1.caption(legenda_compressao(por_faixa, c.COLUNA_FAIXA_ESCOLARIDADE))
+        grafico.caption(legenda_compressao(por_faixa, c.COLUNA_FAIXA_ESCOLARIDADE) + " " + nota)
         por_macro = c.medianas_perfil(perfil, [c.COLUNA_MACROFAMILIA_CBO])
-        col2.plotly_chart(fig.construir_salario_por_categoria(
-            por_macro, c.COLUNA_MACROFAMILIA_CBO, "Mediana salarial por macrofamília (IA)"), width="stretch")
-        col2.caption(legenda_compressao(por_macro, c.COLUNA_MACROFAMILIA_CBO))
-        st.caption(nota)
+    with resumo, st.container(border=True):
+        st.markdown("**O que explica a perda de gente**")
+        st.markdown(resumo_causas(selos, len(unidades)))
 
     # No máximo 2 gráficos à vista (M3.C4): o resto fica em "Aprofundar".
-    unidades = c.agregar_metricas(ctx.df, [c.COLUNA_REGIAO, c.COLUNA_SETOR])
-    unidades = unidades[unidades[c.M_AMOSTRA_OK]]
+    if por_macro is not None:
+        with st.expander("Aprofundar: salário por profissão (macrofamília da IA)"):
+            st.plotly_chart(fig.construir_salario_por_categoria(
+                por_macro, c.COLUNA_MACROFAMILIA_CBO, "Mediana salarial por macrofamília (IA)"), width="stretch")
+            st.caption(legenda_compressao(por_macro, c.COLUNA_MACROFAMILIA_CBO))
     with st.expander("Aprofundar: qualificação e retenção"):
         col1, col2 = st.columns(2)
         macros = c.agregar_metricas(ctx.df, [c.COLUNA_MACROFAMILIA_CBO])
@@ -119,24 +162,10 @@ def render(ctx: c.Contexto) -> None:
                          f"{len(validas)} municípios com ≥ 100 movimentações. Correlação não é causalidade; "
                          "o IDHM é de 2010.")
 
-    st.subheader("Selo de causa por unidade")
-    ref = c.total(ctx.df)
-    frac = c.fracao_por_nivel(ctx.df, [c.COLUNA_REGIAO, c.COLUNA_SETOR], c.NIVEIS_QUALIFICADOS)
-    linhas = []
-    for _, u in unidades.iterrows():
-        selos = c.causas(u, saida_ref=ref[c.M_SAIDA_VOL],
-                         fracao_tecnica=float(frac.get((u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), 0.0)))
-        if selos:
-            linhas.append({"Unidade": f"{u[c.COLUNA_SETOR]} – {u[c.COLUNA_REGIAO]}", "Causas": " · ".join(selos),
-                           "Movimentações": int(u[c.M_MOV]), "Salário de quem entra vs quem saiu": c.fmt_gap(u[c.M_GAP_SAL]),
-                           "Saída voluntária": c.fmt_pct(u[c.M_SAIDA_VOL]),
-                           "Escolaridade de quem entra vs quem saiu": c.fmt_metrica(c.M_GAP_ESC, u[c.M_GAP_ESC])})
-    if linhas:
-        tabela = pd.DataFrame(linhas).sort_values("Movimentações", ascending=False)
-        st.dataframe(tabela, hide_index=True, width="stretch",
-                     column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
-        st.caption(f"{len(tabela)} unidades com ao menos uma causa. Salarial = quem entra ganha mais de 5% menos "
-                   "que quem saiu; Qualificação = entra gente menos escolarizada numa área técnica; Retenção = saída a "
-                   "pedido 5 p.p. acima do estado sem que o salário de entrada seja menor.")
-    else:
-        st.caption("Nenhuma unidade com causa identificada nesta seleção.")
+    with st.expander(f"Ver os {len(selos)} grupos com causa identificada"):
+        if selos.empty:
+            st.caption("Nenhum grupo com causa identificada nesta seleção.")
+        else:
+            st.dataframe(selos, hide_index=True, width="stretch",
+                         column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
+            st.caption(LEGENDA_CAUSAS)

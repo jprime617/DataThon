@@ -9,7 +9,7 @@ from dashboard import comum as c
 from dashboard import figuras as fig
 from dashboard import narrativa as nar
 
-METRICAS_MAPA = [c.M_SAIDA_VOL, c.M_GAP_SAL, c.M_SALDO_10K, c.M_GAP_ESC]
+METRICAS_MAPA = [c.M_SALDO_10K, c.M_ROT_DESC, c.M_SAIDA_VOL, c.M_GAP_SAL]
 
 
 def metricas_mapa(df: pd.DataFrame, nivel: str) -> pd.DataFrame:
@@ -54,35 +54,41 @@ def achado_ativo(filtros: dict, estado) -> bool:
     return all(list(estado.get(k) or []) == list(filtros.get(k, [])) for k in _CHAVES_ACHADO)
 
 
-def render(ctx: c.Contexto) -> None:
-    st.title("Onde está o problema?")
-    c.cabecalho(ctx)
-    if ctx.df.empty:
-        st.info("Nenhuma movimentação com estes filtros. Use **Limpar filtros** na barra lateral.")
-        return
+def volume_por_municipio(df: pd.DataFrame, nivel: str) -> pd.DataFrame:
+    """Movimentações de cada município (segunda camada do mapa), com o rótulo da unidade pintada."""
+    coluna = c.COLUNA_POR_NIVEL_TERRITORIAL[nivel]
+    por = c.agregar_metricas(df, list(dict.fromkeys([c.COLUNA_MUNICIPIO, c.COLUNA_NOME_MUNICIPIO, coluna])))
+    return pd.DataFrame({
+        c.COLUNA_MUNICIPIO: por[c.COLUNA_MUNICIPIO].astype(str),
+        c.COLUNA_NOME_MUNICIPIO: por[c.COLUNA_NOME_MUNICIPIO].astype(str),
+        "rotulo": por[coluna].astype(str),
+        c.M_MOV: por[c.M_MOV],
+    })
 
-    manchete, _, topicos = nar.resposta_principal(ctx.df, ctx.filtros.escopo).partition("\n\n")
-    with st.container(border=True):
-        st.markdown(f"#### {manchete}")
-        if topicos:
-            st.markdown(topicos)
-    indicadores, painel = st.columns([5, 7], gap="large")
-    with indicadores:
-        c.cartoes_kpi(ctx, c.METRICAS_TEMAS)
 
-    with painel, st.container(border=True, key="rx-destaque"):
-        metrica = st.selectbox("Indicador em destaque", METRICAS_MAPA,
-                               format_func=lambda m: c.DEFINICOES[m].rotulo, key="mapa_metrica")
-        nivel = st.segmented_control("Pintar o mapa por", [c.NIVEL_MESO, c.NIVEL_MICRO, c.NIVEL_MUNICIPIO],
-                                     default=c.NIVEL_MICRO, key="mapa_nivel") or c.NIVEL_MICRO
-        c.cartao_destaque(ctx, metrica)
+def _mapa(ctx: c.Contexto) -> None:
+    """Um único mapa de SC: o filtro troca o indicador (e a paleta); o círculo mostra o volume."""
+    with st.container(border=True, key="rx-destaque"):
+        escolha, nivel_col, bolha_col = st.columns([4, 4, 2], vertical_alignment="bottom")
+        metrica = escolha.selectbox("O que mostrar no mapa", METRICAS_MAPA,
+                                    format_func=lambda m: c.DEFINICOES[m].rotulo, key="mapa_metrica")
+        nivel = nivel_col.segmented_control("Pintar por", [c.NIVEL_MESO, c.NIVEL_MICRO, c.NIVEL_MUNICIPIO],
+                                            default=c.NIVEL_MUNICIPIO, key="mapa_nivel") or c.NIVEL_MUNICIPIO
+        bolhas = bolha_col.toggle("Volume", value=True, key="mapa_bolhas",
+                                  help="Círculo em cada município, do tamanho das suas movimentações.")
         dados_mapa = metricas_mapa(ctx.df, nivel)
         destaque = ctx.filtros.territorios if ctx.filtros.nivel_territorial == nivel else ()
-        evento = st.plotly_chart(fig.construir_mapa(dados_mapa, c.geojson_cache(), metrica, rotulo_territorio="rotulo",
-                                                    destaque=destaque),
-                                 width="stretch", on_select="rerun", selection_mode="points", key="mapa")
-        st.caption(nar.legenda_mapa(dados_mapa.drop_duplicates("rotulo"), metrica, "rotulo")
-                   + " Clique num território para abrir a ficha.")
+        mapa, lado = st.columns([3, 1], gap="medium")
+        with mapa:
+            evento = st.plotly_chart(
+                fig.construir_mapa(dados_mapa, c.geojson_cache(), metrica, rotulo_territorio="rotulo",
+                                   destaque=destaque, altura=640,
+                                   bolhas=volume_por_municipio(ctx.df, nivel) if bolhas else None),
+                width="stretch", on_select="rerun", selection_mode="points", key="mapa")
+        with lado:
+            c.cartao_destaque(ctx, metrica)
+            st.caption(nar.legenda_mapa(dados_mapa.drop_duplicates("rotulo"), metrica, "rotulo")
+                       + " Clique num território para abrir a ficha.")
     pontos = getattr(getattr(evento, "selection", None), "points", None) or []
     if pontos:
         alvo = pontos[0].get("customdata")
@@ -91,13 +97,13 @@ def render(ctx: c.Contexto) -> None:
             st.session_state["ficha_alvo"] = (nivel, str(alvo))
             st.switch_page(st.session_state["_paginas"]["ficha"])
 
-    st.divider()
-    st.subheader("Principais achados")
+
+def _achados(ctx: c.Contexto) -> None:
     # Achados do estado (só escopo e período): aplicar um deles não pode
     # reescrever a própria lista, senão os demais somem.
     achados = nar.principais_achados(ctx.ref)
     if not achados:
-        st.caption("Sem unidades com amostra suficiente para gerar achados nesta seleção.")
+        st.caption("Sem dados suficientes para gerar achados nesta seleção.")
     for i, achado in enumerate(achados):
         ativo = achado_ativo(achado.filtros, st.session_state)
         with st.container(border=True, key=f"rx-achado-{i}" + ("-ativo" if ativo else "")):
@@ -110,24 +116,45 @@ def render(ctx: c.Contexto) -> None:
                 botao.button("Ver evidência", key=f"achado_{i}", on_click=aplicar_achado, args=(achado.filtros,),
                              icon=":material/filter_alt:", width="stretch")
 
-    st.subheader("Seções: onde se cria e onde se perde vaga")
+
+def _secoes_e_meses(ctx: c.Contexto) -> None:
     st.dataframe(ranking_secoes(ctx.df), hide_index=True, width="stretch", column_config={
         "Saldo de vagas": st.column_config.NumberColumn(format="localized"),
         "Movimentações": st.column_config.NumberColumn(format="localized"),
         "Rotatividade descontada": st.column_config.ProgressColumn(
-            format="percent", min_value=0.0, max_value=1.0,
-            help="min(admissões, desligamentos descontados) ÷ estoque de 31/12/2025 (RAIS). "
-                 "Oficial (MTE): SC 33,6%, Brasil 34,2%."),
+            "Troca de equipe no ano", format="percent", min_value=0.0, max_value=1.0,
+            help="Rotatividade descontada (MTE): min(admissões, desligamentos descontados) ÷ estoque de "
+                 "31/12/2025 (RAIS). Oficial: SC 33,6%, Brasil 34,2%."),
         "Saída voluntária": st.column_config.ProgressColumn(
-            format="percent", min_value=0.0, max_value=1.0,
+            "Saem a pedido", format="percent", min_value=0.0, max_value=1.0,
             help="Desligamentos a pedido ÷ desligamentos. Vazio = menos de 100 movimentações."),
     })
-    st.caption("Da seção que mais criou vagas para a que mais perdeu. Rotatividade descontada na definição do "
-               "MTE, com o estoque da RAIS 2025; vazio = menos de 100 movimentações.")
-
+    st.caption("Da seção que mais criou vagas para a que mais perdeu. Vazio = poucos dados.")
     mensal = c.agregar_metricas(ctx.df, [c.COLUNA_MES])
     st.plotly_chart(fig.construir_serie_mensal(mensal), width="stretch")
     st.caption(nar.legenda_serie(mensal))
+
+
+def render(ctx: c.Contexto) -> None:
+    st.title("Onde está o problema?")
+    c.cabecalho(ctx)
+    if ctx.df.empty:
+        st.info("Nenhuma movimentação com estes filtros. Use **Limpar filtros** na barra lateral.")
+        return
+
+    manchete, _, topicos = nar.resposta_principal(ctx.df, ctx.filtros.escopo).partition("\n\n")
+    with st.container(border=True):
+        st.markdown(f"#### {manchete}")
+        if topicos:
+            st.markdown(topicos)
+
+    _mapa(ctx)
+    c.cartoes_kpi(ctx, c.METRICAS_TEMAS)
+
+    with st.expander("Aprofundar: principais achados", icon=":material/lightbulb:"):
+        _achados(ctx)
+    with st.expander("Aprofundar: seções e evolução mês a mês", icon=":material/bar_chart:"):
+        _secoes_e_meses(ctx)
 
     reagregado = c.agregar_metricas(ctx.df, [c.COLUNA_REGIAO, c.COLUNA_SETOR, c.COLUNA_MACROFAMILIA_CBO,
                                              c.COLUNA_NIVEL_QUALIFICACAO])

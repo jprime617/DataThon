@@ -192,3 +192,16 @@ def test_malha_cobre_os_295_municipios_com_chave_de_6_digitos():
     assert len(chaves) == 295, f"esperado 295 municípios de SC, veio {len(chaves)}"
     assert all(c and len(c) == 6 and c.isdecimal() for c in chaves)
     assert len(set(chaves)) == 295, "há chaves municipais duplicadas na malha"
+
+
+def test_mapa_bolhas_de_volume_e_paleta_propria_por_indicador():
+    """M3.C8: segunda camada (círculo ∝ movimentações do município) e cada indicador com a sua paleta."""
+    df = _metricas_mapa([-50.0, 20.0, 80.0], movimentos=[200, 800, 0])
+    geo = _geojson_minimo(list(df[c.COLUNA_MUNICIPIO]))
+    bolhas = df.assign(**{c.COLUNA_NOME_MUNICIPIO: df["rotulo"]})
+    figura = fig.construir_mapa(df, geo, c.M_SALDO_10K, rotulo_territorio="rotulo", bolhas=bolhas)
+    camada = figura.data[-1]
+    assert camada.type == "scattergeo" and camada.marker.sizemode == "area"
+    assert list(camada.marker.size) == [200, 800]  # município sem movimentação não ganha círculo
+    assert fig.centroides(geo)["420000"] == (0.25, 0.5)
+    assert fig.PALETAS_MAPA[c.M_SAIDA_VOL] != fig.PALETAS_MAPA[c.M_ROT_DESC]

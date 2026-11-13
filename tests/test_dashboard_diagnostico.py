@@ -20,7 +20,7 @@ def test_frase_de_retencao_compara_com_o_estado():
 
 
 def test_frase_sem_causa_nao_inventa_explicacao():
-    assert "nenhuma causa isolada" in frase_porque(_u(0.5, 0.97), [], 0.47)
+    assert frase_porque(_u(0.5, 0.97), [], 0.47) == ""
 
 
 def test_matriz_legivel_so_cor_e_eixos_em_palavras():
@@ -75,11 +75,3 @@ def test_metodologia_cobre_r1_a_r9_e_r7_4_tem_grafico():
     ids = " ".join(r for r, _, _ in metodologia.REQUISITOS)
     assert all(f"R{i}" in ids for i in range(1, 10))
     assert "c.M_ESC_ADM, c.M_SAL_ADM" in inspect.getsource(causa_raiz.render)
-
-
-def test_sem_causa_isolada_cita_o_sintoma_que_mais_puxa_a_tensao():
-    u = pd.Series({c.M_SAIDA_VOL: 0.40, c.M_GAP_SAL: 0.98, c.M_ROT_DESC: 0.64, c.M_PRECOCE: 0.80,
-                   "z_" + c.M_SAIDA_VOL: -0.5, "z_" + c.M_ROT_DESC: 2.1, "z_" + c.M_PRECOCE: 1.0})
-    ref = pd.Series({c.M_SAIDA_VOL: 0.48, c.M_ROT_DESC: 0.32, c.M_PRECOCE: 0.69})
-    frase = frase_porque(u, [], 0.48, ref)
-    assert frase.startswith("Rotatividade descontada: 64%, acima dos 32%")

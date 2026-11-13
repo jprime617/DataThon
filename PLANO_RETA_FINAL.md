@@ -12,7 +12,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 | M0 | **concluído** (C0 liberado pela equipe em 12/11) | `dashboard-v2` | M0.C0 |
 | M1 | **concluído e mergeado** | `dashboard-v2` | M1.C5 |
 | M2 | C1–C3 e H1 em `dashboard-v2`; concordância com o Gemini 91,4% (família) e 92,2% (nível); C4 feito (20 divergências aceitas); M2 **concluído** (C5 só se M4/M5 trouxerem CBOs novos) | `dashboard-v2` | M2.C4 |
-| M3 | **mergeado** (C1–C4, C6, C7); **C5 (mapa) suspenso**; regras de design e anotações da equipe registradas na seção M3 | `dashboard-v2` | M3.C7 |
+| M3 | C1–C4, C6, C7 mergeados; **C5 (mapa) e C8 (limpeza) feitos em `m3-c8`**, aguardando revisão e merge | `m3-c8` | M3.C8 |
 | M4 | **concluído e mergeado** (C1–C6; C7 opcional) | `dashboard-v2` | M4.C6 |
 | M5 | **concluído e mergeado** (C1–C6) | `dashboard-v2` | M5.C6 |
 | M6 | falta o H2 (xlsx do PDET) | — | — |
@@ -34,7 +34,7 @@ Tudo isto pode ser feito por quem estiver livre, ou pela IA, sem esperar ningué
 - **M0.C0 (organizadores):** decide se M4, M5 e M6 entram no painel e no pitch.
 - **Dono do painel:** os ciclos [painel] (M4.C5–C6, M5.C6, M6.C2).
 - **M2.H1:** alguém roda os 23 prompts, ou a equipe decide que a IA da sessão (Claude) pode classificar a partir dos mesmos prompts. Se for a IA, registre isso na Metodologia.
-- **João:** liberar o M3.C5 (mapa), os merges e o deploy (M7).
+- **João:** M3.C5 e M3.C8 liberados em 12/11 (depois da tag `entrega-v1`); falta aprovar o merge de `m3-c8` e um novo deploy.
 - **Arquivo `Dados/Novo_Caged_MOV_Limpo.csv`:** precisa estar na máquina que rodar o M5.C4 e o M7.C1.
 
 ---
@@ -169,7 +169,7 @@ O que muda, e por quê:
 ## M3 · Painel simplificado (anotações da equipe)
 
 **Branch:** `m3-painel`, criada **depois** do merge do M1 · **Dono:** pessoa 1 · **Estimativa:** 3 a 4 h
-**Estado:** C1–C4, C6 e C7 feitos em `m3-painel` (**mergeado** em `dashboard-v2`). **C5 (mapa) suspenso** a pedido do João: o R7.2 aparece se o usuário escolher "Saldo por 10 mil hab." + "Município", mas o mapa ainda abre em saída voluntária por microrregião. O R7.4 não existia e foi criado (dispersão salário médio de admissão × escolaridade ordinal média, em Por que acontece → Aprofundar). Menu renomeado (URLs iguais). `pytest -q`: 236 verdes. Pendente: só o C5, se o João liberar (fazer numa branch nova a partir de `dashboard-v2`). O design simplificado está descrito no `PLANEJAMENTO.md` (§10 e F7, commit `8f0952c`).
+**Estado:** C1–C4, C6 e C7 feitos em `m3-painel` (**mergeado** em `dashboard-v2`). **C5 e C8 feitos em `m3-c8`** (12/11, ver abaixo). Antes, o C5 estava suspenso a pedido do João: o R7.2 aparece se o usuário escolher "Saldo por 10 mil hab." + "Município", mas o mapa ainda abre em saída voluntária por microrregião. O R7.4 não existia e foi criado (dispersão salário médio de admissão × escolaridade ordinal média, em Por que acontece → Aprofundar). Menu renomeado (URLs iguais). `pytest -q`: 236 verdes. Pendente: só o C5, se o João liberar (fazer numa branch nova a partir de `dashboard-v2`). O design simplificado está descrito no `PLANEJAMENTO.md` (§10 e F7, commit `8f0952c`).
 
 **Por que este marco existe:** a equipe achou o painel "científico" demais, com muitos gráficos, símbolos e legendas confusos, e a tela de diagnóstico era a pior. A meta passou a ser um painel que um leigo e a banca entendam sem explicação. As regras que valem para qualquer mudança no painel:
 - **Linguagem simples:** sem "z-score" nem razões técnicas na tela, e sem jargão no menu.
@@ -184,7 +184,7 @@ O que muda, e por quê:
 | Muito científico; simplificar ou cortar indicadores para leigos | C3 |
 | Muitos gráficos poluindo o sistema | C4 |
 | Separar a informação de forma mais fluida | Sanfona por tema (visual) e "Aprofundar" (C3) |
-| Um único mapa com várias informações e cores destacadas; mapa que muda de tamanho | C5 (**suspenso**); as classes em degraus já entraram no visual |
+| Um único mapa com várias informações e cores destacadas; mapa que muda de tamanho | C5 (feito em `m3-c8`) |
 | Cumprir o `requirements.md` e conseguir apresentar à banca | C6, C7 |
 | Deixar o planejamento a par | `PLANEJAMENTO.md` §10 e F7 (`8f0952c`) |
 
@@ -192,7 +192,8 @@ O que muda, e por quê:
 - [x] **M3.C2 Matriz legível.** Só cor, sem os 4 símbolos. Eixos com palavras ("cresce pouco → cresce muito" / "segura a equipe → perde a equipe"), sem "z-score" na tela.
 - [x] **M3.C3 Linguagem leiga.** "Gap 0,94" vira "paga 6% abaixo de quem saiu". No máximo 4 KPIs principais, e o resto em "Aprofundar". Menu sem jargão ("Por que acontece", "Que profissional falta").
 - [x] **M3.C4 No máximo 2 gráficos por página.** As dispersões de PIB/IDHM saem de Causa raiz e vão para um expander.
-- [ ] **M3.C5 Mapa (R7.2).** Abre em saldo por 10 mil hab., **por município**, com escala divergente e legenda de mínimo e máximo. A bolha mostra o volume de movimentações; no máximo duas camadas.
+- [x] **M3.C5 Mapa (R7.2).** Abre em saldo por 10 mil hab., **por município**, com escala divergente e legenda de mínimo e máximo. A bolha mostra o volume de movimentações; no máximo duas camadas. *(feito em `m3-c8`, 12/11: mapa em largura total no topo do Panorama, enquadrado em SC; 4 indicadores (saldo/10 mil, rotatividade, saída voluntária, salário de entrada), cada um com sua paleta; círculo por município ∝ movimentações, que pode ser desligado; legenda em linguagem leiga com a pior situação)*
+- [x] **M3.C8 Limpeza depois da conferência visual** (12/11, `m3-c8`, liberado pelo João depois da tag). Prints das páginas mostraram o painel ainda longo e técnico. Feito: Panorama = manchete + mapa + 4 indicadores, com achados e seções/mês a mês em "Aprofundar"; achados sem "n =" e sem "p.p."; diagnóstico sem a frase repetida "nenhuma causa isolada" (cartão sem frase = sem causa única), legenda de cores corrigida (laranja-escuro/amarelo) e a sensibilidade de pesos movida para a Metodologia; Por que acontece com 1 gráfico + quadro "o que explica a perda de gente", gráfico por macrofamília e tabela de causas em "Aprofundar", sem a coluna de escolaridade em níveis; Que profissional falta com a auditoria da IA recolhida (abas: concordância, regras, prompt); O que fazer com um cartão por ação (não 4 iguais), tabela e ficha em Markdown recolhidas; rótulo cortado da Ficha corrigido. `pytest -q` verde. **Pendente:** revisão da equipe, merge em `dashboard-v2` e novo deploy (M7.C3).
 - [x] **M3.C6 Ranking de seções (R7.3).** Seções por saldo, ao lado da rotatividade descontada (se o M4 entrou) ou da saída voluntária (se não). Ajustar o texto do R7.3 de acordo.
 - [x] **M3.C7 Tabela "requisito → onde aparece"** na Metodologia, de R1 a R9, para a banca. Conferir também o R7.4 (salário × nível ordinal médio de escolaridade).
 

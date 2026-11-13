@@ -111,7 +111,7 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
         achados.append(Achado(
             "Maior tensão",
             f"**{u[c.COLUNA_SETOR]}** em **{u[c.COLUNA_REGIAO]}**: {_sintomas(u, ref)}; quem entra ganha "
-            f"{c.fmt_gap(u[c.M_GAP_SAL])} de quem saiu, n = {c.fmt_int(u[c.M_MOV])}.",
+            f"{c.fmt_gap(u[c.M_GAP_SAL])} de quem saiu ({c.fmt_int(u[c.M_MOV])} movimentações).",
             _filtro_unidade(u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), float(u["tensao"]),
         ))
         exp = m[m[c.M_SALDO] > 0].sort_values("dinamismo", ascending=False)
@@ -120,10 +120,11 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
             achados.append(Achado(
                 "Expansão mais acelerada",
                 f"**{e[c.COLUNA_SETOR]}** em **{e[c.COLUNA_REGIAO]}**: saldo {c.fmt_int(e[c.M_SALDO])}"
-                + (f" ({c.fmt_pct(e[c.M_VAR_REL])} do estoque; aceleração {c.fmt_pp(e[c.M_ACEL])} sobre o ano anterior)"
+                + (f"; o emprego cresceu {c.fmt_pct(e[c.M_VAR_REL])} no ano, "
+                   f"{c.fmt_num(abs(e[c.M_ACEL]), 1)} pontos {'a mais' if e[c.M_ACEL] >= 0 else 'a menos'} "
+                   "que no ano anterior."
                    if pd.notna(e[c.M_VAR_REL]) and pd.notna(e[c.M_ACEL])
-                   else f" ({c.fmt_pct(e[c.M_SALDO_REL])} das movimentações)")
-                + f", n = {c.fmt_int(e[c.M_MOV])}.",
+                   else f" ({c.fmt_pct(e[c.M_SALDO_REL])} das movimentações)."),
                 _filtro_unidade(e[c.COLUNA_REGIAO], e[c.COLUNA_SETOR]), float(e["dinamismo"]),
             ))
         z_comp = c.zscore(1 - m[c.M_GAP_SAL])
@@ -134,7 +135,7 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
                 "Maior compressão salarial",
                 f"**{k[c.COLUNA_SETOR]}** em **{k[c.COLUNA_REGIAO]}**: quem entra ganha "
                 f"{c.fmt_pct(k[c.M_GAP_SAL], 0)} do salário de quem sai "
-                f"({c.fmt_brl(k[c.M_SAL_ADM])} vs {c.fmt_brl(k[c.M_SAL_DESL])}), n = {c.fmt_int(k[c.M_MOV])}.",
+                f"({c.fmt_brl(k[c.M_SAL_ADM])} contra {c.fmt_brl(k[c.M_SAL_DESL])}).",
                 _filtro_unidade(k[c.COLUNA_REGIAO], k[c.COLUNA_SETOR]), float(abs(z_comp[k.name])),
             ))
     macros = c.agregar_metricas(df, [c.COLUNA_MACROFAMILIA_CBO])
@@ -148,7 +149,7 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
         achados.append(Achado(
             "Ocupação que mais pede demissão (IA)",
             f"A macrofamília **{topo[c.COLUNA_MACROFAMILIA_CBO]}** tem a maior saída voluntária: "
-            f"{c.fmt_pct(topo[c.M_SAIDA_VOL])} dos desligamentos, n = {c.fmt_int(topo[c.M_MOV])}.",
+            f"{c.fmt_pct(topo[c.M_SAIDA_VOL])} de quem sai pede para sair.",
             {"f_macro": [str(topo[c.COLUNA_MACROFAMILIA_CBO])]}, float(z.max()),
         ))
         esc = macros.dropna(subset=[c.M_GAP_ESC]).sort_values(c.M_GAP_ESC)
@@ -156,9 +157,8 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
             q = esc.iloc[0]
             achados.append(Achado(
                 "Contratação com menos estudo",
-                f"Em **{q[c.COLUNA_MACROFAMILIA_CBO]}**, os admitidos têm "
-                f"{c.fmt_num(abs(q[c.M_GAP_ESC]), 2)} nível de escolaridade a menos que os desligados "
-                f"(n = {c.fmt_int(q[c.M_MOV])}).",
+                f"Em **{q[c.COLUNA_MACROFAMILIA_CBO]}**, quem é contratado estudou menos, em média, "
+                "do que quem saiu.",
                 {"f_macro": [str(q[c.COLUNA_MACROFAMILIA_CBO])]},
                 float(abs(c.zscore(macros[c.M_GAP_ESC]).loc[q.name])) if len(macros) > 1 else 0.0,
             ))
@@ -183,14 +183,27 @@ def legenda_serie(mensal: pd.DataFrame) -> str:
             "Dezembro concentra desligamentos sazonais.")
 
 
+# Como ler a cor de cada indicador do mapa, em linguagem leiga.
+LEITURA_MAPA = {
+    c.M_SALDO_10K: "Azul = abriu vagas; laranja = fechou vagas (conta por 10 mil habitantes).",
+    c.M_SALDO_REL: "Azul = abriu vagas; laranja = fechou vagas.",
+    c.M_ROT_DESC: "Quanto mais escuro, mais a equipe é trocada ao longo do ano.",
+    c.M_SAIDA_VOL: "Quanto mais escuro, mais gente pede para sair.",
+    c.M_GAP_SAL: "Verde = quem entra ganha mais do que quem saiu; marrom = ganha menos.",
+    c.M_GAP_ESC: "Verde = quem entra estudou mais do que quem saiu; roxo = estudou menos.",
+}
+_MENOR_E_PIOR = {c.M_GAP_SAL, c.M_GAP_ESC, c.M_SALDO_10K, c.M_SALDO_REL}
+
+
 def legenda_mapa(metricas: pd.DataFrame, metrica: str, rotulo: str) -> str:
-    """Legenda do mapa: a unidade com o valor mais extremo (com amostra)."""
+    """Legenda do mapa: como ler a cor e a unidade em pior situação (com amostra)."""
+    leitura = LEITURA_MAPA.get(metrica, "")
     validas = metricas[metricas[c.M_AMOSTRA_OK]].dropna(subset=[metrica])
     if validas.empty:
-        return "Nenhuma unidade com amostra suficiente (≥ 100 movimentações)."
-    tensao = metrica == c.M_SAIDA_VOL
-    extremo = validas.loc[validas[metrica].idxmax() if tensao or metrica != c.M_GAP_SAL else validas[metrica].idxmin()]
+        return f"{leitura} Nenhuma região com dados suficientes nesta seleção.".strip()
+    pior = metrica in _MENOR_E_PIOR
+    extremo = validas.loc[validas[metrica].idxmin() if pior else validas[metrica].idxmax()]
     definicao = c.DEFINICOES[metrica]
-    return (f"{'Maior' if tensao or metrica != c.M_GAP_SAL else 'Menor'} {definicao.rotulo.lower()}: "
-            f"**{extremo[rotulo]}** ({c.fmt_metrica(metrica, extremo[metrica])}, n = {c.fmt_int(extremo[c.M_MOV])}). "
-            f"Cinza = amostra insuficiente.")
+    return (f"{leitura} Pior situação: **{extremo[rotulo]}** "
+            f"({definicao.rotulo.lower()}: {c.fmt_metrica(metrica, extremo[metrica])}). "
+            f"Cinza = poucos dados.")

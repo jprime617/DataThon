@@ -82,6 +82,29 @@ REQUISITOS = [
 ]
 
 
+def _sensibilidade(ctx: c.Contexto) -> None:
+    """Robustez do índice de tensão (veio de Quem precisa de atenção no M3.C8)."""
+    if len(c.PESOS_TENSAO_PADRAO) < 2 or ctx.df.empty:
+        return
+    with st.expander("Sensibilidade: o top 10 de tensão muda com outros pesos?"):
+        por = [c.COLUNA_REGIAO, c.COLUNA_SETOR]
+        m = c.matriz_diagnostico(ctx.df, por)
+        st.caption("Unidade: mesorregião × setor. Pesos iniciais iguais (PLANEJAMENTO §7.1). Mude-os e veja quantas "
+                   "unidades permanecem no top 10 de tensão.")
+        cols = st.columns(len(c.PESOS_TENSAO_PADRAO))
+        pesos = {nome: col.slider(f"Peso: {c.ROTULO_COMPONENTE[nome]}", 0.0, 3.0, 1.0, 0.5)
+                 for col, nome in zip(cols, c.PESOS_TENSAO_PADRAO)}
+        if sum(pesos.values()) == 0:
+            st.warning("Ao menos um peso precisa ser maior que zero.")
+            return
+        alt = c.matriz_diagnostico(ctx.df, por, pesos_tensao=pesos)
+        rotulo = lambda d: list((d[c.COLUNA_SETOR].astype(str) + " – " + d[c.COLUNA_REGIAO].astype(str)).head(10))
+        base10, alt10 = rotulo(m), rotulo(alt)
+        st.markdown(f"**{len(set(base10) & set(alt10))} de {min(10, len(base10))}** unidades permanecem no top 10.")
+        st.dataframe(pd.DataFrame({"Pesos iguais": pd.Series(base10), "Pesos escolhidos": pd.Series(alt10)},
+                                  index=range(1, max(len(base10), len(alt10)) + 1)), width="stretch")
+
+
 def render(ctx: c.Contexto) -> None:
     st.title("Metodologia e sistema")
     c.cabecalho(ctx)
@@ -131,13 +154,15 @@ def render(ctx: c.Contexto) -> None:
         "meses comparam o mesmo calendário, sem sazonalidade.\n"
         "- **Tensão** = média dos z-scores dos três **sintomas** de dificuldade de reter gente, com pesos iguais: "
         "**rotatividade descontada**, **saída voluntária** e **desligamento precoce** (< 12 meses de casa). "
-        "Em Quem precisa de atenção, um expander mostra se o top 10 muda com outros pesos.\n"
+        "O expander abaixo mostra se o top 10 muda com outros pesos.\n"
         "- **Causas não entram no índice.** A compressão salarial (gap < 0,95), o gap de escolaridade e a retenção "
         "viram selos em Quem precisa de atenção e regras em O que fazer. Somá-las à tensão e depois usá-las para explicá-la "
         "seria contar a mesma coisa duas vezes.\n"
         "- **Saíram:** o giro (função exata do saldo relativo) e a aceleração entre semestres (media o calendário: "
         "dezembro concentra desligamentos); ela voltou na forma de blocos de 12 meses."
     )
+
+    _sensibilidade(ctx)
 
     st.subheader("Requisitos do desafio: onde conferir")
     st.table(pd.DataFrame(REQUISITOS, columns=["Requisito", "O quê", "Onde aparece"]).set_index("Requisito"))

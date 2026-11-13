@@ -29,6 +29,24 @@ def classificar_prioridade(recs: list[c.Recomendacao]) -> dict[int, str]:
     return {i: ("Alta" if p >= q2 else "Média" if p >= q1 else "Baixa") for i, p in enumerate(serie)}
 
 
+# Por que cada ação aparece, em linguagem leiga.
+POR_QUE_ALAVANCA = {
+    c.ALAVANCA_SALARIO: "Quem entra ganha menos do que quem saiu, e muita gente pede para sair.",
+    c.ALAVANCA_FORMACAO: "Falta gente com formação técnica para as vagas que giram.",
+    c.ALAVANCA_MOBILIDADE: "A mesma profissão sobra numa região e falta em outra.",
+    c.ALAVANCA_AUTOMACAO: "Muitos postos de nível básico, e o emprego não cresce.",
+    c.ALAVANCA_RETENCAO: "Saem muitos a pedido mesmo sem salário menor: o problema não é só dinheiro.",
+}
+
+
+def agrupar_por_alavanca(recs: list[c.Recomendacao]) -> dict[str, list[c.Recomendacao]]:
+    """Recomendações por alavanca, na ordem de prioridade da primeira de cada grupo."""
+    grupos: dict[str, list[c.Recomendacao]] = {}
+    for r in recs:
+        grupos.setdefault(r.alavanca, []).append(r)
+    return grupos
+
+
 def ficha_mesorregiao(ctx: c.Contexto, regiao: str, recs: list[c.Recomendacao]) -> str:
     """Ficha em Markdown: diagnóstico + 3 recomendações, só com números calculados."""
     dados = ctx.df[ctx.df[c.COLUNA_REGIAO].astype(str) == regiao]
@@ -76,46 +94,47 @@ def render(ctx: c.Contexto) -> None:
     prioridades = classificar_prioridade(recs)
     ref = c.total(ctx.df)
     st.markdown(
-        f"Cinco regras ligam o diagnóstico de cada **mesorregião × macrofamília (IA)** a uma alavanca da empresa. "
-        f"Referência do recorte: saída voluntária {c.fmt_pct(ref[c.M_SAIDA_VOL])}. "
-        f"**{len(recs)} recomendações** disparadas."
+        "Cada problema encontrado no diagnóstico aponta para uma **ação** que a empresa pode tomar. "
+        f"Ao todo, **{len(recs)} recomendações**, agrupadas abaixo por ação."
     )
     if not recs:
-        st.info("Nenhuma regra disparou com amostra suficiente (≥ 100 movimentações) nesta seleção.")
+        st.info("Nenhuma regra disparou com dados suficientes nesta seleção.")
     else:
         st.subheader("Prioridades")
-        colunas = st.columns(3)
-        for i, r in enumerate(recs[:6]):
-            with colunas[i % 3].container(border=True, height="stretch"):
-                st.markdown(f"**{r.alavanca}**")
-                st.markdown(f":material/location_on: {r.regiao} · :material/work: {r.macrofamilia} · nível {r.nivel_alvo}")
-                st.markdown(f"Prioridade **{prioridades[i]}** · {c.fmt_int(r.movimentacoes)} movimentações")
-                st.caption(f"Gatilho: {r.regra}.")
-                st.caption(f"Evidência: {r.evidencia}.")
+        grupos = agrupar_por_alavanca(recs)
+        colunas = st.columns(min(3, len(grupos)))
+        for i, (alavanca, itens) in enumerate(grupos.items()):
+            with colunas[i % len(colunas)].container(border=True, height="stretch"):
+                st.markdown(f"**{alavanca}**")
+                st.caption(POR_QUE_ALAVANCA.get(alavanca, ""))
+                st.markdown("\n".join(f"- {r.macrofamilia} · {r.regiao}" for r in itens[:3])
+                            + (f"\n\n…e mais {len(itens) - 3}" if len(itens) > 3 else ""))
+                st.markdown(f"**{len(itens)}** {'recomendação' if len(itens) == 1 else 'recomendações'} · "
+                            f"{c.fmt_int(sum(r.movimentacoes for r in itens))} movimentações")
 
-        st.subheader("Todas as recomendações")
         tabela = pd.DataFrame([{
             "Prioridade": prioridades[i], "Alavanca": r.alavanca, "Mesorregião": r.regiao,
             "Macrofamília (IA)": r.macrofamilia, "Nível-alvo": r.nivel_alvo, "Movimentações": int(r.movimentacoes),
             "Evidência": r.evidencia, "Gatilho": r.regra,
         } for i, r in enumerate(recs)])
-        col1, col2 = st.columns(2)
-        alavancas = col1.multiselect("Alavanca", sorted(tabela["Alavanca"].unique()), placeholder="Todas")
-        regioes = col2.multiselect("Mesorregião", sorted(tabela["Mesorregião"].unique()), placeholder="Todas")
-        filtrada = c.aplicar_filtros(tabela, Alavanca=alavancas, **{"Mesorregião": regioes})
-        st.dataframe(filtrada, hide_index=True, width="stretch",
-                     column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
-        c.baixar_csv(filtrada, "recomendacoes.csv", "Baixar recomendações (CSV)")
+        with st.expander(f"Ver as {len(recs)} recomendações numa tabela (com a evidência de cada uma)"):
+            col1, col2 = st.columns(2)
+            alavancas = col1.multiselect("Alavanca", sorted(tabela["Alavanca"].unique()), placeholder="Todas")
+            regioes = col2.multiselect("Mesorregião", sorted(tabela["Mesorregião"].unique()), placeholder="Todas")
+            filtrada = c.aplicar_filtros(tabela, Alavanca=alavancas, **{"Mesorregião": regioes})
+            st.dataframe(filtrada, hide_index=True, width="stretch",
+                         column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
+            c.baixar_csv(filtrada, "recomendacoes.csv", "Baixar recomendações (CSV)")
 
-    st.subheader("Ficha da mesorregião")
-    regioes = sorted(ctx.df[c.COLUNA_REGIAO].astype(str).unique())
-    escolhida = st.selectbox("Mesorregião", regioes, key="ficha_meso")
-    texto = ficha_mesorregiao(ctx, escolhida, recs)
-    with st.container(border=True):
-        # Na tela, títulos menores; o arquivo baixado mantém # e ##.
-        st.markdown(texto.replace("\n## ", "\n##### ").replace("# Ficha", "#### Ficha", 1))
-    st.download_button("Baixar ficha (Markdown)", texto.encode("utf-8"),
-                       file_name=f"ficha_{escolhida.lower().replace(' ', '_')}.md", icon=":material/download:")
+    with st.expander("Baixar a ficha de uma mesorregião (texto para levar à reunião)"):
+        regioes = sorted(ctx.df[c.COLUNA_REGIAO].astype(str).unique())
+        escolhida = st.selectbox("Mesorregião", regioes, key="ficha_meso")
+        texto = ficha_mesorregiao(ctx, escolhida, recs)
+        with st.container(border=True):
+            # Na tela, títulos menores; o arquivo baixado mantém # e ##.
+            st.markdown(texto.replace("\n## ", "\n##### ").replace("# Ficha", "#### Ficha", 1))
+        st.download_button("Baixar ficha (Markdown)", texto.encode("utf-8"),
+                           file_name=f"ficha_{escolhida.lower().replace(' ', '_')}.md", icon=":material/download:")
 
     st.subheader("Quanto custa a saída voluntária?")
     n = st.slider("Custo de repor um trabalhador, em salários (premissa ajustável)", 1, 12, 3, 1,

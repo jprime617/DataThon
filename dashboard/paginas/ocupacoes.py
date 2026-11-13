@@ -74,38 +74,41 @@ def render(ctx: c.Contexto) -> None:
         st.caption(f"{c.fmt_int(len(achados))} de {c.fmt_int(len(mapa))} ocupações. Justificativa vazia = a IA "
                    "seguiu a família sugerida pelo prefixo e o nível do grande grupo.")
 
-    st.subheader("Auditoria da IA")
-    meta = (ctx.art.metadados or {}).get("ia", {})
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Concordância na família", c.fmt_pct(meta.get("concordancia_familia")), border=True,
-                help="Comparação: " + meta.get("comparacao", "mesma IA, 2ª rodada com a ordem dos códigos embaralhada")
-                + ".")
-    col2.metric("Concordância no nível", c.fmt_pct(meta.get("concordancia_nivel")), border=True)
-    col3.metric("Não classificado", c.fmt_pct(meta.get("nao_classificado_ponderado"), 2), border=True,
-                help="Ponderado pelas movimentações.")
-    col4.metric("Ocupações classificadas", c.fmt_int(len(mapa)) if mapa is not None else "—", border=True)
-    if meta.get("modelo"):
-        st.caption(f"Modelo: {meta.get('modelo')} ({meta.get('provedor', '')}), classificação de "
-                   f"{str(meta.get('gerado_em', ''))[:10]}. A IA roda no pipeline, nunca no painel."
-                   + (f" {meta['nota'][0].upper()}{meta['nota'][1:]}." if meta.get("nota") else "")
-                   + (f" Concordância medida em: {meta['comparacao']}." if meta.get("comparacao") else ""))
-    with st.expander("Regras da taxonomia (A–D)"):
-        st.markdown(REGRAS)
-        st.caption(f"{len(MACROFAMILIAS) - 1} macrofamílias + Não classificado; "
-                   f"{len(FAMILIA_POR_PREFIXO_CBO)} prefixos de desempate.")
-    if divergencias is not None:
-        st.markdown("**Maiores divergências entre as rodadas, por volume**")
-        st.dataframe(divergencias.head(10).rename(columns={
-            "cbo2002ocupação": "CBO", "descricao": "Descrição", "movimentacoes": "Movimentações",
-            "macrofamilia_r1": "Família (1ª)", "macrofamilia_r2": "Família (2ª)",
-            "nivel_r1": "Nível (1ª)", "nivel_r2": "Nível (2ª)"}),
-            hide_index=True, width="stretch",
-            column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
-        so_nivel = int((divergencias["macrofamilia_r1"] == divergencias["macrofamilia_r2"]).sum())
-        st.caption(f"Em divergência, vale a 1ª rodada. {so_nivel} das {len(divergencias)} divergências são só de "
-                   "nível, com a família igual nas duas rodadas.")
-    if prompt:
-        with st.expander("Prompt exato enviado à IA"):
-            st.code(prompt[:6000] + ("\n…" if len(prompt) > 6000 else ""), language=None, wrap_lines=True)
-            st.download_button("Baixar o prompt completo", prompt.encode("utf-8"),
-                               file_name="prompt_classificacao_cbo.txt", icon=":material/download:")
+    # Auditoria da IA é assunto técnico: fica recolhida (M3.C8).
+    with st.expander("Aprofundar: como a IA classificou as ocupações (auditoria)"):
+        aba_conc, regras, aba_prompt = st.tabs(["Concordância", "Regras da taxonomia", "Prompt enviado à IA"])
+        with aba_conc:
+            meta = (ctx.art.metadados or {}).get("ia", {})
+            col1, col2, col3, col4 = st.columns(4)
+            col1.metric("Concordância na família", c.fmt_pct(meta.get("concordancia_familia")), border=True,
+                        help="Comparação: " + meta.get("comparacao", "mesma IA, 2ª rodada com a ordem dos códigos embaralhada")
+                        + ".")
+            col2.metric("Concordância no nível", c.fmt_pct(meta.get("concordancia_nivel")), border=True)
+            col3.metric("Não classificado", c.fmt_pct(meta.get("nao_classificado_ponderado"), 2), border=True,
+                        help="Ponderado pelas movimentações.")
+            col4.metric("Ocupações classificadas", c.fmt_int(len(mapa)) if mapa is not None else "—", border=True)
+            if meta.get("modelo"):
+                st.caption(f"Modelo: {meta.get('modelo')} ({meta.get('provedor', '')}), classificação de "
+                           f"{str(meta.get('gerado_em', ''))[:10]}. A IA roda no pipeline, nunca no painel."
+                           + (f" {meta['nota'][0].upper()}{meta['nota'][1:]}." if meta.get("nota") else "")
+                           + (f" Concordância medida em: {meta['comparacao']}." if meta.get("comparacao") else ""))
+            if divergencias is not None:
+                st.markdown("**Maiores divergências entre as rodadas, por volume**")
+                st.dataframe(divergencias.head(10).rename(columns={
+                    "cbo2002ocupação": "CBO", "descricao": "Descrição", "movimentacoes": "Movimentações",
+                    "macrofamilia_r1": "Família (1ª)", "macrofamilia_r2": "Família (2ª)",
+                    "nivel_r1": "Nível (1ª)", "nivel_r2": "Nível (2ª)"}),
+                    hide_index=True, width="stretch",
+                    column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
+                so_nivel = int((divergencias["macrofamilia_r1"] == divergencias["macrofamilia_r2"]).sum())
+                st.caption(f"Em divergência, vale a 1ª rodada. {so_nivel} das {len(divergencias)} divergências são só de "
+                           "nível, com a família igual nas duas rodadas.")
+        with regras:
+            st.markdown(REGRAS)
+            st.caption(f"{len(MACROFAMILIAS) - 1} macrofamílias + Não classificado; "
+                       f"{len(FAMILIA_POR_PREFIXO_CBO)} prefixos de desempate.")
+        with aba_prompt:
+            if prompt:
+                st.code(prompt[:6000] + ("\n…" if len(prompt) > 6000 else ""), language=None, wrap_lines=True)
+                st.download_button("Baixar o prompt completo", prompt.encode("utf-8"),
+                                   file_name="prompt_classificacao_cbo.txt", icon=":material/download:")
