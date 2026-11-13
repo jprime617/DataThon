@@ -1062,3 +1062,16 @@ Metodologia: "Origem em uso: Azure Blob Storage" e "commit do pipeline:
   assinatura e não foi feito sem decisão do time.
 - Mitigação: checklist do pitch (`docs/PITCH_APOIO.md`): abrir o painel
   **10 minutos antes** e navegar pelas 7 páginas para aquecer o cache.
+
+### ENT-04 · Números do pitch conferidos no painel publicado
+
+- Os 17 números da seção 5 de `docs/PITCH_APOIO.md` batem com
+  `https://datathon-caged-sc-br.azurewebsites.net/` (painel `c8d6954`,
+  pipeline `7245713`). Texto extraído das 7 páginas com os "Aprofundar"
+  abertos; o simulador com filtro (Oeste + Operação de linha, R$ 117,9 mi), a
+  contagem dos quadrantes (13/14/20/16) e a mediana da taxa de admissão em
+  Apagão (66,4%) foram recalculados com o próprio código do painel sobre os
+  mesmos artefatos (SHA-256 iguais aos do Blob).
+- Correção de localização: o "96%" (item 9) está em "Por que acontece"
+  (selo salarial) e na Metodologia, não na linha "Renda" do Panorama.
+- Prints 1920×1080 da URL pública e QR do painel em `docs/prints/`.

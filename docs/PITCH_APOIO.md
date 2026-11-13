@@ -1,10 +1,10 @@
 # Pitch: Raio-X da Indústria SC (3 minutos)
 
-> **Status: rascunho para ensaio.** Os números vêm do painel no recorte de
-> abertura: Indústria de transformação (C), set/25–ago/26, SC inteira. Foram
-> gerados dos artefatos do commit `7245713`. Depois do deploy (Lote C), confira
-> cada um no painel publicado (tabela da seção 5) e preencha os
-> `[[PLACEHOLDERS]]`.
+> **Status: números conferidos no painel publicado (13/11, ENT-04).** Recorte de
+> abertura: Indústria de transformação (C), set/25–ago/26, SC inteira; artefatos
+> do pipeline `7245713`, painel `c8d6954`. Os 17 números da seção 5 batem com a
+> URL pública; os prints e o QR estão em `docs/prints/`. Faltam só os
+> placeholders da equipe (nome, logo, quem fala).
 
 ---
 
@@ -222,27 +222,27 @@ Anterior e Próximo. Leve prints de todas as telas no notebook.
 
 ---
 
-## 5. Números para conferir no painel publicado (amanhã, depois do deploy)
+## 5. Números conferidos no painel publicado (13/11)
 
 | # | Número no pitch | Valor atual | Onde conferir | Ok? |
 |---|---|---|---|---|
-| 1 | Movimentações / contratações / desligamentos / saldo | 835.950 / 418.511 / 417.439 / 1.072 | Panorama → Resposta à pergunta central (rodapé) e "Principais" | [ ] |
-| 2 | Saem a pedido | 50,9% | Panorama → Principais | [ ] |
-| 3 | Grupos em Apagão / Expansão / Retração / Estagnação | 13 / 14 / 20 / 16 de 63 | Quem precisa de atenção → legenda da matriz | [ ] |
-| 4 | Apagão: Alimentos Sul e Norte; Expansão: autopeças e eletroeletrônico, Vale | saldos 891 / 313 / 1.602 / 890 | Panorama → "Onde" | [ ] |
-| 5 | Taxa de admissão: grupos em Apagão × estado | 66% (mediana) × 56% | Estado: Metodologia → "Demanda: a taxa de admissão". A mediana dos grupos em Apagão é cálculo de apoio (CHANGELOG, ANA-03); no painel, cada grupo aparece no tooltip da matriz e na tabela de alertas (ex.: metalurgia no Sul, 71,1%) | [ ] |
-| 6 | Metalurgia Sul: rotatividade / desligamento precoce | 44,7% / 73,2% | Panorama → Principais achados → "Maior tensão" | [ ] |
-| 7 | Autopeças Vale: +20,7%; 95% Navegantes; 43% em jul/26 | | Panorama → Principais achados → "Expansão mais acelerada" | [ ] |
-| 8 | Rotatividade SC × Brasil; a pedido SC × Brasil | 27,4% × 27,6%; 50,9% × 37,3% | Por que acontece → Estrutural ou local? | [ ] |
-| 9 | Na mesma ocupação: entrada = 96% da saída; correlação −0,39 | | Panorama → linha "Renda" | [ ] |
-| 10 | Exceção de escolaridade: Alimentos, Oeste | −0,95 nível | Panorama → linha "Escolaridade" | [ ] |
-| 11 | Diploma superior na linha de produção | 1,03× | Por que acontece → Escolaridade → Aprofundar | [ ] |
-| 12 | Top 3 ações, evidências e metas | tabela do slide 6 | O que fazer → As 3 ações de maior impacto | [ ] |
-| 13 | Custo da saída a pedido no grupo da ação 1 | R$ 117,9 mi (3 salários) | O que fazer, com filtros Oeste + Operação de linha e processo → simulador | [ ] |
-| 14 | Custo da transformação inteira (backup) | R$ 1,7 bi (faixa R$ 557,5 mi a R$ 6,7 bi) | O que fazer → simulador, sem filtros | [ ] |
-| 15 | IA: 2.206 CBOs; 91,4% / 92,2% de concordância; nível ajustado em 34,6% das movimentações | | Que profissional falta → Aprofundar → abas Concordância e "O que a IA acrescentou" | [ ] |
-| 16 | Testes automatizados | 411 | Metodologia → Qualidade do código | [ ] |
-| 17 | Commit publicado | `[[COMMIT_PUBLICADO]]` (pipeline: `7245713`) | Metodologia → Procedência dos dados; **sem aviso amarelo no topo** = Blob consistente | [ ] |
+| 1 | Movimentações / contratações / desligamentos / saldo | 835.950 / 418.511 / 417.439 / 1.072 | Panorama → Resposta à pergunta central (rodapé) e "Principais" | [x] |
+| 2 | Saem a pedido | 50,9% | Panorama → Principais | [x] |
+| 3 | Grupos em Apagão / Expansão / Retração / Estagnação | 13 / 14 / 20 / 16 de 63 | Quem precisa de atenção → legenda da matriz | [x] |
+| 4 | Apagão: Alimentos Sul e Norte; Expansão: autopeças e eletroeletrônico, Vale | saldos 891 / 313 / 1.602 / 890 | Panorama → "Onde" | [x] |
+| 5 | Taxa de admissão: grupos em Apagão × estado | 66% (mediana) × 56% | Estado: Metodologia → "Demanda: a taxa de admissão". A mediana dos grupos em Apagão é cálculo de apoio (CHANGELOG, ANA-03); no painel, cada grupo aparece no tooltip da matriz e na tabela de alertas (ex.: metalurgia no Sul, 71,1%) | [x] |
+| 6 | Metalurgia Sul: rotatividade / desligamento precoce | 44,7% / 73,2% | Panorama → Principais achados → "Maior tensão" | [x] |
+| 7 | Autopeças Vale: +20,7%; 95% Navegantes; 43% em jul/26 | +20,7% / 95% / 43% | Panorama → Principais achados → "Expansão mais acelerada" | [x] |
+| 8 | Rotatividade SC × Brasil; a pedido SC × Brasil | 27,4% × 27,6%; 50,9% × 37,3% | Por que acontece → Estrutural ou local? | [x] |
+| 9 | Na mesma ocupação: entrada = 96% da saída; correlação −0,39 | 96% / −0,39 | −0,39: Panorama → linha "Renda"; 96%: Por que acontece → texto do selo salarial (e Metodologia) | [x] |
+| 10 | Exceção de escolaridade: Alimentos, Oeste | −0,95 nível | Panorama → linha "Escolaridade" | [x] |
+| 11 | Diploma superior na linha de produção | 1,03× | Por que acontece → Escolaridade → Aprofundar | [x] |
+| 12 | Top 3 ações, evidências e metas | tabela do slide 6 | O que fazer → As 3 ações de maior impacto | [x] |
+| 13 | Custo da saída a pedido no grupo da ação 1 | R$ 117,9 mi (3 salários) | O que fazer, com filtros Oeste + Operação de linha e processo → simulador | [x] |
+| 14 | Custo da transformação inteira (backup) | R$ 1,7 bi (faixa R$ 557,5 mi a R$ 6,7 bi) | O que fazer → simulador, sem filtros | [x] |
+| 15 | IA: 2.206 CBOs; 91,4% / 92,2% de concordância; nível ajustado em 34,6% das movimentações | 2.206 / 91,4% / 92,2% / 34,6% | Que profissional falta → Aprofundar → abas Concordância e "O que a IA acrescentou" | [x] |
+| 16 | Testes automatizados | 411 | Metodologia → Qualidade do código | [x] |
+| 17 | Commit publicado | `c8d6954` (pipeline: `7245713`) | Metodologia → Procedência dos dados; **sem aviso amarelo no topo** = Blob consistente | [x] |
 
 ---
 
@@ -417,7 +417,7 @@ As falas para as notas do apresentador estão na seção 3 (blocos "Fala").
 | `[[NOME_EQUIPE]]`, `[[LOGO_EQUIPE]]` | identidade do grupo | — |
 | `[[APRESENTADOR_1..5]]`, `[[QUEM_PASSA_SLIDES]]` | divisão das falas | — |
 | `[[URL_PAINEL]]` | endereço público do painel | `https://datathon-caged-sc-br.azurewebsites.net/` (confirmado em 13/11) |
-| `[[URL_REPOSITORIO]]` | repositório público | `https://github.com/jprime617/DataThon` (confirmar que está público) |
-| `[[QR_CODE_PAINEL]]` | QR para `[[URL_PAINEL]]` | gerar depois do deploy |
+| `[[URL_REPOSITORIO]]` | repositório público | `https://github.com/jprime617/DataThon` (público, confirmado em 13/11) |
+| `[[QR_CODE_PAINEL]]` | QR para `[[URL_PAINEL]]` | `docs/prints/qr_painel.png` |
 | `[[COMMIT_PUBLICADO]]` | hash mostrado na Metodologia | pipeline `7245713`; painel `c8d6954` |
-| `[[PRINT_PANORAMA_RESPOSTA]]`, `[[PRINT_MATRIZ]]`, `[[PRINT_SC_BRASIL]]`, `[[PRINT_TOP3]]` | prints do painel publicado | tirar depois do deploy, na resolução do projetor |
+| `[[PRINT_PANORAMA_RESPOSTA]]`, `[[PRINT_MATRIZ]]`, `[[PRINT_SC_BRASIL]]`, `[[PRINT_TOP3]]` | prints do painel publicado | `docs/prints/panorama_resposta.png`, `matriz.png`, `sc_brasil.png`, `top3.png` (1920×1080, URL pública, 13/11) |
