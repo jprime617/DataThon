@@ -52,7 +52,17 @@ FAMILIA_ALIMENTOS = "Alimentos e bebidas"
 FAMILIA_MADEIRA = "Madeira, móveis, cerâmica e vidro"
 FAMILIA_MANUTENCAO = "Manutenção e reparação"
 FAMILIA_LOGISTICA = "Logística e transporte"
-FAMILIA_ENGENHARIA = "Engenharia, técnicos industriais e TI"
+# TAX-03: o nome antigo ("Engenharia, técnicos industriais e TI") sugeria uma
+# família dominada por engenheiros; em movimentações, o nível Técnico supera o
+# Superior em ~9 para 1. O antigo continua aceito como alias (respostas da IA
+# já versionadas em `ia_cbo/`).
+FAMILIA_ENGENHARIA = "Técnicos industriais, engenharia e TI"
+ALIASES_MACROFAMILIA = {"Engenharia, técnicos industriais e TI": FAMILIA_ENGENHARIA}
+
+
+def normalizar_macrofamilia(nome: object) -> object:
+    """Nome atual da macrofamília (aplica `ALIASES_MACROFAMILIA`); outros valores passam iguais."""
+    return ALIASES_MACROFAMILIA.get(nome, nome) if isinstance(nome, str) else nome
 FAMILIA_ADMINISTRATIVO = "Administrativo e comercial"
 FAMILIA_APOIO = "Serviços de apoio e outros"
 
@@ -893,6 +903,8 @@ def __getattr__(nome: str) -> dict[object, str]:
 
 __all__ = [
     "MACROFAMILIAS",
+    "ALIASES_MACROFAMILIA",
+    "normalizar_macrofamilia",
     "NAO_CLASSIFICADO",
     "MESORREGIAO_POR_MUNICIPIO",
     "MICRORREGIAO_POR_MUNICIPIO",

@@ -854,3 +854,38 @@ def test_glossario_cobre_o_jargao():
     termos = " ".join(t for t, _ in metodologia.GLOSSARIO)
     for jargao in ("Rotatividade descontada", "p.p.", "z-score", "Dinamismo", "Tensão"):
         assert jargao in termos
+
+
+# --- TAX-03 (nome): "Técnicos industriais, engenharia e TI" ----------------------
+
+def test_familia_tecnica_renomeada_com_alias_do_nome_antigo():
+    from src.mapeamentos import FAMILIA_ENGENHARIA, MACROFAMILIAS, normalizar_macrofamilia
+
+    assert FAMILIA_ENGENHARIA == "Técnicos industriais, engenharia e TI" and FAMILIA_ENGENHARIA in MACROFAMILIAS
+    assert normalizar_macrofamilia("Engenharia, técnicos industriais e TI") == FAMILIA_ENGENHARIA
+    assert normalizar_macrofamilia("Alimentos e bebidas") == "Alimentos e bebidas"
+
+
+def test_resposta_da_ia_com_nome_antigo_continua_valida():
+    from src.cbo_ia import _validar
+
+    r = _validar("317110", {"macrofamilia": "Engenharia, técnicos industriais e TI", "nivel": "Técnico",
+                            "justificativa": ""})
+    assert r["macrofamilia"] == "Técnicos industriais, engenharia e TI"
+
+
+def test_painel_le_artefato_antigo_com_o_nome_novo():
+    df = pd.DataFrame({"macrofamilia_cbo": pd.Categorical(["Engenharia, técnicos industriais e TI", "Alimentos e bebidas"])})
+    assert list(c._nomes_atuais(df)["macrofamilia_cbo"]) == ["Técnicos industriais, engenharia e TI", "Alimentos e bebidas"]
+
+
+def test_salario_da_familia_tecnica_vem_com_quebra_por_nivel():
+    perfil = pd.DataFrame({
+        "macrofamilia_cbo": ["Técnicos industriais, engenharia e TI"] * 2,
+        "nivel_qualificacao": ["Técnico", "Superior"],
+        "admissoes": [900, 100], "desligamentos": [0, 0],
+        "mediana_salario_admissao": [2800.0, 5000.0], "mediana_salario_desligamento": [3000.0, 6000.0],
+        "n_salario_admissao": [900, 100], "n_salario_desligamento": [0, 0],
+    })
+    texto = nar.quebra_por_nivel(perfil)
+    assert "R$ 2.800 no nível Técnico" in texto and "R$ 5.000 no nível Superior" in texto and "90%" in texto

@@ -116,6 +116,9 @@ def render(ctx: c.Contexto) -> None:
             st.plotly_chart(fig.construir_salario_por_categoria(
                 por_macro, c.COLUNA_MACROFAMILIA_CBO, "Mediana salarial por macrofamília (IA)"), width="stretch")
             st.caption(legenda_compressao(por_macro, c.COLUNA_MACROFAMILIA_CBO))
+            quebra = nar.quebra_por_nivel(perfil)
+            if quebra:
+                st.caption(quebra)
     with st.expander("Aprofundar: qualificação e retenção"):
         col1, col2 = st.columns(2)
         macros = c.agregar_metricas(ctx.df, [c.COLUNA_MACROFAMILIA_CBO])
@@ -140,7 +143,8 @@ def render(ctx: c.Contexto) -> None:
                                                 "Quem entra com mais estudo ganha mais? (por macrofamília)"),
                         width="stretch")
         st.caption("Cada bolha é uma macrofamília (IA); o tamanho é o volume de movimentações. "
-                   f"Só macrofamílias com ≥ {c.MIN_SALARIOS} salários de cada lado.")
+                   f"Só macrofamílias com ≥ {c.MIN_SALARIOS} salários de cada lado. "
+                   + nar.quebra_por_nivel(perfil))
 
     with st.expander("Aprofundar: riqueza do município (IDHM e PIB per capita)"):
         col1, col2 = st.columns([1, 3])

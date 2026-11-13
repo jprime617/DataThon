@@ -262,6 +262,23 @@ _COLUNAS_LEGADAS = {
 }
 
 
+def _nomes_atuais(df: pd.DataFrame) -> pd.DataFrame:
+    """TAX-03: aplica os aliases de macrofamília (nome antigo → atual) num artefato lido."""
+    from src.mapeamentos import ALIASES_MACROFAMILIA
+
+    if df is None or COLUNA_MACROFAMILIA_CBO not in df.columns:
+        return df
+    coluna = df[COLUNA_MACROFAMILIA_CBO]
+    if isinstance(coluna.dtype, pd.CategoricalDtype):
+        antigos = [a for a in ALIASES_MACROFAMILIA if a in coluna.cat.categories]
+        if not antigos:
+            return df
+        coluna = coluna.astype(str)
+    if not coluna.isin(list(ALIASES_MACROFAMILIA)).any():
+        return df
+    return df.assign(**{COLUNA_MACROFAMILIA_CBO: coluna.replace(ALIASES_MACROFAMILIA)})
+
+
 def ler_parquet_enxuto(fonte) -> pd.DataFrame:
     """Lê um Parquet com textos já como categorias e sem as colunas legadas.
 
@@ -275,7 +292,7 @@ def ler_parquet_enxuto(fonte) -> pd.DataFrame:
         fonte.seek(0)
     colunas = [n for n in esquema.names if n not in _COLUNAS_LEGADAS]
     textos = [n for n in colunas if str(esquema.field(n).type) in ("string", "large_string")]
-    return pq.read_table(fonte, columns=colunas, read_dictionary=textos).to_pandas()
+    return _nomes_atuais(pq.read_table(fonte, columns=colunas, read_dictionary=textos).to_pandas())
 
 
 def schema_v2_ok(df: pd.DataFrame | None) -> bool:
@@ -316,7 +333,7 @@ def carregar_artefatos(
             avisos.append("Metadados indisponíveis na cópia local.")
         if agregado is not None and schema_v2_ok(agregado):
             try:
-                estoque = pd.read_parquet(pasta / NOME_BLOB_ESTOQUE)
+                estoque = _nomes_atuais(pd.read_parquet(pasta / NOME_BLOB_ESTOQUE))
             except Exception:  # noqa: BLE001
                 estoque = None
             agregado = anexar_blocos(anexar_estoque(agregado, estoque, avisos))
@@ -330,7 +347,7 @@ def carregar_artefatos(
                 raise ValueError("a cópia do Blob está no schema antigo (sem as colunas v2)")
             perfil = ler_parquet_enxuto(io.BytesIO(baixar(credencial, NOME_BLOB_PERFIL)))
             meta = json.loads(baixar(credencial, NOME_BLOB_METADADOS).decode("utf-8"))
-            estoque = pd.read_parquet(io.BytesIO(baixar(credencial, NOME_BLOB_ESTOQUE)))
+            estoque = _nomes_atuais(pd.read_parquet(io.BytesIO(baixar(credencial, NOME_BLOB_ESTOQUE))))
             agregado = anexar_blocos(anexar_estoque(agregado, estoque, avisos))
             try:
                 cbo = ler_parquet_enxuto(io.BytesIO(baixar(credencial, NOME_BLOB_CBO)))

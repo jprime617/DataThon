@@ -522,3 +522,31 @@ e Sul Catarinense → Vale do Itajaí (Metalmecânica, Qualificado: lá −783 c
 - O número fixo "55 dos 82 grupos" da Metodologia agora é **calculado** no
   recorte (regra antiga × nova): hoje, 45 → 8 de 63 na transformação e
   57 → 16 de 86 em B–F.
+
+---
+
+## TAX-03 (nome) · "Técnicos industriais, engenharia e TI"
+
+- `src/mapeamentos.FAMILIA_ENGENHARIA` = **"Técnicos industriais, engenharia e
+  TI"** (antes "Engenharia, técnicos industriais e TI"). O nome antigo
+  continua aceito como alias (`ALIASES_MACROFAMILIA`,
+  `normalizar_macrofamilia`) ao validar respostas da IA, ao ler o CSV do
+  mapeamento e ao carregar os parquets no painel, antes de cruzar com o
+  estoque da RAIS (conferido: estoque 64.481 continua casando).
+- CSVs de classificação (`cbo_macrofamilias.csv`, `cbo_divergencias.csv`,
+  `cbo_macrofamilias_gemini.csv`) com o nome novo. **Prompts e respostas em
+  `ia_cbo/` e o prompt gravado (`.prompt.txt`) ficaram como estavam:** são o
+  registro do que foi enviado à IA.
+- **Salário sempre com a quebra por nível** (`narrativa.quebra_por_nivel`):
+  em "Por que acontece", abaixo do salário por macrofamília e da dispersão
+  renda × escolaridade.
+- Testes: `test_familia_tecnica_renomeada_com_alias_do_nome_antigo`,
+  `test_resposta_da_ia_com_nome_antigo_continua_valida`,
+  `test_painel_le_artefato_antigo_com_o_nome_novo`,
+  `test_salario_da_familia_tecnica_vem_com_quebra_por_nivel`.
+
+| Família técnica (transformação, período inteiro) | Técnico | Superior |
+|---|---|---|
+| Movimentações | 67.020 (90%) | 6.979 |
+| Mediana de admissão | R$ 2.775 | R$ 4.837 |
+| Mediana geral (antes, sem quebra) | R$ 2.886 | |

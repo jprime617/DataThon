@@ -541,3 +541,28 @@ def _excecao_escolaridade(df: pd.DataFrame) -> str:
     topo = regioes.sort_values(c.COLUNA_ADMISSOES, ascending=False).iloc[0]
     return (f"**{nome}** ({c.fmt_num(pior[c.M_GAP_ESC], 2)} nível), concentrada em {topo[c.COLUNA_REGIAO]} "
             f"({c.fmt_num(topo[c.M_GAP_ESC], 2)})")
+
+
+# --- TAX-03: salário da família técnica sempre com a quebra Técnico × Superior ------
+
+def quebra_por_nivel(perfil: pd.DataFrame | None, macro: str = "") -> str:
+    """"Técnicos industriais, engenharia e TI: mediana de admissão R$ 2.775 no Técnico (67.020 mov.) …"."""
+    from src.mapeamentos import FAMILIA_ENGENHARIA
+
+    macro = macro or FAMILIA_ENGENHARIA
+    if perfil is None or perfil.empty:
+        return ""
+    q = perfil[perfil[c.COLUNA_MACROFAMILIA_CBO].astype(str) == macro]
+    if q.empty:
+        return ""
+    med = c.medianas_perfil(q, [c.COLUNA_NIVEL_QUALIFICACAO]).set_index(c.COLUNA_NIVEL_QUALIFICACAO)
+    mov = (q[c.COLUNA_ADMISSOES] + q[c.COLUNA_DESLIGAMENTOS]).groupby(
+        q[c.COLUNA_NIVEL_QUALIFICACAO].astype(str)).sum()
+    partes = [f"R$ {c.fmt_num(med.loc[n, 'mediana_admissao'], 0)} no nível {n} ({c.fmt_int(mov.get(n, 0))} movimentações)"
+              for n in ("Técnico", "Superior") if n in med.index and pd.notna(med.loc[n, "mediana_admissao"])]
+    if not partes:
+        return ""
+    tec = mov.get("Técnico", 0) / max(float(mov.sum()), 1.0)
+    return (f"**{macro}**: mediana de admissão de " + " e ".join(partes)
+            + f". {c.fmt_pct(tec, 0)} das movimentações da família são de nível Técnico: o salário médio dela "
+              "reflete técnicos, não engenheiros. Medianas do período inteiro.")

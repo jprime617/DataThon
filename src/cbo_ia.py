@@ -48,6 +48,7 @@ from src.mapeamentos import (
     NIVEIS_QUALIFICACAO,
     NIVEL_POR_GRANDE_GRUPO,
     PREFIXOS_LIDERANCA,
+    normalizar_macrofamilia,
 )
 
 # Nome da coluna de código de ocupação no CAGED.
@@ -511,7 +512,7 @@ B. Use só o conjunto fechado abaixo. Desempate: a família sugerida pelo prefix
    6. Madeira, móveis, cerâmica e vidro: 75, 77 (771105 Marceneiro, 774105 Montador de móveis, 752305 Ceramista)
    7. Manutenção e reparação: 91, 95, 99 (911305 Mecânico de manutenção, 951105 Eletricista de manutenção, 954125 Operador eletromecânico)
    8. Logística e transporte: 782, 783, 414, 342 (414105 Almoxarife, 782510 Motorista de caminhão, 414135 Expedidor)
-   9. Engenharia, técnicos industriais e TI: grande grupo 2 de exatas, engenharia e TI; 30, 31, 39, 317 (391205 Inspetor de qualidade, 391125 Técnico de planejamento de produção, 317110 Programador)
+   9. Técnicos industriais, engenharia e TI: grande grupo 2 de exatas, engenharia e TI; 30, 31, 39, 317 (391205 Inspetor de qualidade, 391125 Técnico de planejamento de produção, 317110 Programador)
    10. Administrativo e comercial: grande grupo 4 (exceto 414), 25, 35, 52 (411005 Auxiliar de escritório, 411010 Assistente administrativo, 521110 Vendedor)
    11. Serviços de apoio e outros: 51, saúde, educação, grande grupo 6 (agro), grande grupo 0 (514320 Faxineiro, 513505 Auxiliar de alimentação, 517330 Vigilante)
    Grande grupo 1 (dirigentes): a família da área que a pessoa dirige (142105 Gerente administrativo → Administrativo e comercial).
@@ -599,7 +600,7 @@ def _validar(codigo: str, bruto: dict | None) -> dict[str, str]:
     """
     bruto = bruto or {}
     sugerida, nivel_base = familia_sugerida(codigo), nivel_cbo(codigo)
-    familia = bruto.get("macrofamilia")
+    familia = mapeamentos.normalizar_macrofamilia(bruto.get("macrofamilia"))
     if familia not in _MACROFAMILIAS_VALIDAS:
         familia = NAO_CLASSIFICADO
     nivel = bruto.get("nivel")
@@ -848,7 +849,7 @@ def _ler_mapeamento(caminho: Path) -> dict[str, dict[str, str]]:
     """Lê um `cbo_macrofamilias*.csv` como `{código: {macrofamilia, nivel}}`."""
     mapa = pd.read_csv(caminho, dtype={COLUNA_CBO: str})
     return {
-        _normalizar_cbo(c): {"macrofamilia": f, "nivel": n}
+        _normalizar_cbo(c): {"macrofamilia": normalizar_macrofamilia(f), "nivel": n}
         for c, f, n in zip(mapa[COLUNA_CBO], mapa[COLUNA_MACROFAMILIA], mapa[COLUNA_NIVEL])
         if _normalizar_cbo(c)
     }
@@ -864,6 +865,7 @@ def aplicar_mapeamento(
     """
     mapa = pd.read_csv(caminho_csv, dtype={COLUNA_CBO: str})
     mapa[COLUNA_CBO] = mapa[COLUNA_CBO].map(_normalizar_cbo)
+    mapa[COLUNA_MACROFAMILIA] = mapa[COLUNA_MACROFAMILIA].map(normalizar_macrofamilia)
     chave = df[COLUNA_CBO].map(_normalizar_cbo)
     resultado = df.copy(deep=False)
     for coluna in (COLUNA_MACROFAMILIA, COLUNA_NIVEL):

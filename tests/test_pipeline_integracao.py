@@ -282,7 +282,7 @@ def test_pipeline_ponta_a_ponta_sobre_fixture_pequeno(tmp_path: Path) -> None:
     # --- Etapa 4: CBO/LLM mockado (R5) --------------------------------------
     destino_cbo = processados / "cbo_macrofamilias.csv"
     cliente_llm = ClienteLLMFake(
-        ["Operação de linha e processo", "Engenharia, técnicos industriais e TI"]
+        ["Operação de linha e processo", "Técnicos industriais, engenharia e TI"]
     )
     classificacao = classificar_cbos(
         juncao.df,
@@ -305,7 +305,7 @@ def test_pipeline_ponta_a_ponta_sobre_fixture_pequeno(tmp_path: Path) -> None:
     assert mapa_csv["cbo2002ocupação"].is_unique
     familias_validas = {
         "Operação de linha e processo",
-        "Engenharia, técnicos industriais e TI",
+        "Técnicos industriais, engenharia e TI",
         NAO_CLASSIFICADO,
     }
     assert set(mapa_csv["macrofamilia"]) <= familias_validas
