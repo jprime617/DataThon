@@ -120,3 +120,13 @@ O CAGED não mostra a causa.
 | Indicador (recorte padrão, 3 salários) | Antes | Depois |
 |---|---|---|
 | Custo estimado de reposição | R$ 2.174,6 mi | R$ 2,2 bi |
+
+---
+
+## BUG-05 · Plural errado ("Mesorregiãos")
+
+- `comum.PLURAL_NIVEL` (público) e `comum.plural_nivel(nivel, maiuscula)`.
+  A Ficha passa a mostrar "Mesorregiões / Microrregiões / Municípios com
+  população parecida".
+- O teste `test_nenhum_plural_montado_com_s_nas_paginas` varre `dashboard/`
+  atrás de `{…nivel…}s` e `+ "s"`: hoje, sem ocorrências.

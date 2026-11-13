@@ -1541,7 +1541,14 @@ def posicao_ranking(por: pd.DataFrame, coluna: str, metrica: str, alvo: str) -> 
     return (ordem.index(alvo) + 1, len(ordem)) if alvo in ordem else None
 
 
-_PLURAL_NIVEL = {NIVEL_MESO: "mesorregiões", NIVEL_MICRO: "microrregiões", NIVEL_MUNICIPIO: "municípios"}
+# BUG-05: plural dos níveis territoriais (nunca acrescentar um "s": "Mesorregiãos").
+PLURAL_NIVEL = {NIVEL_MESO: "mesorregiões", NIVEL_MICRO: "microrregiões", NIVEL_MUNICIPIO: "municípios"}
+
+
+def plural_nivel(nivel: str, maiuscula: bool = False) -> str:
+    """"Mesorregião" → "mesorregiões" (ou "Mesorregiões" com `maiuscula`)."""
+    texto = PLURAL_NIVEL.get(nivel, nivel.lower())
+    return texto[0].upper() + texto[1:] if maiuscula else texto
 
 
 def cartao_destaque(ctx: Contexto, metrica: str) -> None:
@@ -1559,7 +1566,7 @@ def cartao_destaque(ctx: Contexto, metrica: str) -> None:
         f'<span>{html.escape(UNIDADES.get(metrica, ""))}</span></div>',
         '<div class="rx-d-comp">Comparando a outras regiões</div>',
     ]
-    plural = _PLURAL_NIVEL[f.nivel_territorial]
+    plural = plural_nivel(f.nivel_territorial)
     rank = None
     if len(f.territorios) == 1:
         coluna = COLUNA_POR_NIVEL_TERRITORIAL[f.nivel_territorial]

@@ -118,5 +118,5 @@ def render(ctx: c.Contexto) -> None:
     }), hide_index=True, width="stretch")
     st.caption("Só macrofamílias com ≥ 100 movimentações no território.")
 
-    st.markdown(f"**{nivel}s com população parecida**")
+    st.markdown(f"**{c.plural_nivel(nivel, maiuscula=True)} com população parecida**")
     st.dataframe(semelhantes(ctx, nivel, nome), hide_index=True, width="stretch")

@@ -466,3 +466,21 @@ def test_fmt_brl_escala(valor, esperado):
 def test_nenhum_valor_de_bilhao_aparece_em_mi():
     for v in (1e9, 1.2e9, 2.1746e9, 9.99e11):
         assert c.fmt_brl_escala(v).endswith(" bi")
+
+
+# --- BUG-05: plural dos níveis territoriais ------------------------------------
+
+def test_plural_nivel():
+    assert c.plural_nivel(c.NIVEL_MESO, maiuscula=True) == "Mesorregiões"
+    assert c.plural_nivel(c.NIVEL_MICRO) == "microrregiões"
+    assert c.plural_nivel(c.NIVEL_MUNICIPIO, maiuscula=True) == "Municípios"
+
+
+def test_nenhum_plural_montado_com_s_nas_paginas():
+    import re
+    from pathlib import Path
+
+    padrao = re.compile(r"\{[^{}]*nivel[^{}]*\}s\b|\+\s*[\"']s[\"']")
+    for arquivo in (Path(__file__).resolve().parent.parent / "dashboard").rglob("*.py"):
+        achados = padrao.findall(arquivo.read_text(encoding="utf-8"))
+        assert not achados, f"{arquivo}: {achados}"
