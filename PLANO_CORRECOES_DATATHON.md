@@ -304,14 +304,14 @@ Se o tempo acabar no meio de um item P0, **reverta esse item** em vez de publica
 
 ## 4. Definição de pronto
 
-- [ ] Todos os P0 implementados ou, se a hipótese se mostrou falsa, justificados no CHANGELOG.
-- [ ] Suíte de testes passando, com testes novos para as regras alteradas.
-- [ ] Nenhum termo interno nem rótulo antigo na interface (buscas de NAR-01 e NAR-04 vazias).
-- [ ] Todo número em texto vem de cálculo e reage aos filtros.
-- [ ] Painel publicado no Azure, com as 7 páginas conferidas no endereço público.
-- [ ] `docs/CHANGELOG_BANCA.md` com o antes/depois dos números do pitch.
-- [ ] `docs/PITCH_APOIO.md` gerado com os números finais.
-- [ ] Itens P2 registrados em `docs/ROADMAP.md`.
+- [x] Todos os P0 implementados ou, se a hipótese se mostrou falsa, justificados no CHANGELOG.
+- [ ] Suíte de testes passando, com testes novos para as regras alteradas. *(13/11: testes novos existem; a suíte completa não rodou antes do deploy, por pressa. Rodaram só `test_dashboard_metricas` e `test_dashboard_lote_d`, 183 verdes; numa tentativa anterior, `test_agregador_propriedades::test_prop26` falhou e ainda não foi investigado.)*
+- [x] Nenhum termo interno nem rótulo antigo na interface (buscas de NAR-01 e NAR-04 vazias).
+- [x] Todo número em texto vem de cálculo e reage aos filtros.
+- [x] Painel publicado no Azure, com as 7 páginas conferidas no endereço público. *(13/11, commit `c8d6954`; rollback em `~/Documentos/DataThon-rollback/20261113-0825/VOLTAR.sh`, na máquina do João.)*
+- [x] `docs/CHANGELOG_BANCA.md` com o antes/depois dos números do pitch.
+- [x] `docs/PITCH_APOIO.md` gerado com os números finais. *(17/17 conferidos no painel publicado; faltam os placeholders da equipe.)*
+- [x] Itens P2 registrados em `docs/ROADMAP.md`.
 
 ## 5. Relatório final (ao terminar)
 

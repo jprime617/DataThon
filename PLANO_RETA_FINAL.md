@@ -16,6 +16,7 @@ As estimativas de tempo são chutes, servem para decidir o corte das 18h.
 | M4 | **concluído e mergeado** (C1–C6; C7 opcional) | `dashboard-v2` | M4.C6 |
 | M5 | **concluído e mergeado** (C1–C6) | `dashboard-v2` | M5.C6 |
 | M6 | falta o H2 (xlsx do PDET) | — | — |
+| Banca | Lotes A, B, D e C **concluídos** (plano em `PLANO_CORRECOES_DATATHON.md`, §4); **publicado no Azure em 13/11** (commit `c8d6954`, tag `deploy-20261113`); números do pitch conferidos (ENT-04). Falta: rodar a suíte completa e os placeholders da equipe no `docs/PITCH_APOIO.md` | `dashboard-v2` (via `fix/banca-c`) | ENT-04 |
 | M7 | C1–C3 feitos (**no ar**: https://datathon-caged-sc-br.azurewebsites.net) **concluído**; tag `entrega-v1`, código congelado | `dashboard-v2` | M7.C5 |
 
 Commits locais só sobem com autorização do João: confira `git log origin/dashboard-v2..` antes de supor que algo foi publicado.
@@ -34,7 +35,7 @@ Tudo isto pode ser feito por quem estiver livre, ou pela IA, sem esperar ningué
 - **M0.C0 (organizadores):** decide se M4, M5 e M6 entram no painel e no pitch.
 - **Dono do painel:** os ciclos [painel] (M4.C5–C6, M5.C6, M6.C2).
 - **M2.H1:** alguém roda os 23 prompts, ou a equipe decide que a IA da sessão (Claude) pode classificar a partir dos mesmos prompts. Se for a IA, registre isso na Metodologia.
-- **João:** M3.C5 e M3.C8 liberados em 12/11 (depois da tag `entrega-v1`); merge de `m3-c8`, deploy e tag `entrega-v2` feitos.
+- **João:** M3.C5 e M3.C8 liberados em 12/11 (depois da tag `entrega-v1`); merge de `m3-c8`, deploy e tag `entrega-v2` feitos. Em 13/11: deploy do plano da banca (Lote C: ENT-01 a ENT-04). Para voltar à `entrega-v2`, rode `VOLTAR.sh` (`~/Documentos/DataThon-rollback/20261113-0825/`, na máquina do João).
 - **Arquivo `Dados/Novo_Caged_MOV_Limpo.csv`:** precisa estar na máquina que rodar o M5.C4 e o M7.C1.
 
 ---
