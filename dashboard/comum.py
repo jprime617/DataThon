@@ -140,6 +140,8 @@ from dashboard.regras import (  # noqa: F401
     ALAVANCAS_OBSERVACAO,
     MOTIVO_OBSERVACAO,
     eh_observacao,
+    MIN_COBERTURA_CBO,
+    RAZAO_SALARIAL_MESMA_CBO,
 )
 
 _ETAPA = "dashboard"
@@ -540,11 +542,12 @@ def aplicar_filtros(
     return df[mascara].copy()
 
 
-def filtrar_cbo(ctx: "Contexto") -> pd.DataFrame | None:
+def filtrar_cbo(ctx: "Contexto", *, estado: bool = False) -> pd.DataFrame | None:
     """A tabela por CBO no recorte atual (escopo, período, setor, macrofamília, nível).
 
     A tabela não tem município: um filtro de micro/município usa as
-    mesorregiões que o contêm (como o perfil).
+    mesorregiões que o contêm (como o perfil). Com `estado=True`, só escopo e
+    período: a referência do estado, como `Contexto.ref`.
     """
     tabela = ctx.art.cbo
     if tabela is None or tabela.empty:
@@ -554,6 +557,8 @@ def filtrar_cbo(ctx: "Contexto") -> pd.DataFrame | None:
     if f.meses:
         meses = tabela[COLUNA_MES].astype(str)
         tabela = tabela[(meses >= f.meses[0]) & (meses <= f.meses[1])]
+    if estado:
+        return tabela
     regioes = sorted(ctx.df[COLUNA_REGIAO].astype(str).unique()) if f.territorios else []
     return aplicar_filtros(tabela, regiao=regioes, **{COLUNA_SETOR: f.setores, COLUNA_MACROFAMILIA_CBO: f.macrofamilias,
                                                       COLUNA_NIVEL_QUALIFICACAO: f.niveis})
@@ -631,6 +636,8 @@ M_ACEL = "aceleracao"
 M_AMOSTRA_OK = "amostra_ok"
 M_SALARIO_OK = "salario_ok"
 M_TAXA_ADM = "taxa_admissao"   # ANA-03: proxy de demanda
+M_GAP_SAL_CBO = "gap_salarial_cbo"   # ANA-01 P1: razão entrada/saída dentro da mesma CBO
+M_COBERTURA_CBO = "cobertura_cbo"     # fração das movimentações do grupo nas CBOs que entram na média
 
 
 @dataclass(frozen=True)
@@ -660,6 +667,13 @@ DEFINICOES: dict[str, Definicao] = {
         f"(< {str(LIMIAR_COMPRESSAO).replace('.', ',')} = compressão). "
         f"Exige ≥ {MIN_SALARIOS} salários em cada lado. Salário válido: > 0 e ≤ 20× a "
         "mediana estadual (exclui zeros e valores de rescisão/digitação).",
+        "gap",
+    ),
+    M_GAP_SAL_CBO: Definicao(
+        "Salário de quem entra vs quem saiu, na mesma ocupação",
+        "média das razões salário médio de admissão ÷ de desligamento de cada CBO do grupo, ponderada pelas "
+        f"movimentações, só com CBOs com ≥ {MIN_SALARIOS} salários de cada lado. Compara a mesma função: tira o "
+        "efeito de entrar e sair gente de ocupações diferentes",
         "gap",
     ),
     M_GAP_ESC: Definicao(
@@ -712,6 +726,7 @@ EXPLICACAO: dict[str, str] = {
     M_SALDO_10K: "Saldo de vagas proporcional à população: compara territórios de tamanhos diferentes.",
     M_SAIDA_VOL: "De cada 100 desligamentos, quantos foram pedido do próprio trabalhador.",
     M_GAP_SAL: "Quanto quem é contratado ganha em relação a quem saiu.",
+    M_GAP_SAL_CBO: "Quanto quem é contratado ganha em relação a quem saiu da mesma ocupação.",
     M_GAP_ESC: "Se quem entra estudou mais (positivo) ou menos (negativo) do que quem sai.",
     M_SALDO_REL: "Quanto do movimento virou vaga nova.",
     M_ESTOQUE: "Quantos empregos formais existiam em 31/12/2025.",
@@ -950,20 +965,90 @@ def matriz_diagnostico(
 
 
 
-def causas(linha: pd.Series, *, saida_ref: float, gap_ref: float, fracao_tecnica: float = 0.0) -> list[str]:
+_COLUNAS_SALARIO_CBO = ["soma_salario_admissao", "n_salario_admissao", "soma_salario_desligamento",
+                        "n_salario_desligamento", COLUNA_ADMISSOES, COLUNA_DESLIGAMENTOS]
+
+
+def razao_mesma_cbo(cbos: pd.DataFrame | None, por: list[str]) -> pd.DataFrame:
+    """ANA-01 (P1): razão salário de entrada ÷ de saída dentro da mesma CBO, por grupo.
+
+    Média das razões de cada CBO, ponderada pelas movimentações, só com as CBOs
+    que têm ≥ `MIN_SALARIOS` salários de admissão e de desligamento no grupo.
+    `cobertura_cbo` = fração das movimentações do grupo nessas CBOs. Índice =
+    chaves de `por` como texto (`por` vazio: uma linha, o total).
+    """
+    por = list(por or [])
+    chave = por or ["_todos"]
+    if cbos is None or cbos.empty or not {"cbo", *_COLUNAS_SALARIO_CBO} <= set(cbos.columns):
+        return pd.DataFrame(columns=[*chave, M_GAP_SAL_CBO, M_COBERTURA_CBO]).set_index(chave)
+    base = pd.DataFrame({**{k: (cbos[k].astype(str) if k in cbos else "") for k in chave},
+                         "cbo": cbos["cbo"].astype(str), **{col: cbos[col] for col in _COLUNAS_SALARIO_CBO}})
+    g = base.groupby([*chave, "cbo"], sort=False)[_COLUNAS_SALARIO_CBO].sum().reset_index()
+    peso = (g[COLUNA_ADMISSOES] + g[COLUNA_DESLIGAMENTOS]).astype("float64")
+    ok = (g["n_salario_admissao"] >= MIN_SALARIOS) & (g["n_salario_desligamento"] >= MIN_SALARIOS)
+    razao = _divisao(_divisao(g["soma_salario_admissao"], g["n_salario_admissao"]),
+                     _divisao(g["soma_salario_desligamento"], g["n_salario_desligamento"]))
+    ok &= razao.notna()
+    g["_pr"] = (razao * peso).where(ok, 0.0)
+    g["_pok"] = peso.where(ok, 0.0)
+    g["_peso"] = peso
+    soma = g.groupby(chave, sort=False)[["_pr", "_pok", "_peso"]].sum()
+    return pd.DataFrame({M_GAP_SAL_CBO: _divisao(soma["_pr"], soma["_pok"]),
+                         M_COBERTURA_CBO: _divisao(soma["_pok"], soma["_peso"])}, index=soma.index)
+
+
+def razao_estado_mesma_cbo(cbos_estado: pd.DataFrame | None) -> float:
+    """A razão dentro da mesma CBO do estado inteiro (mesmo escopo e período), ou NaN."""
+    r = razao_mesma_cbo(cbos_estado, [])
+    return float(r[M_GAP_SAL_CBO].iloc[0]) if not r.empty else float("nan")
+
+
+def anexar_razao_cbo(m: pd.DataFrame, cbos: pd.DataFrame | None, por: list[str]) -> pd.DataFrame:
+    """`m` com `gap_salarial_cbo` e `cobertura_cbo` por grupo (NaN onde não há dado por CBO)."""
+    resultado = m.copy()
+    if (m.empty or cbos is None or cbos.empty or not set(por) <= set(cbos.columns)
+            or not {"cbo", *_COLUNAS_SALARIO_CBO} <= set(cbos.columns)):
+        resultado[M_GAP_SAL_CBO] = float("nan")
+        resultado[M_COBERTURA_CBO] = float("nan")
+        return resultado
+    r = razao_mesma_cbo(cbos, por)
+    chaves = pd.MultiIndex.from_arrays([m[k].astype(str) for k in por]) if len(por) > 1 else m[por[0]].astype(str)
+    alinhado = r.reindex(chaves)
+    resultado[M_GAP_SAL_CBO] = alinhado[M_GAP_SAL_CBO].to_numpy(dtype="float64")
+    resultado[M_COBERTURA_CBO] = alinhado[M_COBERTURA_CBO].to_numpy(dtype="float64")
+    return resultado
+
+
+def gap_causa(linha: pd.Series, gap_ref: float, gap_ref_cbo: float = float("nan")) -> tuple[float, float, bool]:
+    """(razão do grupo, razão do estado, é dentro da mesma CBO?) que decide a causa Salarial (ANA-01).
+
+    Usa a razão dentro da mesma CBO quando ela existe, cobre ≥ `MIN_COBERTURA_CBO`
+    das movimentações do grupo e há a do estado; senão, a razão bruta.
+    """
+    g, cob = linha.get(M_GAP_SAL_CBO), linha.get(M_COBERTURA_CBO)
+    if (RAZAO_SALARIAL_MESMA_CBO and not _vazio(g) and not _vazio(cob) and not _vazio(gap_ref_cbo)
+            and float(cob) >= MIN_COBERTURA_CBO):
+        return float(g), float(gap_ref_cbo), True
+    return linha.get(M_GAP_SAL), gap_ref, False
+
+
+def causas(linha: pd.Series, *, saida_ref: float, gap_ref: float, fracao_tecnica: float = 0.0,
+           gap_ref_cbo: float = float("nan")) -> list[str]:
     """Selos de causa de uma unidade, a partir das métricas e da referência do estado.
 
     `saida_ref` e `gap_ref` são a saída voluntária e a razão salarial entrada/saída
     do estado inteiro no mesmo escopo e período (`Contexto.ref`).
 
-    - Salarial: razão entrada/saída ≥ 3 p.p. abaixo da do estado (ANA-01).
+    - Salarial: razão entrada/saída ≥ 3 p.p. abaixo da do estado (ANA-01); dentro
+      da mesma CBO quando há `gap_ref_cbo` e a linha traz `gap_salarial_cbo`
+      (`gap_causa`).
     - Qualificação: gap de escolaridade ≤ −0,10 numa unidade em que Técnico +
       Superior somam ao menos metade das movimentações.
     - Retenção: saída voluntária ≥ referência + 5 p.p. com salário de entrada
       não pior que o do estado (o salário não explica a saída).
     """
     selos = []
-    gap = linha.get(M_GAP_SAL)
+    gap, gap_ref, _ = gap_causa(linha, gap_ref, gap_ref_cbo)
     if pd.notna(gap) and salario_pior_que_estado(gap, gap_ref):
         selos.append(CAUSA_SALARIAL)
     gap_esc = linha.get(M_GAP_ESC)
@@ -1182,6 +1267,7 @@ def gerar_recomendacoes(
     ref: pd.Series | None = None,
     cbos: pd.DataFrame | None = None,
     descricoes: dict[str, str] | None = None,
+    gap_ref_cbo: float = float("nan"),
 ) -> list[Recomendacao]:
     """Avalia as 5 regras por mesorregião × macrofamília (com guarda de amostra).
 
@@ -1195,7 +1281,7 @@ def gerar_recomendacoes(
     ref = total(df) if ref is None else ref
     saida_ref, gap_ref = ref[M_SAIDA_VOL], ref[M_GAP_SAL]
     por = [COLUNA_REGIAO, COLUNA_MACROFAMILIA_CBO]
-    m = matriz_diagnostico(df, por)
+    m = anexar_razao_cbo(matriz_diagnostico(df, por), cbos, por)  # ANA-01 P1
     if m.empty:
         return []
     frac_basico = fracao_por_nivel(df, por, ("Básico",))
@@ -1214,7 +1300,9 @@ def gerar_recomendacoes(
         regiao, macro = str(chave[0]), str(chave[1])
         nivel = nivel_dominante.get(chave, "—")
         mov = float(u[M_MOV])
-        saida, gap = u[M_SAIDA_VOL], u[M_GAP_SAL]
+        saida = u[M_SAIDA_VOL]
+        gap, gap_ref_u, mesma_cbo = gap_causa(u, gap_ref, gap_ref_cbo)
+        na_cbo = " na mesma ocupação" if mesma_cbo else ""
 
         def add(alavanca, regra, evidencia, severidade, alvo=nivel, **extras):
             extras.setdefault("acao", ACAO_ALAVANCA.get(alavanca, "").format(macro=macro, regiao=regiao))
@@ -1224,15 +1312,17 @@ def gerar_recomendacoes(
                                      quem_age=QUEM_AGE.get(alavanca, "—"), horizonte=HORIZONTE.get(alavanca, "—"),
                                      kpi=meta_kpi(alavanca, u, ref)))
 
-        if salario_pior_que_estado(gap, gap_ref) and pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA:
+        if (pd.notna(gap) and salario_pior_que_estado(gap, gap_ref_u) and pd.notna(saida)
+                and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA):
             ref_sal = mediana_regional.get(chave)
             texto_ref = f"; mediana regional de admissão {fmt_brl(ref_sal)}" if ref_sal else ""
             add(ALAVANCA_SALARIO,
-                f"razão salarial entrada/saída ≥ {fmt_num(MARGEM_SALARIAL_RELATIVA * 100, 0)} p.p. pior que a do estado "
-                f"e saída voluntária ≥ estado + {fmt_num(MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p.",
-                f"quem entra ganha {fmt_pct(gap, 0)} do salário de quem saiu (estado: {fmt_pct(gap_ref, 0)}); "
-                f"saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)} no estado{texto_ref}",
-                (gap_ref - gap) + (saida - saida_ref))
+                f"razão salarial entrada/saída{na_cbo} ≥ {fmt_num(MARGEM_SALARIAL_RELATIVA * 100, 0)} p.p. pior que a "
+                f"do estado e saída voluntária ≥ estado + {fmt_num(MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p.",
+                f"{na_cbo.strip().capitalize() + ', q' if na_cbo else 'Q'}uem entra ganha {fmt_pct(gap, 0)} do salário "
+                f"de quem saiu (estado: {fmt_pct(gap_ref_u, 0)}); saída voluntária {fmt_pct(saida)} vs "
+                f"{fmt_pct(saida_ref)} no estado{texto_ref}",
+                (gap_ref_u - gap) + (saida - saida_ref))
         # REC-01: formação profissional direcionada (regra em `regras.py`).
         if (u["quadrante"] in QUADRANTES_FORMACAO and nivel in NIVEIS_ALVO_FORMACAO
                 and macro not in MACROFAMILIAS_FORA_FORMACAO):
@@ -1278,12 +1368,12 @@ def gerar_recomendacoes(
                 "nível Básico ≥ 50% e saldo ≤ 0",
                 f"{fmt_pct(f_bas)} em nível Básico; saldo {fmt_int(u[M_SALDO])}",
                 f_bas - 0.5, alvo="Básico")
-        if pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA and salario_nao_explica(gap, gap_ref):
+        if pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA and salario_nao_explica(gap, gap_ref_u):
             add(ALAVANCA_RETENCAO,
-                f"saída voluntária ≥ estado + {fmt_num(MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p. com salário de entrada "
-                "não pior que o do estado (o salário não explica)",
-                f"saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)}; quem entra ganha {fmt_pct(gap, 0)} do "
-                f"salário de quem saiu (estado: {fmt_pct(gap_ref, 0)})",
+                f"saída voluntária ≥ estado + {fmt_num(MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p. com salário de entrada"
+                f"{na_cbo} não pior que o do estado (o salário não explica)",
+                f"saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)}; quem entra ganha{na_cbo} {fmt_pct(gap, 0)} "
+                f"do salário de quem saiu (estado: {fmt_pct(gap_ref_u, 0)})",
                 saida - saida_ref)
     for r in recs:
         r.prioridade = r.severidade * r.movimentacoes
@@ -1636,6 +1726,11 @@ class Contexto:
     def tem_recorte(self) -> bool:
         f = self.filtros
         return bool(f.territorios or f.setores or f.macrofamilias or f.niveis)
+
+
+def referencia_cbo(ctx: Contexto) -> tuple[pd.DataFrame | None, float]:
+    """(tabela por CBO do recorte, razão entrada/saída dentro da mesma CBO do estado) — ANA-01 P1."""
+    return filtrar_cbo(ctx), razao_estado_mesma_cbo(filtrar_cbo(ctx, estado=True))
 
 
 _CHAVES_FILTRO = ("f_escopo", "f_meses", "f_nivel", "f_terr", "f_setor", "f_macro", "f_niv")

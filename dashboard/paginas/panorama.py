@@ -138,7 +138,8 @@ def _secoes_e_meses(ctx: c.Contexto) -> None:
 def _resposta_central(ctx: c.Contexto) -> None:
     """NAR-02: a pergunta do desafio respondida em três linhas calculadas, sem rolar a página."""
     manchete = nar.resposta_principal(ctx.df, ctx.filtros.escopo).partition("\n\n")[0]
-    resposta = nar.resposta_central(ctx.df, c.total(ctx.ref))
+    cbos, gap_ref_cbo = c.referencia_cbo(ctx)
+    resposta = nar.resposta_central(ctx.df, c.total(ctx.ref), cbos=cbos, gap_ref_cbo=gap_ref_cbo)
     t = c.total(ctx.df)
     with st.container(border=True, key="rx-resposta"):
         st.caption("RESPOSTA À PERGUNTA CENTRAL · onde há apagão ou expansão, e se renda e escolaridade explicam")

@@ -125,6 +125,15 @@ def salario_pior_que_estado(gap: float, gap_estado: float) -> bool:
     return gap == gap and gap_estado == gap_estado and gap <= gap_estado - MARGEM_SALARIAL_RELATIVA + 1e-9
 
 
+# ANA-01 (P1): a razão entrada/saída DENTRO DA MESMA CBO (média das razões por
+# ocupação, ponderada pelas movimentações, só CBOs com ≥ 30 salários de cada lado)
+# tira o efeito de composição: entrar e sair gente de ocupações diferentes. É ela
+# que decide a causa Salarial quando cobre ≥ 50% das movimentações do grupo; senão,
+# vale a razão bruta. `False` aqui volta tudo para a razão bruta.
+RAZAO_SALARIAL_MESMA_CBO = True
+MIN_COBERTURA_CBO = 0.5
+
+
 def salario_nao_explica(gap: float, gap_estado: float) -> bool:
     """O salário de entrada do grupo não é pior que o do estado (base da causa "Retenção")."""
     return gap == gap and gap_estado == gap_estado and gap >= gap_estado

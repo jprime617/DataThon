@@ -796,3 +796,47 @@ emprego que têm. A demanda existe; o problema é reter.
 - Testes: `test_script_de_classificacao_tem_help`,
   `test_script_grava_respostas_no_formato_do_chat`,
   `test_script_exige_a_chave_antes_de_qualquer_chamada`.
+
+---
+
+## ANA-01 (P1) · Razão salarial dentro da mesma CBO
+
+- **Nova medida** `comum.razao_mesma_cbo`: a razão salário de entrada ÷
+  salário de saída é calculada **em cada CBO do grupo** e depois ponderada
+  pelas movimentações, só com CBOs com ≥ 30 salários de cada lado. Sai de
+  `caged_cbo.parquet`, sem reprocessar. Assim a comparação é entre a mesma
+  função; não entra o efeito de contratar numa ocupação e perder gente
+  noutra.
+- **Ela decide a causa Salarial** (`comum.gap_causa`) quando as CBOs com
+  amostra cobrem **≥ 50% das movimentações** do grupo
+  (`regras.MIN_COBERTURA_CBO`); senão, vale a razão do grupo inteiro. Vale
+  também para a alavanca salarial e a de retenção, para o "Renda explica?"
+  da resposta central, os cartões, as tabelas (colunas novas "Na mesma
+  ocupação") e a legenda das causas. **Uma chave em `regras.py`
+  (`RAZAO_SALARIAL_MESMA_CBO`) volta tudo para a razão bruta.**
+- A Metodologia explica a medida e mostra, calculado no recorte: corte fixo
+  antigo → regra relativa → mesma ocupação.
+- Testes: `test_razao_dentro_da_mesma_cbo_tira_o_efeito_de_composicao`,
+  `test_media_ponderada_pelas_movimentacoes_e_so_cbos_com_amostra`,
+  `test_causa_salarial_usa_a_mesma_cbo_quando_ha_cobertura`,
+  `test_frase_do_cartao_diz_que_compara_a_mesma_ocupacao`.
+
+| Indicador | Antes (bruta, relativa) | Depois (mesma CBO) |
+|---|---|---|
+| Razão entrada/saída do estado, transformação | 0,93 (93%) | **0,96 (96%)** |
+| Grupos com causa Salarial, transformação | 8 de 63 | **2 de 63** |
+| Correlação salário × saída voluntária, transformação | −0,22 | **−0,39** (52 grupos com cobertura) |
+| "Renda explica?", transformação | explica em parte | explica em parte |
+| Razão do estado, B–F | 0,94 | 0,97 |
+| Grupos com causa Salarial, B–F | 16 de 86 | 10 de 86 |
+| Correlação, B–F | −0,33 | −0,49 |
+| Recomendações: retenção / salário, transformação | 6 / 1 | 5 / 1 |
+| Recomendações: retenção / salário, B–F | 11 / 1 | 6 / 3 |
+| Top 3 (transformação e B–F) | — | **sem mudança** |
+
+**Leitura para o pitch (pergunta 2 da banca, "quem sai não ganha mais só
+por ter mais tempo de casa?"):** comparando a mesma ocupação, quem entra
+ganha 96% do salário de quem sai. Só 2 dos 63 grupos ficam 3 p.p. ou mais
+abaixo disso. Mesmo assim, onde o salário de entrada é relativamente pior, a
+saída voluntária é maior (r = −0,39). Misturar ocupações diluía essa
+relação (−0,22).

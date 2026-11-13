@@ -51,16 +51,22 @@ def legenda_compressao(medianas: pd.DataFrame, categoria: str) -> str:
 def selos_por_unidade(ctx: c.Contexto, unidades: pd.DataFrame) -> pd.DataFrame:
     """Mesorregião × setor com ao menos uma causa (Salarial, Qualificação, Retenção), da maior para a menor."""
     ref = c.total(ctx.ref)  # ANA-01: referência = estado inteiro, mesmo escopo e período
-    frac = c.fracao_por_nivel(ctx.df, [c.COLUNA_REGIAO, c.COLUNA_SETOR], c.NIVEIS_QUALIFICADOS)
+    por = [c.COLUNA_REGIAO, c.COLUNA_SETOR]
+    frac = c.fracao_por_nivel(ctx.df, por, c.NIVEIS_QUALIFICADOS)
+    cbos, gap_ref_cbo = c.referencia_cbo(ctx)
+    unidades = c.anexar_razao_cbo(unidades, cbos, por)  # ANA-01 P1: dentro da mesma CBO
     linhas = []
     for _, u in unidades.iterrows():
         selos = c.causas(u, saida_ref=ref[c.M_SAIDA_VOL], gap_ref=ref[c.M_GAP_SAL],
-                         fracao_tecnica=float(frac.get((u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), 0.0)))
+                         fracao_tecnica=float(frac.get((u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), 0.0)),
+                         gap_ref_cbo=gap_ref_cbo)
         if selos:
             linhas.append({"Grupo": f"{u[c.COLUNA_SETOR]} – {u[c.COLUNA_REGIAO]}", "Causas": " · ".join(selos),
                            "Movimentações": int(u[c.M_MOV]),
                            "Salário de quem entra vs quem saiu": c.fmt_gap(u[c.M_GAP_SAL]),
                            "Mesma razão no estado": c.fmt_gap(ref[c.M_GAP_SAL]),
+                           "Na mesma ocupação (CBO)": c.fmt_gap(u.get(c.M_GAP_SAL_CBO)),
+                           "Na mesma ocupação, no estado": c.fmt_gap(gap_ref_cbo),
                            "Saem a pedido": c.fmt_pct(u[c.M_SAIDA_VOL])})
     if not linhas:
         return pd.DataFrame(columns=["Grupo", "Causas", "Movimentações"])
@@ -225,4 +231,4 @@ def render(ctx: c.Contexto) -> None:
         else:
             st.dataframe(selos, hide_index=True, width="stretch",
                          column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
-            st.caption(nar.legenda_causas(c.total(ctx.ref)))
+            st.caption(nar.legenda_causas(c.total(ctx.ref), c.referencia_cbo(ctx)[1]))

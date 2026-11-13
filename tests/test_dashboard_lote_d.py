@@ -344,3 +344,59 @@ def test_script_exige_a_chave_antes_de_qualquer_chamada():
 
     with pytest.raises(ErroDeValidacao):
         criar_cliente("anthropic", None, env={})
+
+
+# --- ANA-01 (P1): razão salarial dentro da mesma CBO -----------------------------------
+
+
+def _cbo(cbo, adm, desl, sal_adm, sal_desl, regiao="Norte Catarinense", setor="Metalurgia e produtos de metal"):
+    return {"regiao": regiao, "setor": setor, "macrofamilia_cbo": "Metalmecânica e eletroeletrônica", "cbo": cbo,
+            "admissoes": adm, "desligamentos": desl,
+            "soma_salario_admissao": sal_adm * adm, "n_salario_admissao": adm,
+            "soma_salario_desligamento": sal_desl * desl, "n_salario_desligamento": desl}
+
+
+def _composicao() -> pd.DataFrame:
+    """Cada ocupação paga igual na entrada e na saída; o grupo contrata a barata e perde a cara."""
+    return pd.DataFrame([_cbo("784205", 900, 100, 2000, 2000), _cbo("214905", 100, 900, 8000, 8000)])
+
+
+def test_razao_dentro_da_mesma_cbo_tira_o_efeito_de_composicao():
+    cbos = _composicao()
+    bruta = (cbos["soma_salario_admissao"].sum() / 1000) / (cbos["soma_salario_desligamento"].sum() / 1000)
+    assert bruta == pytest.approx(2600 / 7400)                     # 35%: parece compressão salarial
+    r = c.razao_mesma_cbo(cbos, ["regiao", "setor"]).iloc[0]
+    assert r[c.M_GAP_SAL_CBO] == pytest.approx(1.0)                # na mesma função, ninguém ganha menos
+    assert r[c.M_COBERTURA_CBO] == pytest.approx(1.0)
+
+
+def test_media_ponderada_pelas_movimentacoes_e_so_cbos_com_amostra():
+    cbos = pd.DataFrame([_cbo("A", 300, 100, 1800, 2000),          # razão 0,90, 400 movimentações
+                         _cbo("B", 50, 50, 2000, 2000),            # razão 1,00, 100 movimentações
+                         _cbo("C", 10, 90, 500, 5000)])            # 10 salários de admissão: fora
+    r = c.razao_mesma_cbo(cbos, ["regiao", "setor"]).iloc[0]
+    assert r[c.M_GAP_SAL_CBO] == pytest.approx((0.9 * 400 + 1.0 * 100) / 500)
+    assert r[c.M_COBERTURA_CBO] == pytest.approx(500 / 600)
+    assert c.razao_estado_mesma_cbo(cbos) == pytest.approx(0.92)
+    assert pd.isna(c.razao_estado_mesma_cbo(None))
+
+
+def test_causa_salarial_usa_a_mesma_cbo_quando_ha_cobertura(monkeypatch):
+    linha = pd.Series({c.M_GAP_SAL: 0.80, c.M_GAP_SAL_CBO: 0.99, c.M_COBERTURA_CBO: 0.9, c.M_SAIDA_VOL: 0.40})
+    assert c.CAUSA_SALARIAL in c.causas(linha, saida_ref=0.47, gap_ref=0.93)                    # sem ref por CBO: bruta
+    assert c.CAUSA_SALARIAL not in c.causas(linha, saida_ref=0.47, gap_ref=0.93, gap_ref_cbo=0.96)
+    pouca = linha.copy()
+    pouca[c.M_COBERTURA_CBO] = c.MIN_COBERTURA_CBO - 0.01                                     # pouca cobertura: bruta
+    assert c.CAUSA_SALARIAL in c.causas(pouca, saida_ref=0.47, gap_ref=0.93, gap_ref_cbo=0.96)
+    assert c.gap_causa(linha, 0.93, 0.96) == (0.99, 0.96, True)
+    monkeypatch.setattr(c, "RAZAO_SALARIAL_MESMA_CBO", False)                                 # a chave volta à bruta
+    assert c.gap_causa(linha, 0.93, 0.96) == (0.80, 0.93, False)
+
+
+def test_frase_do_cartao_diz_que_compara_a_mesma_ocupacao():
+    from dashboard.paginas.diagnostico import frase_porque
+
+    u = pd.Series({c.M_GAP_SAL: 0.85, c.M_GAP_SAL_CBO: 0.90, c.M_COBERTURA_CBO: 0.8, c.M_SAIDA_VOL: 0.6})
+    frase = frase_porque(u, [c.CAUSA_SALARIAL], 0.47, 0.93, 0.96)
+    assert frase.startswith("Na mesma ocupação, quem entra ganha 90%") and "(no estado, 96%)" in frase
+    assert "na mesma ocupação" in nar.legenda_causas(pd.Series({c.M_GAP_SAL: 0.93}), 0.96)

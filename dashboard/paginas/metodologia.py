@@ -136,9 +136,16 @@ def _comparacao_regra_salarial(ctx: c.Contexto) -> str:
         return ""
     gap_ref = c.total(ctx.ref)[c.M_GAP_SAL]
     antigo = int((m[c.M_GAP_SAL] < c.LIMIAR_COMPRESSAO).sum())
-    novo = int(sum(c.salario_pior_que_estado(g, gap_ref) for g in m[c.M_GAP_SAL]))
-    return (f"Neste recorte, o corte fixo antigo (< {c.fmt_num(c.LIMIAR_COMPRESSAO, 2)}) daria o selo a {antigo} "
-            f"dos {len(m)} grupos mesorregião × setor, sem separar nada; a regra relativa dá a {novo}.")
+    relativo = int(sum(c.salario_pior_que_estado(g, gap_ref) for g in m[c.M_GAP_SAL]))
+    texto = (f"Neste recorte, o corte fixo antigo (< {c.fmt_num(c.LIMIAR_COMPRESSAO, 2)}) daria o selo a {antigo} "
+             f"dos {len(m)} grupos mesorregião × setor, sem separar nada; a regra relativa, a {relativo}.")
+    cbos, gap_ref_cbo = c.referencia_cbo(ctx)
+    if c.RAZAO_SALARIAL_MESMA_CBO and pd.notna(gap_ref_cbo):
+        m = c.anexar_razao_cbo(m, cbos, [c.COLUNA_REGIAO, c.COLUNA_SETOR])
+        final = int(sum(c.salario_pior_que_estado(*c.gap_causa(u, gap_ref, gap_ref_cbo)[:2]) for _, u in m.iterrows()))
+        texto += (f" Comparando dentro da mesma ocupação, a do estado sobe de {c.fmt_pct(gap_ref, 0)} para "
+                  f"{c.fmt_pct(gap_ref_cbo, 0)} e o selo fica com {final}.")
+    return texto
 
 
 def render(ctx: c.Contexto) -> None:
@@ -220,6 +227,11 @@ def render(ctx: c.Contexto) -> None:
         f"{c.fmt_pct(c.total(ctx.ref)[c.M_GAP_SAL], 0)} do salário de quem sai. Por isso a causa **Salarial** é relativa: "
         f"só acende quando a razão entrada/saída do grupo fica **{c.fmt_num(c.MARGEM_SALARIAL_RELATIVA * 100, 0)} p.p. "
         "ou mais abaixo da razão do estado** (mesmo escopo e período). "
+        "**Dentro da mesma ocupação:** a razão é calculada em cada CBO do grupo e depois ponderada pelas "
+        f"movimentações (só CBOs com ≥ {c.MIN_SALARIOS} salários de cada lado). Assim a comparação é entre a mesma "
+        "função, e não entra o efeito de contratar numa ocupação e perder gente noutra. Ela decide o selo quando as "
+        f"CBOs com amostra cobrem ≥ {c.fmt_pct(c.MIN_COBERTURA_CBO, 0)} das movimentações do grupo; senão, vale a "
+        "razão do grupo inteiro. "
         + _comparacao_regra_salarial(ctx) + "\n"
         "- **Saíram:** o giro (função exata do saldo relativo) e a aceleração entre semestres (media o calendário: "
         "dezembro concentra desligamentos); ela voltou na forma de blocos de 12 meses."

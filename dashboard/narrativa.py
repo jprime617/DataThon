@@ -474,14 +474,21 @@ def rotulo_lista_principal(demais: pd.DataFrame, df: pd.DataFrame, por: list[str
 
 # --- ANA-01: critério das causas, em texto gerado dos limiares --------------------
 
-def legenda_causas(ref: pd.Series | None = None) -> str:
+def legenda_causas(ref: pd.Series | None = None, gap_ref_cbo: float = float("nan")) -> str:
     """Como cada causa é decidida, com a referência do estado quando houver."""
     gap_ref = ref[c.M_GAP_SAL] if ref is not None else float("nan")
-    estado = f" (no estado, quem entra ganha {c.fmt_pct(gap_ref, 0)} do salário de quem sai)" if pd.notna(gap_ref) else ""
+    usa_cbo = c.RAZAO_SALARIAL_MESMA_CBO and pd.notna(gap_ref_cbo)
+    valor = gap_ref_cbo if usa_cbo else gap_ref
+    onde = " na mesma ocupação" if usa_cbo else ""
+    estado = (f" (no estado, quem entra ganha{onde} {c.fmt_pct(valor, 0)} do salário de quem sai)"
+              if pd.notna(valor) else "")
     margem = c.fmt_num(c.MARGEM_SALARIAL_RELATIVA * 100, 0)
+    cbo = (f" A razão é calculada dentro de cada ocupação (CBO) e depois ponderada pelas movimentações, quando as "
+           f"CBOs com amostra cobrem ≥ {c.fmt_pct(c.MIN_COBERTURA_CBO, 0)} das movimentações do grupo; senão, vale a "
+           "razão do grupo inteiro." if usa_cbo else "")
     return (f"Salarial = a razão entre o salário de quem entra e o de quem sai fica {margem} p.p. ou mais abaixo da "
             f"razão do estado{estado}. Quem sai tem mais tempo de casa, então ganhar um pouco menos na entrada é "
-            f"normal; o selo só acende quando a diferença é pior que a do estado. Qualificação = entra gente menos "
+            f"normal; o selo só acende quando a diferença é pior que a do estado.{cbo} Qualificação = entra gente menos "
             f"escolarizada numa área técnica. Retenção = saída a pedido "
             f"{c.fmt_num(c.MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p. acima do estado, com salário de entrada não pior "
             "que o do estado.")
@@ -506,7 +513,8 @@ def _lista_grupos(grupos: pd.DataFrame) -> str:
         for _, g in grupos.iterrows())
 
 
-def resposta_central(df: pd.DataFrame, ref: pd.Series | None = None, n: int = 2) -> RespostaCentral | None:
+def resposta_central(df: pd.DataFrame, ref: pd.Series | None = None, n: int = 2, *,
+                     cbos: pd.DataFrame | None = None, gap_ref_cbo: float = float("nan")) -> RespostaCentral | None:
     """Onde está o apagão e a expansão; se renda e escolaridade explicam (limiares em `regras`).
 
     Tudo calculado no recorte: grupos mesorregião × setor com amostra. `ref` é o
@@ -538,24 +546,36 @@ def resposta_central(df: pd.DataFrame, ref: pd.Series | None = None, n: int = 2)
     onde = ". ".join(partes) + "." if partes else "Nenhum grupo com amostra suficiente em Apagão ou Expansão acelerada."
 
     # Causas por grupo (as mesmas regras de Quem precisa de atenção).
-    frac_tec = c.fracao_por_nivel(df, [c.COLUNA_REGIAO, c.COLUNA_SETOR], c.NIVEIS_QUALIFICADOS)
+    por = [c.COLUNA_REGIAO, c.COLUNA_SETOR]
+    todas = c.anexar_razao_cbo(todas, cbos, por)  # ANA-01 P1
+    frac_tec = c.fracao_por_nivel(df, por, c.NIVEIS_QUALIFICADOS)
     selos = [c.causas(u, saida_ref=ref[c.M_SAIDA_VOL], gap_ref=ref[c.M_GAP_SAL],
-                      fracao_tecnica=float(frac_tec.get((u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), 0.0)))
+                      fracao_tecnica=float(frac_tec.get((u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), 0.0)),
+                      gap_ref_cbo=gap_ref_cbo)
              for _, u in todas.iterrows()]
     n_grupos = len(todas)
     n_sal = sum(c.CAUSA_SALARIAL in s for s in selos)
     n_qual = sum(c.CAUSA_QUALIFICACAO in s for s in selos)
 
-    def _corr(coluna):
-        v = todas.dropna(subset=[coluna, c.M_SAIDA_VOL])
+    def _corr(coluna, base=todas):
+        v = base.dropna(subset=[coluna, c.M_SAIDA_VOL])
         return float(v[coluna].corr(v[c.M_SAIDA_VOL])) if len(v) >= 3 else float("nan")
 
-    r_sal, r_esc = _corr(c.M_GAP_SAL), _corr(c.M_GAP_ESC)
+    r_bruto, r_esc = _corr(c.M_GAP_SAL), _corr(c.M_GAP_ESC)
+    # ANA-01 P1: a correlação usa a mesma medida da causa: dentro da mesma CBO, nos grupos com cobertura.
+    cobertos = todas[todas[c.M_COBERTURA_CBO] >= c.MIN_COBERTURA_CBO]
+    usa_cbo = c.RAZAO_SALARIAL_MESMA_CBO and pd.notna(gap_ref_cbo) and len(cobertos) >= 3
+    r_sal = _corr(c.M_GAP_SAL_CBO, cobertos) if usa_cbo else r_bruto
     v_renda = c.veredito(r_sal, n_sal / n_grupos)
     v_esc = c.veredito(r_esc, n_qual / n_grupos)
-    renda = (f"**Renda {v_renda}.** Correlação de {c.fmt_num(r_sal, 2)} entre o salário de entrada (vs o de quem "
-             f"saiu) e a saída voluntária; {n_sal} de {n_grupos} grupos têm causa salarial (entrada "
-             f"{c.fmt_num(c.MARGEM_SALARIAL_RELATIVA * 100, 0)} p.p. pior que a do estado).")
+    na_cbo = " na mesma ocupação" if usa_cbo else ""
+    renda = (f"**Renda {v_renda}.** Correlação de {c.fmt_num(r_sal, 2)} entre o salário de entrada{na_cbo} (vs o de "
+             f"quem saiu) e a saída voluntária; {n_sal} de {n_grupos} grupos têm causa salarial (entrada "
+             f"{c.fmt_num(c.MARGEM_SALARIAL_RELATIVA * 100, 0)} p.p. pior que a do estado{na_cbo}).")
+    if usa_cbo and pd.notna(r_bruto) and pd.notna(r_sal):
+        leitura = ("misturar ocupações diferentes dilui a relação" if abs(r_sal) > abs(r_bruto)
+                   else "parte da relação vinha de entrar e sair gente de ocupações diferentes")
+        renda += f" Sem separar por ocupação, a correlação seria {c.fmt_num(r_bruto, 2)}: {leitura}."
     gap = ref[c.M_GAP_ESC]
     diferenca = (f"quem entra tem em média {c.fmt_num(abs(gap), 2)} nível de escolaridade "
                  f"{'a menos' if gap < 0 else 'a mais'} que quem sai" if pd.notna(gap) else "sem dado de escolaridade")

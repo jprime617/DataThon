@@ -112,7 +112,8 @@ def render(ctx: c.Contexto) -> None:
         st.info("Nenhuma movimentação com estes filtros.")
         return
     todas = c.gerar_recomendacoes(ctx.df, mediana_regional=medianas_regionais(ctx), ref=c.total(ctx.ref),
-                                   cbos=c.filtrar_cbo(ctx), descricoes=c.descricoes_cbo_cache())
+                                   cbos=c.filtrar_cbo(ctx), descricoes=c.descricoes_cbo_cache(),
+                                   gap_ref_cbo=c.referencia_cbo(ctx)[1])
     # REC-06: alavancas de observação ficam fora das prioridades e do Top 3.
     recs = [r for r in todas if not c.eh_observacao(r.alavanca)]
     observacoes = [r for r in todas if c.eh_observacao(r.alavanca)]
