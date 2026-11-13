@@ -248,3 +248,53 @@ calçados – Sul Catarinense, e a da construção é Construção – Vale do I
 | Recomendações "Retenção não salarial", B–F | 0 | 11 |
 | Recomendações "Revisar faixas salariais", transformação | 6 | 1 |
 | Recomendações "Retenção não salarial", transformação | 0 | 6 |
+
+---
+
+## TAX-01 · "Veículos – Vale do Itajaí": autopeças e construção naval
+
+**A hipótese se confirmou só em parte.** Abrindo o setor nos microdados
+(`scripts/veiculos_por_divisao.py` → `data_processed/veiculos_por_divisao.csv`),
+12 meses, Vale do Itajaí:
+
+| Divisão CNAE | Saldo | Onde | Subclasse que puxa |
+|---|---|---|---|
+| 29 · Veículos automotores e autopeças | **1.602 (63%)** | Navegantes (+1.642; os demais somam negativo) | 2945-0/00 material elétrico/eletrônico para veículos (+1.604) |
+| 30 · Construção naval e outros equipamentos de transporte | **928 (37%)** | Navegantes (+625), Itajaí (+334) | 3011-3/01 (+734), 3011-3/02 (+154), 3012-1/00 (+83) |
+| Total (o antigo "Veículos") | 2.530 | | |
+
+O pico de jul/26 na microrregião de Itajaí (+1.131) se divide em +942 da
+divisão 29 e +189 da naval. **O motor principal da "expansão de Veículos" é
+uma planta de autopeças elétricas em Navegantes, não os estaleiros.** Os
+estaleiros existem e respondem por 37% do saldo.
+
+**O que mudou:**
+- `src/mapeamentos.py`: as divisões 29 e 30 viram setores distintos. O
+  pipeline foi **reprocessado de ponta a ponta** (CAGED de 24 meses do FTP do
+  MTE e RAIS 2025), com metadados de commit `5432643`. Conferência: todos os
+  totais (admissões, desligamentos, a pedido, descontados, contagens de
+  salário e escolaridade, estoque e desligados da RAIS) ficaram **idênticos**,
+  e "Veículos" (35.776 admissões) = 26.383 (div. 29) + 9.393 (div. 30).
+- Os achados de expansão citam o setor correto e trazem a **concentração por
+  município calculada** ("100% do saldo vem de Navegantes"). Novo achado,
+  "Expansão puxada por encomendas", para a construção naval do Vale do Itajaí
+  (saldo 928, emprego +17,5%, quadrante **Apagão: cresce, mas não retém**),
+  com nota de contexto e fontes na tela: Click Petróleo e Gás (Programa Mar
+  Aberto, anúncio de 26/06/2026, Detroit Brasil e Navship) e NSC Total
+  (contratos de 12/12/2024). As **fragatas da Marinha / Estaleiro Brasil Sul
+  não aparecem nessas fontes e ficaram fora.**
+- Metodologia: tabela "Setores: divisão CNAE → setor" gerada do mapeamento.
+- `por_tipo` dos metadados preenchido (BUG-02 conferido: EXC = 5.226).
+- O limite de achados passou de 5 para 6, para que "Maior tensão" nunca saia.
+- Testes: `test_divisoes_29_e_30_sao_setores_distintos`,
+  `test_metodologia_documenta_o_mapeamento_cnae`,
+  `test_nota_de_expansao_cita_concentracao_e_fonte_do_setor_naval`,
+  `test_achado_de_expansao_por_encomenda_do_setor_naval`.
+
+| Indicador (abertura do painel) | Antes | Depois |
+|---|---|---|
+| Expansão mais acelerada | Veículos – Vale do Itajaí, saldo 2.530, +19,3% no ano | Veículos automotores e autopeças – Vale do Itajaí, saldo 1.602, +20,7% no ano (100% Navegantes) |
+| Construção naval – Vale do Itajaí | (dentro de "Veículos") | saldo 928, +17,5% no ano, Apagão: cresce, mas não retém |
+| Grupos meso × setor, transformação | 59 | 63 |
+| Apagão / Retração / Expansão / Estagnação (transformação) | 15 / 17 / 15 / 12 | 13 / 20 / 14 / 16 |
+| Grupos meso × setor, B–F | 82 | 86 |

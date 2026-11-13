@@ -8,7 +8,7 @@ Resumo para quem vai mexer no painel antes do pitch. Escrito no início do plano
 | Camada | Onde | O que faz |
 |---|---|---|
 | Ingestão e limpeza | `src/ingestao.py`, `src/limpeza.py`, `src/download.py` | Lê o Novo CAGED (MOV/FOR/EXC do FTP do MTE, set/24–ago/26), valida domínios, converte moeda e escolaridade (`limpeza.ESCOLARIDADE_ORDINAL`, 1–11). |
-| Mapeamentos | `src/mapeamentos.py` | Mesorregião/microrregião por município, **setor por divisão CNAE** (`SETOR_POR_DIVISAO_TRANSFORMACAO`: div. 29 + 30 = "Veículos"), faixas de escolaridade e nomes das 12 macrofamílias de CBO. |
+| Mapeamentos | `src/mapeamentos.py` | Mesorregião/microrregião por município, **setor por divisão CNAE** (`SETOR_POR_DIVISAO_TRANSFORMACAO`; desde o TAX-01, div. 29 = "Veículos automotores e autopeças" e div. 30 = "Construção naval e outros equipamentos de transporte"), faixas de escolaridade e nomes das 12 macrofamílias de CBO. |
 | Métricas e agregação | `src/metricas.py`, `src/agregador.py` | `preparar_base` aplica o peso do consolidado (linha EXC = −1). `agregar` gera `caged_agregado.parquet` (município × seção/setor × macrofamília × nível × mês), `agregar_perfil` gera `caged_perfil.parquet` (com medianas salariais e faixa de escolaridade) e `montar_metadados` gera `metadados.json` (o funil). |
 | IA (CBO → macrofamília) | `src/cbo_ia.py`, `ia_cbo/` | Prompts em 23 lotes (`ia_cbo/prompts`), respostas coladas do chat (`ia_cbo/respostas`, provedor `arquivo`). Saída: `data_processed/cbo_macrofamilias.csv` + `.meta.json`. A concordância é medida contra a classificação anterior do Gemini (`cbo_macrofamilias_gemini.csv`). As divergências vão para `cbo_divergencias.csv`. |
 | RAIS | `src/rais.py`, `scripts/baixar_rais.py` | Estoque em 31/12/2025 (`rais_estoque.parquet`), usado para rotatividade descontada e desligamento precoce. |
@@ -46,7 +46,7 @@ Resumo para quem vai mexer no painel antes do pitch. Escrito no início do plano
 ## Pipeline × painel: o que dá para mudar sem reprocessar
 
 - O agregado tem **seção, setor, macrofamília, nível e mês por município**, mas **não tem divisão nem subclasse CNAE nem CBO**. A divisão 29 × 30 (TAX-01) e a razão salarial por CBO (ANA-01 P1) **exigem reprocessar** os microdados.
-- **Os microdados não estão no ambiente** (`Dados/` só tem o dicionário e os municípios, e os 6 testes de contrato são pulados por isso). Reprocessar exige baixar os 72 arquivos `.7z` do FTP do MTE (`python -m src.download`).
+- Os microdados não vêm no repositório. Para reprocessar: `python -m src.download` (72 `.7z` do CAGED), `python scripts/baixar_rais.py`, `python -m src.rais && python -m src.rais --estoque`, `python -m src.caged24` e o notebook com `PULAR_UPLOAD=1`. Com 8 GB de RAM, a limpeza precisa de swap (o kernel morre sem ele).
 - Renomear setor ou macrofamília, mudar quadrantes, causas, limiares e recomendações, e montar textos e o funil: tudo isso dá para fazer **na camada do painel**.
 - Os rótulos de quadrante, causa e alavanca já são constantes em `comum.py`, mas há **strings soltas** que os repetem (ex.: `apresentacao.py:64`, docstrings e textos em `narrativa.py`).
 

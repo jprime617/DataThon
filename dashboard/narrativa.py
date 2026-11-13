@@ -157,7 +157,7 @@ def _sintomas(u: pd.Series, ref: pd.Series) -> str:
     return ", ".join(partes)
 
 
-def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
+def principais_achados(df: pd.DataFrame, limite: int = 6) -> list[Achado]:
     """3–5 achados ranqueados pela força do sinal (|z|), cada um com seus filtros."""
     if df is None or df.empty:
         return []
@@ -194,6 +194,21 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
                    else f" ({c.fmt_pct(e[c.M_SALDO_REL])} das movimentações).")
                 + nota_expansao(df, str(e[c.COLUNA_REGIAO]), str(e[c.COLUNA_SETOR])),
                 _filtro_unidade(e[c.COLUNA_REGIAO], e[c.COLUNA_SETOR]), float(e["dinamismo"]),
+            ))
+        # TAX-01: setor com contexto externo documentado (ex.: construção naval) ganha um
+        # achado próprio quando cresce, mesmo abaixo do piso de relevância de 1%.
+        todas = unidades(df)
+        for setor in c.CONTEXTO_SETOR:
+            cand = todas[(todas[c.COLUNA_SETOR].astype(str) == setor) & (todas[c.M_SALDO] > 0)]
+            if cand.empty or (not exp.empty and str(exp.iloc[0][c.COLUNA_SETOR]) == setor):
+                continue
+            n = cand.sort_values(c.M_SALDO, ascending=False).iloc[0]
+            achados.append(Achado(
+                f"Expansão puxada por encomendas: {setor}",
+                f"**{setor}** em **{n[c.COLUNA_REGIAO]}**: saldo {c.fmt_int(n[c.M_SALDO])}"
+                + (f", emprego {c.fmt_pct(n[c.M_VAR_REL])} maior no ano" if pd.notna(n[c.M_VAR_REL]) else "")
+                + f"; está em **{n['quadrante']}**." + nota_expansao(df, str(n[c.COLUNA_REGIAO]), setor),
+                _filtro_unidade(n[c.COLUNA_REGIAO], setor), float(n["dinamismo"]) * 0.9,
             ))
         z_comp = c.zscore(1 - m[c.M_GAP_SAL])
         comp = m.dropna(subset=[c.M_GAP_SAL]).sort_values(c.M_GAP_SAL)

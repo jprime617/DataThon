@@ -1,19 +1,24 @@
 {
-  "gerado_em": "2026-11-12T20:13:49-03:00",
+  "gerado_em": "2026-11-12T23:19:32-03:00",
   "periodo": {
     "inicio": "202409",
     "fim": "202608",
     "meses": 24
   },
-  "commit": "3fd2dfb",
+  "commit": "5432643",
   "linhas": {
     "brutas": 6782144,
     "excluidas_competencia": 0,
     "apos_limpeza": 6782144,
     "movimentacoes_agregadas": 6771692,
     "movimentacoes_industria": 2282348,
-    "agregado": 511621,
-    "perfil": 18730
+    "agregado": 512548,
+    "perfil": 18975,
+    "por_tipo": {
+      "MOV": 6715601,
+      "FOR": 61317,
+      "EXC": 5226
+    }
   },
   "ia": {
     "provedor": "ClienteArquivo",

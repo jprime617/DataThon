@@ -628,3 +628,19 @@ def test_nota_de_expansao_cita_concentracao_e_fonte_do_setor_naval():
     assert "fragata" not in nota.lower()                      # fato sem fonte não entra
     outro = nar.nota_expansao(df.assign(setor="Têxtil"), "Vale do Itajaí", "Têxtil")
     assert "fonte externa" not in outro
+
+
+def test_achado_de_expansao_por_encomenda_do_setor_naval():
+    """TAX-01: a construção naval, com contexto externo, aparece com a nota e as fontes."""
+    from dashboard import comum as c2
+
+    art = c2.carregar_artefatos(env={})
+    if c2.SETOR_NAVAL not in set(art.agregado[c2.COLUNA_SETOR].astype(str)):
+        pytest.skip("agregado sem o setor naval separado")
+    ctx = c2.montar_contexto(art, c2.Filtros(meses=("202509", "202608")))
+    achados = nar.principais_achados(ctx.df)
+    titulos = [a.titulo for a in achados]
+    assert any(t.startswith("Expansão puxada por encomendas") for t in titulos)
+    assert any(t.startswith("Maior tensão") for t in titulos)
+    naval = next(a for a in achados if a.titulo.startswith("Expansão puxada"))
+    assert "clickpetroleoegas.com.br" in naval.texto and "Vale do Itajaí" in naval.texto
