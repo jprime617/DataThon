@@ -947,3 +947,51 @@ Os números do painel depois do reprocessamento estão em "TAX-03 + TAX-04
 | Quadrantes (Apagão / Expansão / Retração / Estagnação) | 13 / 14 / 20 / 16 | 13 / 14 / 20 / 16 |
 | Top 3 | Retenção Oeste · Formação Oeste · Atração Vale | sem mudança |
 | "Renda" / "Escolaridade" | explica em parte / não explica | sem mudança |
+
+---
+
+## ANA-04 (P2, pedido pelo usuário) · Estrutural ou local? SC × Brasil
+
+- **Brasil sem fonte nova:** os 72 `.7z` do CAGED baixados são nacionais.
+  `src/caged_brasil.py` relê os arquivos (MOV + FOR − EXC, set/24–ago/26) e
+  soma, por abrangência (SC, Brasil) × seção × mês, admissões, desligamentos,
+  a pedido e descontados, **com as mesmas regras do agregado**. O resultado é
+  `data_processed/caged_brasil_secao.parquet`, 1.026 linhas. A linha de SC
+  **fecha exatamente** com o agregado do painel, seção por seção (teste
+  `test_tabela_nacional_fecha_com_o_agregado_de_sc`): 3.443.428 admissões e
+  3.328.264 desligamentos.
+- **Intervalo de confiança por bootstrap:** o IC de 95% da saída voluntária
+  de SC sai de reamostrar os **municípios** 1.000 vezes, com semente fixa
+  (`comum.ic_bootstrap_razao`, parâmetros em `regras.py`). O Brasil entra
+  como referência. Leitura: acima, abaixo ou igual ao Brasil
+  (`regras.leitura_benchmark`).
+- **Na tela:** "Por que acontece" → "Aprofundar: estrutural ou local? SC ×
+  Brasil por seção", com frase calculada (`narrativa.texto_benchmark`),
+  gráfico com o IC e tabela. A frase separa a parte da diferença que é do
+  estado (a economia toda de SC × Brasil) da que é própria da seção, e
+  compara a rotatividade da transformação com a taxa oficial que o painel já
+  citava.
+- **Não coube:** a rotatividade do Brasil **por seção** pede o estoque
+  nacional. Está registrada em `docs/ROADMAP.md`, com os IC para os grupos
+  da matriz. A Metodologia ("Próximos passos") aponta para lá.
+- Testes: `test_ic_bootstrap_contem_o_valor_e_e_reproduzivel`,
+  `test_leitura_do_benchmark`,
+  `test_benchmark_compara_sc_com_o_brasil_no_mesmo_periodo`,
+  `test_tabela_nacional_fecha_com_o_agregado_de_sc`.
+
+| Saída voluntária, set/25–ago/26 | SC (IC 95%) | Brasil | Diferença |
+|---|---|---|---|
+| Indústrias de transformação | 50,9% (49,4% a 52,8%) | 37,3% | **+13,6 p.p.** |
+| Construção | 38,3% (35,9% a 40,5%) | 23,5% | +14,8 p.p. |
+| Economia toda | 47,1% | 36,3% | +10,8 p.p. |
+| Seções com SC acima do Brasil (economia) | 18 de 20 | | |
+
+| Rotatividade descontada, transformação | SC (calculada, set/25–ago/26) | Brasil (oficial MTE, out/25–set/26) |
+|---|---|---|
+| | 27,4% | 27,6% |
+
+**Leitura para o pitch:** a indústria catarinense **não troca mais gente que
+a do Brasil** (rotatividade 27,4% × 27,6%). O que é local é **quem sai pedir
+para sair** (50,9% × 37,3%). Dos +13,6 p.p., cerca de +10,8 p.p. vêm do
+mercado de trabalho catarinense como um todo, que é aquecido, e +2,8 p.p.
+são próprios da transformação.

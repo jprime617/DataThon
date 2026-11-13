@@ -160,6 +160,29 @@ def premio_baixo(premio: float, premio_estado: float) -> bool:
 
 
 # ---------------------------------------------------------------------------
+# ANA-04: SC × Brasil por seção e intervalos de confiança por bootstrap
+# ---------------------------------------------------------------------------
+# O IC de SC sai de reamostrar os MUNICÍPIOS com reposição (bootstrap por
+# conglomerado): a incerteza que importa é a da geografia, não a de contar
+# centenas de milhares de desligamentos. O Brasil entra como valor de referência.
+N_BOOTSTRAP = 1000
+SEMENTE_BOOTSTRAP = 42
+CONFIANCA = 0.95
+LEITURA_ACIMA, LEITURA_ABAIXO, LEITURA_IGUAL = "acima do Brasil", "abaixo do Brasil", "igual ao Brasil"
+
+
+def leitura_benchmark(ic_inf: float, ic_sup: float, brasil: float) -> str:
+    """SC está acima, abaixo ou igual ao Brasil? "Igual" = o Brasil cai dentro do IC de SC."""
+    if not (ic_inf == ic_inf and ic_sup == ic_sup and brasil == brasil):
+        return "—"
+    if ic_inf > brasil:
+        return LEITURA_ACIMA
+    if ic_sup < brasil:
+        return LEITURA_ABAIXO
+    return LEITURA_IGUAL
+
+
+# ---------------------------------------------------------------------------
 # Alavancas do motor de recomendações
 # ---------------------------------------------------------------------------
 

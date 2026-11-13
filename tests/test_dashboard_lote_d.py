@@ -518,6 +518,60 @@ def test_auditoria_lista_os_overrides():
     assert tabela_overrides(None).empty and explorador(mapa, None) is mapa
 
 
+# --- ANA-04: SC × Brasil por seção, com IC por bootstrap ----------------------------------------
+
+
+def test_ic_bootstrap_contem_o_valor_e_e_reproduzivel():
+    num, den = [30, 60, 45, 10, 80], [100, 100, 100, 50, 150]
+    inf, sup = c.ic_bootstrap_razao(num, den)
+    assert inf < sum(num) / sum(den) < sup
+    assert (inf, sup) == c.ic_bootstrap_razao(num, den)                 # semente fixa
+    assert all(pd.isna(v) for v in c.ic_bootstrap_razao([5], [10]))      # 1 município: sem IC
+
+
+@pytest.mark.parametrize("inf, sup, brasil, esperado", [
+    (0.49, 0.53, 0.37, r.LEITURA_ACIMA), (0.20, 0.30, 0.37, r.LEITURA_ABAIXO),
+    (0.24, 0.36, 0.29, r.LEITURA_IGUAL), (float("nan"), 0.3, 0.29, "—"),
+])
+def test_leitura_do_benchmark(inf, sup, brasil, esperado):
+    assert r.leitura_benchmark(inf, sup, brasil) == esperado
+
+
+def _brasil_tabela() -> pd.DataFrame:
+    linhas = []
+    for abr, desl, ped in (("SC", 200, 100), ("Brasil", 1000, 300)):
+        for mes in ("202509", "202510"):
+            linhas.append({"abrangencia": abr, "secao": "C", "mes": mes, "admissoes": 0, "desligamentos": desl,
+                           "desligamentos_a_pedido": ped, "desligamentos_descontados": 0,
+                           "secao_industrial": c.SECAO_TRANSFORMACAO})
+    return pd.DataFrame(linhas)
+
+
+def test_benchmark_compara_sc_com_o_brasil_no_mesmo_periodo():
+    sc = _df(*[_celula(municipio=str(i), desligamentos=100, desligamentos_a_pedido=p, mes="202509",
+                       secao_industrial=c.SECAO_TRANSFORMACAO) for i, p in enumerate([45, 50, 55, 50])])
+    tab = c.benchmark_brasil(sc, _brasil_tabela(), ("202509", "202509"))
+    linha = tab.iloc[0]
+    assert linha["sc"] == pytest.approx(0.5) and linha["brasil"] == pytest.approx(0.3)
+    assert linha["diferenca_pp"] == pytest.approx(20.0) and linha["leitura"] == r.LEITURA_ACIMA
+    assert c.saida_voluntaria_economia(_brasil_tabela(), ("202509", "202509")) == pytest.approx((0.5, 0.3))
+    texto = nar.texto_benchmark(tab, (0.47, 0.36), rotatividade_transformacao=0.274)
+    assert "+20,0 p.p." in texto and "acima do Brasil" in texto
+    assert "parecida com a do Brasil (27,6%" in texto and "o que é local é o pedido de saída" in texto
+    assert c.benchmark_brasil(sc, None, None).empty and "Sem a tabela" in nar.texto_benchmark(c.benchmark_brasil(sc, None, None), (0, 0))
+
+
+def test_tabela_nacional_fecha_com_o_agregado_de_sc():
+    brasil = c.carregar_brasil()
+    if brasil is None:
+        pytest.skip("caged_brasil_secao.parquet ausente")
+    art = c.carregar_artefatos(env={})
+    ag = art.agregado
+    sc = brasil[brasil["abrangencia"] == "SC"].groupby("secao_industrial")["desligamentos"].sum()
+    for secao, valor in ag.groupby(ag[c.COLUNA_SECAO_INDUSTRIAL].astype(str))["desligamentos"].sum().items():
+        assert sc.get(secao, 0) == valor, secao
+
+
 def test_mapeamento_final_casa_cbo_do_grande_grupo_zero(tmp_path):
     """Regressão: o CAGED traz "10105" e o mapeamento final usa "010105"."""
     from src.cbo_ia import aplicar_mapeamento

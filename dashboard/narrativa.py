@@ -773,3 +773,37 @@ def texto_custo_reposicao(t: pd.Series, salarios: int) -> str:
             f"{c.fmt_brl_escala(maximo)}. **Premissa:** o custo de repor um trabalhador em salários é "
             f"{c.FONTE_CUSTO_REPOSICAO}; não há fonte citada. **O cálculo assume que todo desligamento a pedido é "
             "reposto** por uma nova contratação. É ordem de grandeza para a seleção atual, não valor contábil.")
+
+
+# --- ANA-04: estrutural ou local? SC × Brasil -----------------------------------------------
+
+def texto_benchmark(tab: pd.DataFrame, economia: tuple[float, float],
+                    rotatividade_transformacao: float = float("nan")) -> str:
+    """A saída voluntária de SC contra a do Brasil, seção a seção, e o que é do estado × do setor."""
+    if tab is None or tab.empty:
+        return "Sem a tabela nacional do CAGED ou sem seções com amostra nesta seleção."
+    principal = tab.iloc[0]
+    texto = (f"Na seção **{principal['secao']}**, {c.fmt_pct(principal['sc'])} dos desligamentos em SC são a pedido, "
+             f"contra {c.fmt_pct(principal['brasil'])} no Brasil ({c.fmt_pp(principal['diferenca_pp'])}; intervalo "
+             f"de {c.fmt_num(c.CONFIANCA * 100, 0)}% de SC: {c.fmt_pct(principal['ic_inf'])} a "
+             f"{c.fmt_pct(principal['ic_sup'])}): **{principal['leitura']}**.")
+    if len(tab) > 1:
+        acima = int((tab["leitura"] == c.LEITURA_ACIMA).sum())
+        texto += f" SC fica acima do Brasil em {acima} das {len(tab)} seções com amostra."
+    sc_eco, br_eco = economia
+    if pd.notna(sc_eco) and pd.notna(br_eco):
+        dif_eco = (sc_eco - br_eco) * 100
+        texto += (f" Na economia toda, SC tem {c.fmt_pct(sc_eco)} contra {c.fmt_pct(br_eco)} do Brasil "
+                  f"({c.fmt_pp(dif_eco)}): esta parte da diferença é do mercado de trabalho catarinense, não do setor")
+        resto = principal["diferenca_pp"] - dif_eco
+        texto += (f"; o que passa disso ({c.fmt_pp(resto)}) é próprio da seção." if resto > 1
+                  else "; a seção não destoa do estado.")
+    rot_br = c.ROTATIVIDADE_OFICIAL.get("Transformação (Brasil)")
+    if pd.notna(rotatividade_transformacao) and rot_br and principal["secao"] == c.SECAO_TRANSFORMACAO:
+        diferenca = rotatividade_transformacao - rot_br
+        comparacao = ("parecida com a" if abs(diferenca) <= 0.02 else "maior que a" if diferenca > 0 else "menor que a")
+        texto += (f" Já a **rotatividade descontada** da transformação em SC ({c.fmt_pct(rotatividade_transformacao)}, "
+                  f"calculada) é {comparacao} do Brasil ({c.fmt_pct(rot_br)}, taxa oficial do MTE de out/25–set/26)"
+                  + (": trocar a equipe é estrutural; o que é local é o pedido de saída." if abs(diferenca) <= 0.02
+                     else "."))
+    return texto

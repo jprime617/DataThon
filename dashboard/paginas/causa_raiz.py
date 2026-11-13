@@ -138,6 +138,33 @@ def _escolaridade_contratacao(ctx: c.Contexto, perfil: pd.DataFrame | None, nota
         }), hide_index=True, width="stretch")
 
 
+def _benchmark_brasil(ctx: c.Contexto) -> None:
+    """ANA-04: a saída voluntária de SC contra a do Brasil (mesmas regras, mesmo período), com IC por bootstrap."""
+    brasil = c.brasil_cache()
+    tab = c.benchmark_brasil(ctx.ref, brasil, ctx.filtros.meses)
+    transf = ctx.ref[ctx.ref[c.COLUNA_SECAO_INDUSTRIAL].astype(str) == c.SECAO_TRANSFORMACAO]
+    rot = c.total(transf)[c.M_ROT_DESC] if not transf.empty else float("nan")
+    st.markdown(nar.texto_benchmark(tab, c.saida_voluntaria_economia(brasil, ctx.filtros.meses), rot))
+    if tab.empty:
+        return
+    st.plotly_chart(fig.construir_benchmark(tab), width="stretch")
+    st.caption(
+        "Brasil: os mesmos arquivos do Novo CAGED (MOV + FOR − EXC, todas as UFs, inclusive SC), com as mesmas regras "
+        "e o mesmo período. O intervalo de SC sai de reamostrar os municípios "
+        f"{c.fmt_int(c.N_BOOTSTRAP)} vezes (bootstrap): "
+        "se o Brasil cai dentro dele, a diferença não se distingue do acaso geográfico. Compara o estado inteiro, "
+        "sem os filtros de território, setor, macrofamília e nível.")
+    st.dataframe(pd.DataFrame({
+        "Seção (CNAE)": tab["secao"], "Desligamentos em SC": tab["desligamentos"].astype("int64"),
+        "SC: a pedido": [c.fmt_pct(v) for v in tab["sc"]],
+        f"IC {c.fmt_num(c.CONFIANCA * 100, 0)}% de SC": [f"{c.fmt_pct(a)} a {c.fmt_pct(b)}"
+                                                         for a, b in zip(tab["ic_inf"], tab["ic_sup"])],
+        "Brasil: a pedido": [c.fmt_pct(v) for v in tab["brasil"]],
+        "Diferença": [c.fmt_pp(v) for v in tab["diferenca_pp"]], "Leitura": tab["leitura"],
+    }), hide_index=True, width="stretch",
+        column_config={"Desligamentos em SC": st.column_config.NumberColumn(format="localized")})
+
+
 def render(ctx: c.Contexto) -> None:
     st.title("Por quê: salário, qualificação ou estrutura?", anchor=False)
     c.cabecalho(ctx)
@@ -205,6 +232,9 @@ def render(ctx: c.Contexto) -> None:
         st.caption("Cada bolha é uma macrofamília (IA); o tamanho é o volume de movimentações. "
                    f"Só macrofamílias com ≥ {c.MIN_SALARIOS} salários de cada lado. "
                    + nar.quebra_por_nivel(perfil))
+
+    with st.expander("Aprofundar: estrutural ou local? SC × Brasil por seção"):
+        _benchmark_brasil(ctx)
 
     with st.expander("Aprofundar: riqueza do município (IDHM e PIB per capita)"):
         col1, col2 = st.columns([1, 3])

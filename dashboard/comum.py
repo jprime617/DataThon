@@ -142,6 +142,13 @@ from dashboard.regras import (  # noqa: F401
     eh_observacao,
     MIN_COBERTURA_CBO,
     RAZAO_SALARIAL_MESMA_CBO,
+    CONFIANCA,
+    LEITURA_ABAIXO,
+    LEITURA_ACIMA,
+    LEITURA_IGUAL,
+    N_BOOTSTRAP,
+    SEMENTE_BOOTSTRAP,
+    leitura_benchmark,
 )
 
 _ETAPA = "dashboard"
@@ -158,6 +165,7 @@ CAMINHO_DIVERGENCIAS = _DIR_DADOS / "cbo_divergencias.csv"
 CAMINHO_PROMPT = _DIR_DADOS / "cbo_macrofamilias.csv.prompt.txt"
 CAMINHO_META_RODADA2 = _DIR_DADOS / "cbo_macrofamilias_gemini.csv.meta.json"   # TAX-04: a classificação de auditoria
 CAMINHO_CBO_FINAL = _DIR_DADOS / "cbo_classificacao_final.csv"   # TAX-04 P1 / TAX-03: o que o pipeline aplicou
+CAMINHO_BRASIL = _DIR_DADOS / "caged_brasil_secao.parquet"   # ANA-04: SC × Brasil por seção (src.caged_brasil)
 
 VAR_CREDENCIAL_AZURE = "AZURE_STORAGE_CONNECTION_STRING"
 VAR_CONTAINER_AZURE = "AZURE_BLOB_CONTAINER"
@@ -1472,6 +1480,81 @@ def escolaridade_contratacao(perfil: pd.DataFrame | None, por: list[str] | None 
 
 
 # ---------------------------------------------------------------------------
+# ANA-04: SC × Brasil por seção, com IC por bootstrap
+# ---------------------------------------------------------------------------
+
+
+def ic_bootstrap_razao(numerador, denominador, *, n: int = N_BOOTSTRAP, semente: int = SEMENTE_BOOTSTRAP,
+                       confianca: float = CONFIANCA) -> tuple[float, float]:
+    """IC de Σ numerador ÷ Σ denominador reamostrando as unidades (municípios) com reposição.
+
+    Com menos de 2 unidades com denominador > 0 devolve (NaN, NaN).
+    """
+    import numpy as np
+
+    num = np.asarray(numerador, dtype="float64")
+    den = np.asarray(denominador, dtype="float64")
+    ok = den > 0
+    num, den = num[ok], den[ok]
+    if len(den) < 2:
+        return float("nan"), float("nan")
+    idx = np.random.default_rng(semente).integers(0, len(den), size=(n, len(den)))
+    razoes = num[idx].sum(axis=1) / den[idx].sum(axis=1)
+    alfa = (1 - confianca) / 2
+    return float(np.quantile(razoes, alfa)), float(np.quantile(razoes, 1 - alfa))
+
+
+def saida_voluntaria_economia(brasil: pd.DataFrame | None, meses: tuple[str, str] | None) -> tuple[float, float]:
+    """(SC, Brasil): saída voluntária da economia toda no período, da tabela nacional (referência do "estado")."""
+    if brasil is None or brasil.empty:
+        return float("nan"), float("nan")
+    t = brasil
+    if meses:
+        t = t[(t["mes"].astype(str) >= meses[0]) & (t["mes"].astype(str) <= meses[1])]
+    soma = t.groupby("abrangencia")[[COLUNA_DESLIGAMENTOS, COLUNA_DESLIGAMENTOS_A_PEDIDO]].sum()
+
+    def _taxa(abrangencia):
+        if abrangencia not in soma.index or not soma.loc[abrangencia, COLUNA_DESLIGAMENTOS]:
+            return float("nan")
+        return float(soma.loc[abrangencia, COLUNA_DESLIGAMENTOS_A_PEDIDO] / soma.loc[abrangencia, COLUNA_DESLIGAMENTOS])
+
+    return _taxa("SC"), _taxa("Brasil")
+
+
+def benchmark_brasil(sc: pd.DataFrame, brasil: pd.DataFrame | None, meses: tuple[str, str] | None,
+                     minimo_desligamentos: int = MIN_MOVIMENTACOES) -> pd.DataFrame:
+    """ANA-04: saída voluntária de SC (com IC por bootstrap de municípios) × Brasil, por seção CNAE.
+
+    `sc` = o agregado no recorte (escopo e período) — de onde saem as seções e os
+    municípios; `brasil` = a tabela de `src.caged_brasil`, cortada no mesmo
+    período. A coluna `leitura` diz se SC está acima, abaixo ou igual ao Brasil.
+    """
+    colunas = ["secao", "desligamentos", "sc", "ic_inf", "ic_sup", "brasil", "diferenca_pp", "leitura"]
+    if sc is None or sc.empty or brasil is None or brasil.empty:
+        return pd.DataFrame(columns=colunas)
+    br = brasil[brasil["abrangencia"] == "Brasil"]
+    if meses:
+        br = br[(br["mes"].astype(str) >= meses[0]) & (br["mes"].astype(str) <= meses[1])]
+    br = br.groupby("secao_industrial")[[COLUNA_DESLIGAMENTOS, COLUNA_DESLIGAMENTOS_A_PEDIDO]].sum()
+    por_mun = (sc.groupby([COLUNA_SECAO_INDUSTRIAL, COLUNA_MUNICIPIO], observed=True)
+               [[COLUNA_DESLIGAMENTOS, COLUNA_DESLIGAMENTOS_A_PEDIDO]].sum().reset_index())
+    linhas = []
+    for secao, g in por_mun.groupby(COLUNA_SECAO_INDUSTRIAL, observed=True):
+        desl = float(g[COLUNA_DESLIGAMENTOS].sum())
+        if desl < minimo_desligamentos or str(secao) not in br.index:
+            continue
+        valor = float(g[COLUNA_DESLIGAMENTOS_A_PEDIDO].sum()) / desl
+        inf, sup = ic_bootstrap_razao(g[COLUNA_DESLIGAMENTOS_A_PEDIDO], g[COLUNA_DESLIGAMENTOS])
+        b = br.loc[str(secao)]
+        ref = float(b[COLUNA_DESLIGAMENTOS_A_PEDIDO]) / float(b[COLUNA_DESLIGAMENTOS]) if b[COLUNA_DESLIGAMENTOS] else float("nan")
+        linhas.append({"secao": str(secao), "desligamentos": desl, "sc": valor, "ic_inf": inf, "ic_sup": sup,
+                       "brasil": ref, "diferenca_pp": (valor - ref) * 100, "leitura": leitura_benchmark(inf, sup, ref)})
+    if not linhas:
+        return pd.DataFrame(columns=colunas)
+    return pd.DataFrame(linhas, columns=colunas).sort_values("desligamentos", ascending=False).reset_index(drop=True)
+
+
+# ---------------------------------------------------------------------------
 # Formatação pt-BR
 # ---------------------------------------------------------------------------
 
@@ -1660,6 +1743,14 @@ def carregar_cbo_final() -> pd.DataFrame | None:
         return None
 
 
+def carregar_brasil() -> pd.DataFrame | None:
+    """ANA-04: contagens por abrangência (SC, Brasil) × seção × mês, ou ``None`` se o arquivo não existe."""
+    try:
+        return pd.read_parquet(CAMINHO_BRASIL)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def carregar_meta_rodada2() -> dict:
     """Procedência da classificação usada como 2ª rodada (auditoria)."""
     try:
@@ -1782,6 +1873,16 @@ def cbo_final_cache() -> pd.DataFrame | None:
     @st.cache_resource
     def _ler():
         return carregar_cbo_final()
+
+    return _ler()
+
+
+def brasil_cache() -> pd.DataFrame | None:
+    import streamlit as st
+
+    @st.cache_resource
+    def _ler():
+        return carregar_brasil()
 
     return _ler()
 

@@ -436,3 +436,32 @@ def construir_premio(tabela: pd.DataFrame, categoria: str, premio_estado: float)
     return _layout(figura, "Quanto a mais o diploma superior paga na entrada?", 160 + 42 * len(dados),
                    xaxis={"title": "Mediana de admissão: superior completo ÷ médio completo",
                           "range": [0, float(dados["premio"].max()) * 1.25]})
+
+
+def construir_benchmark(tab: pd.DataFrame) -> go.Figure:
+    """ANA-04: saída voluntária de SC (com o IC) × Brasil, por seção."""
+    if tab is None or tab.empty:
+        return c.figura_vazia("Sem a tabela nacional do CAGED nesta seleção.")
+    dados = tab.sort_values("sc")
+    rotulo = [s if len(s) <= 40 else s[:38] + "…" for s in dados["secao"]]
+    figura = go.Figure()
+    figura.add_scatter(
+        x=dados["sc"], y=rotulo, mode="markers", name="Santa Catarina (IC 95%)",
+        marker={"size": 12, "color": c.COR_TENSAO},
+        error_x={"type": "data", "symmetric": False, "array": dados["ic_sup"] - dados["sc"],
+                 "arrayminus": dados["sc"] - dados["ic_inf"], "color": c.COR_TENSAO, "thickness": 2},
+        customdata=list(zip([c.fmt_pct(v) for v in dados["sc"]], [c.fmt_pct(v) for v in dados["ic_inf"]],
+                            [c.fmt_pct(v) for v in dados["ic_sup"]], [c.fmt_int(v) for v in dados["desligamentos"]])),
+        hovertemplate="%{y}<br>SC: %{customdata[0]} (IC %{customdata[1]}–%{customdata[2]}; "
+                      "%{customdata[3]} desligamentos)<extra></extra>")
+    figura.add_scatter(
+        x=dados["brasil"], y=rotulo, mode="markers", name="Brasil",
+        marker={"size": 12, "color": c.COR_EXPANSAO, "symbol": "diamond"},
+        customdata=[c.fmt_pct(v) for v in dados["brasil"]], hovertemplate="%{y}<br>Brasil: %{customdata}<extra></extra>")
+    minimo = float(min(dados["ic_inf"].min(), dados["brasil"].min()))
+    maximo = float(max(dados["ic_sup"].max(), dados["brasil"].max()))
+    folga = max(0.02, 0.08 * (maximo - minimo))
+    return _layout(figura, "Em SC, quem sai pede mais para sair do que no Brasil?", 230 + 44 * len(dados),
+                   xaxis={"title": "Desligamentos a pedido ÷ desligamentos", "tickformat": ".0%",
+                          "range": [max(0.0, minimo - folga), min(1.0, maximo + folga)]},
+                   legend={"orientation": "h", "y": 1.02, "yanchor": "bottom", "x": 1, "xanchor": "right"})

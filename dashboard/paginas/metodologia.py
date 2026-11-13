@@ -46,8 +46,10 @@ LIMITES = """
 """
 
 PROXIMOS = """
-- **SC × Brasil** por seção (Tabelas 6.1 e 10 do CAGED) para separar o que é estrutural do que é local.
-- Intervalos de confiança por bootstrap; RAIS 2024 e estoque mensal rolado.
+- **Feito:** a saída voluntária de SC × Brasil por seção, com intervalo de confiança por bootstrap de municípios (Por que acontece → "Estrutural ou local?").
+- **Rotatividade do Brasil por seção:** pede o estoque nacional (RAIS de todas as regiões ou as tabelas oficiais do MTE); hoje só a da transformação é comparada, com a taxa oficial.
+- Intervalos de confiança também para os grupos da matriz e para as causas; RAIS 2024 e estoque mensal rolado.
+- Lista completa em `docs/ROADMAP.md`.
 """
 
 # NAR-04: onde conferir cada um dos 5 critérios oficiais da banca (e, à parte, a engenharia).
