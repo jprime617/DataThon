@@ -454,3 +454,43 @@ e Sul Catarinense → Vale do Itajaí (Metalmecânica, Qualificado: lá −783 c
 3. Atrair profissionais de metalmecânica e eletroeletrônica (Qualificado) de
    Sul Catarinense para Vale do Itajaí: desligamento precoce 67,2% (estado:
    65,9%), 22.602 movimentações. Empresa + Poder público, 3–12 meses.
+
+---
+
+## NAR-02 · Bloco "Resposta à pergunta central" no topo do Panorama
+
+- Bloco com três linhas, **todas calculadas** (`narrativa.resposta_central`),
+  que mudam com os filtros:
+  1. **Onde:** os 2 grupos (mesorregião × setor, relevantes, fora da
+     construção) mais tensos em **Apagão** e com saldo > 0, e os 2 de maior
+     dinamismo em **Expansão acelerada**, com saldo e rotatividade. Com a
+     seção F no recorte, entra a linha da construção (estrutural).
+  2. **Renda explica?** Correlação entre a razão salarial entrada/saída e a
+     saída voluntária, mais a fração de grupos com causa Salarial.
+  3. **Escolaridade explica?** Gap de escolaridade do estado, correlação com
+     a saída voluntária e grupos com causa de Qualificação, mais a exceção
+     calculada (DATA-01).
+- **Limiares** (`regras.veredito`, documentados na Metodologia): "explica" =
+  r ≤ −0,5 **e** ≥ 25% dos grupos; "explica em parte" = r ≤ −0,3 **ou** ≥ 10%
+  dos grupos; senão "não explica".
+- Os eixos da matriz são relativos ("cresce" = acima da média dos grupos), e
+  a Metodologia agora diz isso. Por esse motivo a resposta só lista em
+  Apagão grupos com saldo positivo.
+- Cabe numa tela de 1366×768 sem rolar (verificado).
+- Testes: `test_veredito_dos_fatores`,
+  `test_resposta_central_e_calculada_e_reage_aos_filtros`.
+
+**Resposta no recorte padrão (transformação, set/25–ago/26):**
+- **Onde:** Apagão em Alimentos e bebidas – Sul (saldo 891, rotatividade
+  27,7%) e Alimentos e bebidas – Norte (313; 27,3%). Expansão acelerada em
+  Veículos automotores e autopeças – Vale do Itajaí (1.602; 25,4%) e
+  Eletroeletrônico – Vale do Itajaí (890; 23,4%).
+- **Renda explica em parte:** r = −0,22, e 8 de 63 grupos têm causa
+  salarial.
+- **Escolaridade não explica:** −0,08 nível no estado, r = −0,08, 0 de 63
+  grupos. Exceção: Alimentos e bebidas (−0,74), concentrada no Oeste (−0,95).
+
+| Número citado no plano | Antes | Agora |
+|---|---|---|
+| Correlação gap salarial × saída voluntária | −0,35 (B–F, 82 grupos) | −0,22 (transformação, 63) · −0,33 (B–F, 86) |
+| Gap de escolaridade do estado | −0,05 (B–F) | −0,08 (transformação) · −0,05 (B–F) |

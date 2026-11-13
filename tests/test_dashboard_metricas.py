@@ -778,3 +778,31 @@ def test_top3_e_legivel_em_uma_linha_por_acao():
     linha = texto_top3([r])
     assert linha.startswith("1. **Formar magarefe, trabalhador de tratamento do leite e desossador em Oeste Catarinense.**")
     assert "40.133 movimentações" in linha and "Federação–SENAI" in linha and "salsicheiro" not in linha
+
+
+# --- NAR-02: resposta à pergunta central ----------------------------------------
+
+@pytest.mark.parametrize("r, fracao, esperado", [
+    (-0.6, 0.30, "explica"),
+    (-0.6, 0.05, "explica em parte"),     # correlação forte, poucos grupos
+    (-0.22, 0.127, "explica em parte"),   # transformação hoje: 8 de 63 grupos
+    (-0.08, 0.0, "não explica"),          # escolaridade hoje
+    (float("nan"), 0.0, "não explica"),
+])
+def test_veredito_dos_fatores(r, fracao, esperado):
+    assert c.veredito(r, fracao) == esperado
+
+
+def test_resposta_central_e_calculada_e_reage_aos_filtros():
+    art = c.carregar_artefatos(env={})
+    ctx = c.montar_contexto(art, c.Filtros(meses=("202509", "202608")))
+    r = nar.resposta_central(ctx.df, c.total(ctx.ref))
+    assert r is not None and r.veredito_renda in ("explica", "explica em parte", "não explica")
+    assert "Apagão" in r.onde and "Expansão acelerada" in r.onde
+    assert "saldo −" not in r.onde.split("Expansão")[0]          # Apagão listado só com saldo positivo
+    sul = c.montar_contexto(art, c.Filtros(meses=("202509", "202608"), territorios=("Sul Catarinense",)))
+    r_sul = nar.resposta_central(sul.df, c.total(sul.ref))
+    assert r_sul.renda != r.renda                                  # número muda com o filtro
+    obra = c.montar_contexto(art, c.Filtros(escopo=c.ESCOPO_INDUSTRIA, meses=("202509", "202608")))
+    assert c.ROTULO_CONSTRUCAO in nar.resposta_central(obra.df, c.total(obra.ref)).onde
+    assert nar.resposta_central(ctx.df.iloc[0:0]) is None

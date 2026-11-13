@@ -135,6 +135,21 @@ def _secoes_e_meses(ctx: c.Contexto) -> None:
     st.caption(nar.legenda_serie(mensal))
 
 
+def _resposta_central(ctx: c.Contexto) -> None:
+    """NAR-02: a pergunta do desafio respondida em três linhas calculadas, sem rolar a página."""
+    manchete = nar.resposta_principal(ctx.df, ctx.filtros.escopo).partition("\n\n")[0]
+    resposta = nar.resposta_central(ctx.df, c.total(ctx.ref))
+    t = c.total(ctx.df)
+    with st.container(border=True, key="rx-resposta"):
+        st.caption("RESPOSTA À PERGUNTA CENTRAL · onde há apagão ou expansão, e se renda e escolaridade explicam")
+        st.markdown(f"#### {manchete}")
+        if resposta is not None:
+            st.markdown(f"- **Onde.** {resposta.onde}\n- {resposta.renda}\n- {resposta.escolaridade}")
+        st.caption(f"{c.fmt_int(t[c.M_MOV])} movimentações · saldo {c.fmt_int(t[c.M_SALDO])} vagas · "
+                   f"{c.fmt_pct(t[c.M_SAIDA_VOL])} dos desligamentos a pedido · grupos = mesorregião × setor com "
+                   f"≥ {c.MIN_MOVIMENTACOES} movimentações. Critérios de \"explica\" na Metodologia.")
+
+
 def render(ctx: c.Contexto) -> None:
     st.title("Onde está o problema?")
     c.cabecalho(ctx)
@@ -142,11 +157,7 @@ def render(ctx: c.Contexto) -> None:
         st.info("Nenhuma movimentação com estes filtros. Use **Limpar filtros** na barra lateral.")
         return
 
-    manchete, _, topicos = nar.resposta_principal(ctx.df, ctx.filtros.escopo).partition("\n\n")
-    with st.container(border=True):
-        st.markdown(f"#### {manchete}")
-        if topicos:
-            st.markdown(topicos)
+    _resposta_central(ctx)
 
     _mapa(ctx)
     c.cartoes_kpi(ctx, c.METRICAS_TEMAS)

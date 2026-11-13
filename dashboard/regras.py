@@ -259,3 +259,28 @@ ACAO_ALAVANCA = {
     ALAVANCA_MOBILIDADE: "Atrair profissionais de {macro} para {regiao}",
 }
 TOP_EXECUTIVO = 3
+
+# ---------------------------------------------------------------------------
+# NAR-02: "renda / escolaridade explicam?" — limiares da resposta à pergunta central
+# ---------------------------------------------------------------------------
+# Medidos entre os grupos mesorregião × setor com amostra:
+#   r = correlação entre o fator (razão salarial ou gap de escolaridade) e a
+#       saída voluntária (negativa = quanto pior o fator, mais gente sai);
+#   fração = grupos com a causa correspondente (Salarial ou Qualificação).
+# "explica" exige as duas coisas fortes; "explica em parte", uma moderada
+# (|r| ≥ 0,3 é a convenção usual de correlação moderada).
+CORR_EXPLICA = -0.5
+FRACAO_EXPLICA = 0.25
+CORR_EXPLICA_PARTE = -0.3
+FRACAO_EXPLICA_PARTE = 0.10
+VEREDITO_EXPLICA, VEREDITO_PARTE, VEREDITO_NAO = "explica", "explica em parte", "não explica"
+
+
+def veredito(r: float, fracao: float) -> str:
+    """"explica" / "explica em parte" / "não explica", pelos limiares acima."""
+    r_ok = r == r
+    if r_ok and r <= CORR_EXPLICA and fracao >= FRACAO_EXPLICA:
+        return VEREDITO_EXPLICA
+    if (r_ok and r <= CORR_EXPLICA_PARTE) or fracao >= FRACAO_EXPLICA_PARTE:
+        return VEREDITO_PARTE
+    return VEREDITO_NAO

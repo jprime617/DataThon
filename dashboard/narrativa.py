@@ -446,3 +446,98 @@ def legenda_causas(ref: pd.Series | None = None) -> str:
             f"escolarizada numa área técnica. Retenção = saída a pedido "
             f"{c.fmt_num(c.MARGEM_SAIDA_VOLUNTARIA * 100, 0)} p.p. acima do estado, com salário de entrada não pior "
             "que o do estado.")
+
+
+# --- NAR-02: resposta à pergunta central, em três linhas calculadas ---------------
+
+@dataclass
+class RespostaCentral:
+    onde: str
+    renda: str
+    escolaridade: str
+    veredito_renda: str
+    veredito_escolaridade: str
+
+
+def _lista_grupos(grupos: pd.DataFrame) -> str:
+    return " e ".join(
+        f"**{g[c.COLUNA_SETOR]} – {g[c.COLUNA_REGIAO]}** (saldo {c.fmt_int(g[c.M_SALDO])}, "
+        f"rotatividade {c.fmt_pct(g[c.M_ROT_DESC])})" for _, g in grupos.iterrows())
+
+
+def resposta_central(df: pd.DataFrame, ref: pd.Series | None = None, n: int = 2) -> RespostaCentral | None:
+    """Onde está o apagão e a expansão; se renda e escolaridade explicam (limiares em `regras`).
+
+    Tudo calculado no recorte: grupos mesorregião × setor com amostra. `ref` é o
+    estado no mesmo escopo e período (para as causas); sem ela, o total do recorte.
+    """
+    if df is None or df.empty:
+        return None
+    ref = c.total(df) if ref is None else ref
+    todas = unidades(df)
+    if todas.empty:
+        return None
+    rel = unidades(df, relevantes=True)
+    rel = rel if not rel.empty else todas
+    sem_obra = rel[~rel["construcao"]] if "construcao" in rel else rel
+    # "Cresce" na matriz é relativo (acima da média); na resposta, só grupos que de fato abriram vagas.
+    apagao = sem_obra[(sem_obra["quadrante"] == c.Q_APAGAO) & (sem_obra[c.M_SALDO] > 0)
+                      ].sort_values("tensao", ascending=False).head(n)
+    expansao = sem_obra[(sem_obra["quadrante"] == c.Q_EXPANSAO) & (sem_obra[c.M_SALDO] > 0)
+                        ].sort_values("dinamismo", ascending=False).head(n)
+    partes = []
+    if not apagao.empty:
+        partes.append(f"Apagão (cresce, mas não retém): {_lista_grupos(apagao)}")
+    if not expansao.empty:
+        partes.append(f"Expansão acelerada: {_lista_grupos(expansao)}")
+    obra = mais_tensas(rel)[1]
+    if obra is not None:  # NAR-03: com a seção F no recorte, a construção vem identificada
+        partes.append(f"{c.ROTULO_CONSTRUCAO}: **{obra[c.COLUNA_SETOR]} – {obra[c.COLUNA_REGIAO]}** "
+                      f"(rotatividade {c.fmt_pct(obra[c.M_ROT_DESC])})")
+    onde = ". ".join(partes) + "." if partes else "Nenhum grupo com amostra suficiente em Apagão ou Expansão acelerada."
+
+    # Causas por grupo (as mesmas regras de Quem precisa de atenção).
+    frac_tec = c.fracao_por_nivel(df, [c.COLUNA_REGIAO, c.COLUNA_SETOR], c.NIVEIS_QUALIFICADOS)
+    selos = [c.causas(u, saida_ref=ref[c.M_SAIDA_VOL], gap_ref=ref[c.M_GAP_SAL],
+                      fracao_tecnica=float(frac_tec.get((u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), 0.0)))
+             for _, u in todas.iterrows()]
+    n_grupos = len(todas)
+    n_sal = sum(c.CAUSA_SALARIAL in s for s in selos)
+    n_qual = sum(c.CAUSA_QUALIFICACAO in s for s in selos)
+
+    def _corr(coluna):
+        v = todas.dropna(subset=[coluna, c.M_SAIDA_VOL])
+        return float(v[coluna].corr(v[c.M_SAIDA_VOL])) if len(v) >= 3 else float("nan")
+
+    r_sal, r_esc = _corr(c.M_GAP_SAL), _corr(c.M_GAP_ESC)
+    v_renda = c.veredito(r_sal, n_sal / n_grupos)
+    v_esc = c.veredito(r_esc, n_qual / n_grupos)
+    renda = (f"**Renda {v_renda}.** Correlação de {c.fmt_num(r_sal, 2)} entre o salário de entrada (vs o de quem "
+             f"saiu) e a saída voluntária; {n_sal} de {n_grupos} grupos têm causa salarial (entrada "
+             f"{c.fmt_num(c.MARGEM_SALARIAL_RELATIVA * 100, 0)} p.p. pior que a do estado).")
+    gap = ref[c.M_GAP_ESC]
+    diferenca = (f"quem entra tem em média {c.fmt_num(abs(gap), 2)} nível de escolaridade "
+                 f"{'a menos' if gap < 0 else 'a mais'} que quem sai" if pd.notna(gap) else "sem dado de escolaridade")
+    escolaridade = (f"**Escolaridade {v_esc}.** No estado, {diferenca}; correlação de {c.fmt_num(r_esc, 2)} com a "
+                    f"saída voluntária; {n_qual} de {n_grupos} grupos com causa de qualificação.")
+    destaque = _excecao_escolaridade(df)
+    if destaque:
+        escolaridade += f" Exceção: {destaque}."
+    return RespostaCentral(onde, renda, escolaridade, v_renda, v_esc)
+
+
+def _excecao_escolaridade(df: pd.DataFrame) -> str:
+    """A macrofamília com gap de escolaridade fora da curva (DATA-01) e onde ela se concentra."""
+    macros = c.agregar_metricas(df, [c.COLUNA_MACROFAMILIA_CBO])
+    macros = macros[macros[c.M_AMOSTRA_OK]
+                    & (macros[c.COLUNA_MACROFAMILIA_CBO].astype(str) != c.NAO_CLASSIFICADO)].dropna(subset=[c.M_GAP_ESC])
+    if macros.empty:
+        return ""
+    pior = macros.loc[macros[c.M_GAP_ESC].idxmin()]
+    if pior[c.M_GAP_ESC] > c.LIMIAR_DESTAQUE_GAP_ESC:
+        return ""
+    nome = str(pior[c.COLUNA_MACROFAMILIA_CBO])
+    regioes = c.agregar_metricas(df[df[c.COLUNA_MACROFAMILIA_CBO].astype(str) == nome], [c.COLUNA_REGIAO])
+    topo = regioes.sort_values(c.COLUNA_ADMISSOES, ascending=False).iloc[0]
+    return (f"**{nome}** ({c.fmt_num(pior[c.M_GAP_ESC], 2)} nível), concentrada em {topo[c.COLUNA_REGIAO]} "
+            f"({c.fmt_num(topo[c.M_GAP_ESC], 2)})")

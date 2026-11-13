@@ -155,6 +155,19 @@ def render(ctx: c.Contexto) -> None:
                f"≥ {c.MIN_SALARIOS} salários de admissão e de desligamento. Abaixo disso a célula fica em cinza "
                "e sai de rankings e da matriz.")
 
+    st.subheader("Resposta à pergunta central: quando renda e escolaridade \"explicam\"")
+    st.markdown(
+        "Entre os grupos mesorregião × setor com amostra, medimos (1) a **correlação** entre o fator e a saída "
+        "voluntária (negativa = quanto pior o fator, mais gente pede para sair) e (2) a **fração de grupos** com a "
+        "causa correspondente (Salarial ou Qualificação).\n"
+        f"- **Explica:** correlação ≤ {c.fmt_num(c.CORR_EXPLICA, 1)} **e** pelo menos "
+        f"{c.fmt_pct(c.FRACAO_EXPLICA, 0)} dos grupos com a causa.\n"
+        f"- **Explica em parte:** correlação ≤ {c.fmt_num(c.CORR_EXPLICA_PARTE, 1)} **ou** pelo menos "
+        f"{c.fmt_pct(c.FRACAO_EXPLICA_PARTE, 0)} dos grupos com a causa (|r| ≥ 0,3 é a convenção usual de "
+        "correlação moderada).\n"
+        "- **Não explica:** abaixo disso. Uma macrofamília com gap de escolaridade fora da curva aparece como exceção.\n"
+        "Correlação não é causalidade: o veredito diz se o fator acompanha a saída, não se a provoca.")
+
     st.subheader("Regras das recomendações")
     st.markdown("Cada recomendação de O que fazer sai de uma regra explícita, avaliada por mesorregião × "
                 "macrofamília (IA), só em grupos com ≥ 100 movimentações. A referência é o estado inteiro no "
@@ -189,7 +202,9 @@ def render(ctx: c.Contexto) -> None:
         "dezembro concentra desligamentos); ela voltou na forma de blocos de 12 meses."
     )
 
-    st.markdown("**Os quatro quadrantes** (Dinamismo ≥ 0 = cresce muito; Tensão ≥ 0 = perde a equipe). "
+    st.markdown("**Os quatro quadrantes** (Dinamismo ≥ 0 = cresce mais que a média dos grupos; Tensão ≥ 0 = perde "
+                "a equipe mais que a média). Os eixos são relativos: um grupo pode estar do lado \"cresce\" com saldo "
+                "pequeno ou até negativo, se a média for baixa; por isso as frases do painel citam o saldo. "
                 "Pelo guia do desafio, apagão é demanda alta com escassez ou rotatividade forte: o grupo que "
                 "cresce e não retém.")
     st.markdown("\n".join(f"- **{q}**: {d.eixos}." for q, d in c.QUADRANTES.items()))
