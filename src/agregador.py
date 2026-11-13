@@ -697,6 +697,28 @@ def agregar_cbo(df_metricas: pd.DataFrame) -> pd.DataFrame:
     return tabela.reset_index(drop=True)
 
 
+def contar_testes(raiz: str | os.PathLike[str] = ".") -> int | None:
+    """Quantos testes o pytest coleta no repositório (para a Metodologia), ou None.
+
+    Usa o interpretador atual (`sys.executable`): no kernel do notebook, o
+    comando `python` pode não estar no PATH, e a contagem saía vazia.
+    """
+    import subprocess
+    import sys
+
+    try:
+        saida = subprocess.run([sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider"],
+                               cwd=raiz, capture_output=True, text=True, timeout=300, check=True).stdout
+    except Exception:  # noqa: BLE001 — procedência é melhor-esforço
+        return None
+    for linha in reversed(saida.splitlines()):
+        if "collected" in linha:
+            numeros = [int(t) for t in linha.split() if t.isdigit()]
+            if numeros:
+                return numeros[0]
+    return None
+
+
 def montar_metadados(
     *,
     linhas_brutas: int,
@@ -708,6 +730,7 @@ def montar_metadados(
     raiz: str | os.PathLike[str] = ".",
     teto_salario_valido: float | None = None,
     linhas_por_tipo: dict[str, int] | None = None,
+    artefatos: dict[str, dict] | None = None,
 ) -> dict:
     """Reúne a procedência dos artefatos para o `metadados.json`.
 
@@ -715,6 +738,8 @@ def montar_metadados(
     de modo que o funil exibido no painel seja coerente com o que ele agrega.
     ``linhas_por_tipo`` (MOV, FOR, EXC) explica a queda entre as linhas lidas e
     as movimentações: cada linha EXC sai e anula a declaração que corrige (BUG-02).
+    ``artefatos`` (de `impressoes_digitais`) deixa o painel conferir que os
+    arquivos que ele lê são todos desta mesma execução.
     """
     import subprocess
 
@@ -731,15 +756,7 @@ def montar_metadados(
     industria = df_agregado[COLUNA_ESCOPO_INDUSTRIAL].astype(bool)
     nao_classificado = df_agregado[COLUNA_MACROFAMILIA_CBO] == mapeamentos.NAO_CLASSIFICADO
     meses = sorted(df_agregado[COLUNA_MES].astype(str).unique())
-    coleta = _comando("python", "-m", "pytest", "--collect-only", "-q")
-    n_testes = None
-    if coleta:
-        for linha in reversed(coleta.splitlines()):
-            if "collected" in linha or "test" in linha:
-                numeros = [int(t) for t in linha.split() if t.isdigit()]
-                if numeros:
-                    n_testes = numeros[0]
-                    break
+    n_testes = contar_testes(raiz)
     return {
         "gerado_em": pd.Timestamp.now(tz="America/Sao_Paulo").isoformat(timespec="seconds"),
         "periodo": {"inicio": meses[0] if meses else None, "fim": meses[-1] if meses else None, "meses": len(meses)},
@@ -765,7 +782,36 @@ def montar_metadados(
             "teto": teto_salario_valido,
         },
         "testes": n_testes,
+        **({"artefatos": artefatos} if artefatos else {}),
     }
+
+
+# Arquivos que o painel lê junto com o `metadados.json` (Blob ou cópia local).
+ARTEFATOS_COM_IMPRESSAO = ("caged_agregado.parquet", "caged_perfil.parquet", "caged_cbo.parquet",
+                           "rais_estoque.parquet")
+
+
+def sha256_bytes(conteudo: bytes) -> str:
+    import hashlib
+
+    return hashlib.sha256(conteudo).hexdigest()
+
+
+def impressoes_digitais(pasta: str | os.PathLike[str],
+                        nomes: tuple[str, ...] = ARTEFATOS_COM_IMPRESSAO) -> dict[str, dict]:
+    """SHA-256 e tamanho de cada artefato desta execução, para o `metadados.json`.
+
+    O painel compara essas impressões com os arquivos que baixa do Blob: se um
+    deles veio de outra execução (upload parcial), ele não mistura as origens.
+    Arquivos ausentes ficam de fora.
+    """
+    resultado = {}
+    for nome in nomes:
+        caminho = Path(pasta) / nome
+        if caminho.is_file():
+            conteudo = caminho.read_bytes()
+            resultado[nome] = {"sha256": sha256_bytes(conteudo), "bytes": len(conteudo)}
+    return resultado
 
 
 def escrever_metadados(destino: str | os.PathLike[str], metadados: dict) -> None:

@@ -604,3 +604,74 @@ def test_resumo_de_causas_no_singular():
     selos = pd.DataFrame({"Grupo": ["A"], "Causas": [c.CAUSA_SALARIAL], "Movimentações": [100]})
     texto = resumo_causas(selos, 5)
     assert "**1** grupo:" in texto and "grupos:" not in texto
+
+
+# --- ENT-03 (trava): os arquivos que o painel lê são todos da mesma execução ---------------
+
+
+def _blob_falso(tmp_path, *, sem_impressoes=False, trocar=None):
+    """Um "Blob" com os artefatos reais de data_processed/ e o metadados com as impressões digitais."""
+    import json
+    from pathlib import Path
+
+    from src.agregador import impressoes_digitais
+
+    pasta = Path(__file__).resolve().parent.parent / "data_processed"
+    arquivos = {n: (pasta / n).read_bytes() for n in (c.NOME_BLOB_AGREGADO, c.NOME_BLOB_PERFIL,
+                                                      c.NOME_BLOB_ESTOQUE, c.NOME_BLOB_CBO)}
+    meta = json.loads((pasta / c.NOME_BLOB_METADADOS).read_text(encoding="utf-8"))
+    meta["artefatos"] = impressoes_digitais(pasta)
+    if sem_impressoes:
+        meta.pop("artefatos")
+    if trocar:  # outra execução: o mesmo conteúdo regravado já muda os bytes
+        df = pd.read_parquet(pasta / trocar)
+        destino = tmp_path / trocar
+        df.iloc[:-1].to_parquet(destino, index=False)
+        arquivos[trocar] = destino.read_bytes()
+    arquivos[c.NOME_BLOB_METADADOS] = json.dumps(meta).encode("utf-8")
+    return lambda _credencial, nome: arquivos[nome]
+
+
+@pytest.mark.parametrize("trocar", [None, "rais_estoque.parquet"])
+def test_painel_so_usa_o_blob_quando_todos_os_arquivos_sao_da_mesma_execucao(tmp_path, trocar):
+    art = c.carregar_artefatos(baixar=_blob_falso(tmp_path, trocar=trocar), env={c.VAR_CREDENCIAL_AZURE: "x"})
+    if trocar is None:
+        assert art.origem == "blob" and not any(c.aviso_na_tela(a) for a in art.avisos)
+    else:
+        assert art.origem == "local"                                   # nunca mistura execuções
+        aviso = next(a for a in art.avisos if "execuções diferentes" in a)
+        assert trocar in aviso and c.aviso_na_tela(aviso)
+
+
+def test_blob_sem_impressao_digital_avisa_na_tela_com_o_commit(tmp_path):
+    art = c.carregar_artefatos(baixar=_blob_falso(tmp_path, sem_impressoes=True), env={c.VAR_CREDENCIAL_AZURE: "x"})
+    assert art.origem == "blob"
+    aviso = next(a for a in art.avisos if "impressão digital" in a)
+    assert c.aviso_na_tela(aviso) and str(art.metadados.get("commit")) in aviso
+
+
+def test_impressoes_do_metadados_versionado_batem_com_os_arquivos():
+    import json
+    from pathlib import Path
+
+    from src.agregador import impressoes_digitais
+
+    pasta = Path(__file__).resolve().parent.parent / "data_processed"
+    meta = json.loads((pasta / "metadados.json").read_text(encoding="utf-8"))
+    assert meta["artefatos"] == impressoes_digitais(pasta)
+    assert set(meta["artefatos"]) == {"caged_agregado.parquet", "caged_perfil.parquet", "caged_cbo.parquet",
+                                      "rais_estoque.parquet"}
+
+
+def test_metadados_leva_as_impressoes_e_conferir_detecta_divergencia(tmp_path):
+    from src.agregador import impressoes_digitais, sha256_bytes
+
+    (tmp_path / "caged_agregado.parquet").write_bytes(b"agregado")
+    (tmp_path / "caged_perfil.parquet").write_bytes(b"perfil")
+    impressoes = impressoes_digitais(tmp_path)
+    assert impressoes["caged_agregado.parquet"] == {"sha256": sha256_bytes(b"agregado"), "bytes": 8}
+    assert "rais_estoque.parquet" not in impressoes                     # ausente: fica de fora
+    meta = {"artefatos": impressoes}
+    assert c.conferir_impressoes({"caged_agregado.parquet": b"agregado"}, meta) == ([], True)
+    assert c.conferir_impressoes({"caged_perfil.parquet": b"outro"}, meta) == (["caged_perfil.parquet"], True)
+    assert c.conferir_impressoes({"caged_perfil.parquet": b"outro"}, {}) == ([], False)

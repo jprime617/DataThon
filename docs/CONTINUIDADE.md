@@ -143,6 +143,12 @@ regenerar o benchmark nacional.
   `caged_cbo.parquet` (`NOME_BLOB_CBO` em `comum.py`). Depois, o deploy do
   App Service (`az webapp deploy`, README seção 3) e a conferência das 7
   páginas no endereço público, inclusive com recorte vazio.
+  - **Trava de consistência (feita, branch `fix/banca-c`):** o `metadados.json`
+    leva o SHA-256 de cada artefato; se o Blob tiver arquivos de execuções
+    diferentes, o painel usa a cópia local e mostra um aviso amarelo no topo.
+    Depois do upload, confira que **não há aviso** e que a Metodologia diz
+    "Origem em uso: Azure Blob Storage" e "commit do pipeline: 7245713".
+    Suba o `metadados.json` por último.
   - Precisa de `AZURE_STORAGE_CONNECTION_STRING` num `.env`, que está no
     `.gitignore`; **nunca cole a chave no chat**.
   - Precisa de `az login` feito pelo usuário.
