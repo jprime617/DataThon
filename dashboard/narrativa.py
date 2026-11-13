@@ -207,3 +207,140 @@ def legenda_mapa(metricas: pd.DataFrame, metrica: str, rotulo: str) -> str:
     return (f"{leitura} Pior situação: **{extremo[rotulo]}** "
             f"({definicao.rotulo.lower()}: {c.fmt_metrica(metrica, extremo[metrica])}). "
             f"Cinza = poucos dados.")
+
+
+# --- Panorama: legenda do mapa, sinais e guia de decisão -----------------------
+
+# Os dois polos de cada indicador do mapa (topo e base da legenda), em linguagem leiga.
+POLOS_MAPA = {
+    c.M_SALDO_10K: ("Abriu mais vagas", "Fechou mais vagas"),
+    c.M_SALDO_REL: ("Abriu mais vagas", "Fechou mais vagas"),
+    c.M_ROT_DESC: ("Troca mais a equipe", "Troca menos a equipe"),
+    c.M_SAIDA_VOL: ("Mais gente pede para sair", "Menos gente pede para sair"),
+    c.M_GAP_SAL: ("Quem entra ganha mais que quem saiu", "Quem entra ganha menos que quem saiu"),
+    c.M_GAP_ESC: ("Quem entra estudou mais", "Quem entra estudou menos"),
+}
+# A unidade dos números da legenda.
+UNIDADE_LEGENDA = {
+    c.M_SALDO_10K: "Saldo de vagas por 10 mil habitantes.",
+    c.M_SALDO_REL: "Saldo em % do total movimentado.",
+    c.M_ROT_DESC: "% da equipe trocada no período.",
+    c.M_SAIDA_VOL: "% dos desligamentos que foram a pedido.",
+    c.M_GAP_SAL: "Salário de quem entra, em % do de quem saiu (100% = igual).",
+    c.M_GAP_ESC: "Diferença de escolaridade, em níveis.",
+}
+
+
+def extremos_mapa(metricas: pd.DataFrame, metrica: str, rotulo: str, n: int = 3) -> tuple[list, list]:
+    """(piores, melhores): as `n` unidades em pior e em melhor situação, como (nome, valor formatado)."""
+    unidades = metricas.drop_duplicates(rotulo)
+    validas = unidades[unidades[c.M_AMOSTRA_OK]].dropna(subset=[metrica])
+    if validas.empty:
+        return [], []
+    ordem = validas.sort_values(metrica, ascending=metrica in _MENOR_E_PIOR, kind="stable")
+    par = lambda d: [(str(r), c.fmt_metrica(metrica, v)) for r, v in zip(d[rotulo], d[metrica])]  # noqa: E731
+    return par(ordem.head(n)), par(ordem.tail(n).iloc[::-1])
+
+
+@dataclass
+class Sinal:
+    """Um conceito-chave do Panorama: o que é, quanto vale no recorte e se acende o alerta."""
+
+    metrica: str          # a métrica que o botão "ver no mapa" escolhe
+    titulo: str
+    o_que_e: str
+    valor: str
+    referencia: str
+    alerta: bool
+    leitura: str
+
+
+LIMIAR_SAIDA_VOLUNTARIA = 0.40  # o mesmo da manchete: a partir daqui o apagão é de retenção
+MARGEM_ALERTA = 0.05            # com recorte: 5 p.p. acima do estado (mesma régua das causas)
+
+
+def sinais(t: pd.Series, ref: pd.Series | None = None) -> list[Sinal]:
+    """Os quatro sinais do Panorama, cada um com a referência que decide o alerta.
+
+    Sem recorte (``ref=None``) a referência é fixa: rotatividade oficial de SC
+    (MTE), 40% de saída voluntária e o limiar de compressão salarial. Com
+    recorte, rotatividade e saída voluntária se comparam ao estado (+5 p.p.).
+    """
+    saldo, mov, saldo_rel = t[c.M_SALDO], t[c.M_MOV], t[c.M_SALDO_REL]
+    if saldo < 0:
+        leitura_saldo = "Fechou mais vagas do que abriu."
+    elif saldo == 0:
+        leitura_saldo = "Abriu e fechou o mesmo número de vagas."
+    elif saldo_rel <= 0.05:
+        leitura_saldo = f"Cresce pouco: {c.fmt_int(mov / saldo)} contratações e saídas para cada vaga nova."
+    else:
+        leitura_saldo = "Cresce com folga: o saldo passa de 5% de tudo o que movimenta."
+    lista = [Sinal(
+        c.M_SALDO_10K, "Saldo de vagas", "Contratações menos desligamentos: o emprego cresceu ou encolheu?",
+        f"{c.fmt_int(saldo)} vagas",
+        f"{c.fmt_metrica(c.M_SALDO_10K, t[c.M_SALDO_10K])} por 10 mil hab. · {c.fmt_int(mov)} movimentações",
+        pd.isna(saldo_rel) or saldo_rel <= 0.05, leitura_saldo,
+    )]
+
+    rot = t[c.M_ROT_DESC]
+    if ref is not None and pd.notna(ref[c.M_ROT_DESC]):
+        texto_ref, limite = f"Santa Catarina: {c.fmt_pct(ref[c.M_ROT_DESC])}", ref[c.M_ROT_DESC] + MARGEM_ALERTA
+    else:
+        oficial = c.ROTATIVIDADE_OFICIAL
+        texto_ref = f"Oficial (MTE): SC {c.fmt_pct(oficial['SC'])} · Brasil {c.fmt_pct(oficial['Brasil'])}"
+        limite = oficial["SC"]
+    lista.append(Sinal(
+        c.M_ROT_DESC, "Troca de equipe", "Rotatividade: quanto da equipe é substituída no período.",
+        c.fmt_pct(rot), texto_ref, pd.notna(rot) and rot > limite,
+        f"De cada 100 postos, cerca de {round(rot * 100)} trocaram de ocupante." if pd.notna(rot)
+        else "Sem o estoque da RAIS para este recorte.",
+    ))
+
+    saida = t[c.M_SAIDA_VOL]
+    if ref is not None and pd.notna(ref[c.M_SAIDA_VOL]):
+        texto_ref, limite = f"Santa Catarina: {c.fmt_pct(ref[c.M_SAIDA_VOL])}", ref[c.M_SAIDA_VOL] + MARGEM_ALERTA
+    else:
+        texto_ref, limite = f"Alerta a partir de {c.fmt_pct(LIMIAR_SAIDA_VOLUNTARIA, 0)}", LIMIAR_SAIDA_VOLUNTARIA
+    lista.append(Sinal(
+        c.M_SAIDA_VOL, "Pedem para sair", "Saída voluntária: desligamentos a pedido do próprio trabalhador.",
+        c.fmt_pct(saida), texto_ref, pd.notna(saida) and saida >= limite,
+        f"{round(saida * 100)} de cada 100 desligamentos foram escolha de quem saiu." if pd.notna(saida)
+        else "Sem desligamentos neste recorte.",
+    ))
+
+    gap = t[c.M_GAP_SAL]
+    compressao = c.fmt_gap(c.LIMIAR_COMPRESSAO)
+    texto_ref = f"Alerta quando fica {compressao} ou mais" + (
+        f" · Santa Catarina: {c.fmt_gap(ref[c.M_GAP_SAL])}" if ref is not None and pd.notna(ref[c.M_GAP_SAL]) else "")
+    ok = bool(t.get(c.M_SALARIO_OK, True)) and pd.notna(gap)
+    lista.append(Sinal(
+        c.M_GAP_SAL, "Salário de quem entra", "O contratado ganha mais ou menos do que quem saiu da vaga?",
+        c.fmt_gap(gap) if ok else "—", texto_ref, ok and gap < c.LIMIAR_COMPRESSAO,
+        (f"Quem entra ganha {c.fmt_gap(gap)} do salário de quem saiu: "
+         + ("a vaga ficou menos atraente." if gap < c.LIMIAR_COMPRESSAO else "o salário não explica a saída."))
+        if ok else "Poucos salários para comparar neste recorte.",
+    ))
+    return lista
+
+
+# Situação de cada grupo (quadrante da matriz) → como é e o que fazer primeiro.
+# As ações são as alavancas do motor de recomendações (`comum.gerar_recomendacoes`).
+GUIA_QUADRANTES = {
+    c.Q_APAGAO: ("Perde gente e quase não cresce.",
+                 "Estancar a saída antes de contratar mais: rever o salário de entrada e reter quem já está."),
+    c.Q_PRESSAO: ("Cresce, mas perde gente no caminho.",
+                  "Sustentar o crescimento: formação técnica e recrutamento em outras regiões."),
+    c.Q_ESTAGNACAO: ("Segura a equipe, mas não cresce.",
+                     "Acompanhar e rever postos de nível básico (automação e redesenho de funções)."),
+    c.Q_SAUDAVEL: ("Cresce e segura a equipe.",
+                   "Manter e usar como referência de boas práticas para os demais."),
+}
+
+
+def resumo_quadrantes(m: pd.DataFrame) -> dict[str, tuple[int, float]]:
+    """Quadrante → (nº de grupos, fração das movimentações analisadas)."""
+    if m is None or m.empty:
+        return {q: (0, 0.0) for q in GUIA_QUADRANTES}
+    total_mov = float(m[c.M_MOV].sum()) or 1.0
+    return {q: (int((m["quadrante"] == q).sum()), float(m.loc[m["quadrante"] == q, c.M_MOV].sum()) / total_mov)
+            for q in GUIA_QUADRANTES}

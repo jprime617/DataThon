@@ -1349,6 +1349,60 @@ _CSS = """
 .rx-semaforo::before {content: ""; width: .8rem; height: .8rem; border-radius: 50%; background: currentColor;}
 .rx-semaforo.rx-apagao::before {background: #D55E00;}
 .rx-semaforo.rx-pressao::before {background: #E69F00;}
+/* Panorama: os quatro sinais (conceitos-chave), com selo em texto (nunca só cor) */
+[class*="st-key-rx-sinal-alerta"] {border-top: 4px solid var(--rx-ruim) !important;}
+[class*="st-key-rx-sinal-ok"] {border-top: 4px solid var(--rx-bom) !important;}
+.rx-sinal {color: var(--rx-texto);}
+.rx-s-titulo {font-weight: 700; font-size: 1.05rem; color: var(--rx-tema);}
+.rx-s-oque {color: var(--rx-suave); font-size: .88rem; margin-top: .1rem; min-height: 2.5em;}
+.rx-s-valor {font-size: 1.9rem; font-weight: 700; line-height: 1.15; margin-top: .45rem;}
+.rx-s-ref {color: var(--rx-suave); font-size: .82rem; margin-top: .1rem;}
+.rx-s-leitura {font-size: .93rem; margin-top: .45rem;}
+.rx-selo {display: inline-flex; align-items: center; gap: .35rem; font-weight: 700; font-size: .8rem;
+  padding: .12rem .55rem; border-radius: 999px; margin-top: .55rem; border: 1px solid currentColor;}
+.rx-selo::before {content: ""; width: .5rem; height: .5rem; border-radius: 50%; background: currentColor;}
+.rx-selo-alerta {color: var(--rx-ruim);}
+.rx-selo-ok {color: var(--rx-bom);}
+
+/* Panorama: painel ao lado do mapa (território clicado, legenda, extremos) */
+.rx-painel {color: var(--rx-texto); font-size: .92rem;}
+.rx-l-titulo {font-weight: 700; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em;
+  color: var(--rx-tema); margin: 0 0 .3rem;}
+.rx-l-sub {color: var(--rx-suave); font-size: .85rem; margin: 0 0 .55rem;}
+.rx-l-polo {font-weight: 700; font-size: .88rem; margin: .15rem 0;}
+.rx-l-lista {list-style: none; margin: 0 0 0 .45rem; padding: .1rem 0 .1rem .8rem; border-left: 2px solid var(--rx-linha);}
+.rx-l-lista li {display: grid; grid-template-columns: 1.15rem minmax(0, 1fr) auto; gap: .55rem;
+  align-items: center; padding: .12rem 0;}
+.rx-sw {display: inline-block; width: 1.15rem; height: .9rem; border-radius: 2px; border: 1px solid rgba(0,0,0,.18);}
+.rx-sw-realce {background: transparent; border: 2px solid #C2185B;}
+.rx-sw-bolha {width: .95rem; height: .95rem; border-radius: 50%; background: rgba(127,127,127,.2); border: 1.5px solid var(--rx-texto);}
+.rx-l-n {color: var(--rx-suave); font-size: .8rem; white-space: nowrap; font-variant-numeric: tabular-nums;}
+.rx-l-extra {list-style: none; margin: .7rem 0 0; padding: .55rem 0 0; border-top: 1px solid var(--rx-linha);}
+.rx-l-extra li {display: grid; grid-template-columns: 1.15rem minmax(0, 1fr); gap: .55rem; align-items: center;
+  padding: .12rem 0; color: var(--rx-suave); font-size: .85rem;}
+.rx-l-rank {list-style: none; margin: 0 0 .7rem .45rem; padding: 0 0 0 .8rem; border-left: 2px solid var(--rx-linha);}
+.rx-l-rank li {display: flex; justify-content: space-between; gap: .75rem; padding: .12rem 0;}
+.rx-l-rank li b {font-variant-numeric: tabular-nums; white-space: nowrap;}
+.rx-sel-nome {font-size: 1.2rem; font-weight: 700; line-height: 1.2;}
+.rx-sel-valor {color: var(--rx-destaque); font-size: 1.9rem; font-weight: 700; line-height: 1.2; margin-top: .2rem;}
+.rx-sel-valor span {font-size: .85rem; color: var(--rx-suave); font-weight: 400;}
+.rx-sel-ref {color: var(--rx-suave); font-size: .85rem;}
+
+/* Panorama: guia de decisão por situação (mesmas cores da matriz) */
+[class*="st-key-rx-quad-"] {border-left: 6px solid var(--rx-suave) !important;}
+[class*="st-key-rx-quad-apagao"] {border-left-color: #D55E00 !important;}
+[class*="st-key-rx-quad-pressao"] {border-left-color: #E69F00 !important;}
+[class*="st-key-rx-quad-saudavel"] {border-left-color: #0072B2 !important;}
+[class*="st-key-rx-quad-estagnacao"] {border-left-color: #8C8C8C !important;}
+.rx-semaforo.rx-saudavel::before {background: #0072B2;}
+.rx-semaforo.rx-estagnacao::before {background: #8C8C8C;}
+.rx-q-como {margin-top: .35rem; font-size: .95rem;}
+.rx-q-fazer {margin-top: .35rem; font-size: .95rem;}
+.rx-q-n {margin-top: .5rem; color: var(--rx-suave); font-size: .85rem;}
+.rx-q-n b {color: var(--rx-texto);}
+.rx-passos {display: flex; flex-wrap: wrap; gap: .4rem 1.2rem; margin: .4rem 0 0; padding: 0; list-style: none;
+  color: var(--rx-suave); font-size: .92rem;}
+.rx-passos b {color: var(--rx-texto);}
 """
 
 
@@ -1486,48 +1540,7 @@ def posicao_ranking(por: pd.DataFrame, coluna: str, metrica: str, alvo: str) -> 
     return (ordem.index(alvo) + 1, len(ordem)) if alvo in ordem else None
 
 
-_PLURAL_NIVEL = {NIVEL_MESO: "mesorregiões", NIVEL_MICRO: "microrregiões", NIVEL_MUNICIPIO: "municípios"}
-
-
-def cartao_destaque(ctx: Contexto, metrica: str) -> None:
-    """Indicador em destaque com a régua de ranking do território filtrado."""
-    import html
-
-    import streamlit as st
-
-    definicao = DEFINICOES[metrica]
-    f = ctx.filtros
-    valor = total(ctx.df)[metrica]
-    partes = [
-        f'<div class="rx-d-rotulo">{html.escape(definicao.rotulo)} {html.escape(_periodo(ctx))}</div>',
-        f'<div class="rx-d-valor">{html.escape(fmt_metrica(metrica, valor))} '
-        f'<span>{html.escape(UNIDADES.get(metrica, ""))}</span></div>',
-        '<div class="rx-d-comp">Comparando a outras regiões</div>',
-    ]
-    plural = _PLURAL_NIVEL[f.nivel_territorial]
-    rank = None
-    if len(f.territorios) == 1:
-        coluna = COLUNA_POR_NIVEL_TERRITORIAL[f.nivel_territorial]
-        base = filtrar(ctx.art.agregado, f, ignorar=("territorio",))
-        rank = posicao_ranking(agregar_metricas(base, [coluna]), coluna, metrica,
-                               f.territorios[0])
-    if rank:
-        pos, n = rank
-        x = 100.0 if n == 1 else (n - pos) / (n - 1) * 100
-        partes.append(
-            f'<div class="rx-d-nivel">Entre as {plural}</div>'
-            f'<div class="rx-regua" role="img" aria-label="{pos}º de {n} {plural} (1º = maior valor)">'
-            f'<div class="rx-extremos" aria-hidden="true"><span>{n}º</span><span>1º</span></div>'
-            f'<div class="rx-trilho" aria-hidden="true"><span class="rx-marca" style="left:{x:.1f}%">'
-            f'<em>{pos}º</em></span></div></div>'
-            '<p class="rx-d-nota">1º = maior valor entre as unidades com amostra suficiente.</p>')
-    elif len(f.territorios) == 1:
-        partes.append('<p class="rx-d-nota">Sem amostra suficiente para ranquear este território.</p>')
-    else:
-        partes.append(f'<p class="rx-d-nota">Valor do estado. Filtre uma única '
-                      f'{html.escape(f.nivel_territorial.lower())} na barra lateral para ver a posição '
-                      f'dela entre as {plural}.</p>')
-    st.html(f'<div class="rx-destaque">{"".join(partes)}</div>')
+PLURAL_NIVEL = {NIVEL_MESO: "mesorregiões", NIVEL_MICRO: "microrregiões", NIVEL_MUNICIPIO: "municípios"}
 
 
 def baixar_csv(df: pd.DataFrame, nome: str, rotulo: str = "Baixar dados filtrados (CSV)") -> None:

@@ -8,6 +8,8 @@ responde; números no hover vêm formatados em pt-BR, sempre com o ``n``.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import pandas as pd
 import plotly.graph_objects as go
 
@@ -73,6 +75,61 @@ def _rotulos_classes(metrica: str, bordas: list[float]) -> list[str]:
     return [f"até {c.fmt_metrica(metrica, b)}" for b in bordas] + [f"mais que {c.fmt_metrica(metrica, bordas[-1])}"]
 
 
+@dataclass
+class ClassesMapa:
+    """Classes de cor do mapa: as cores (do menor ao maior valor), as bordas entre elas e o z de cada unidade."""
+
+    cores: list[str]
+    bordas: list[float]
+    z: pd.Series
+    zmin: float
+    zmax: float
+    ticks: list[float]
+
+
+def classes_mapa(valores: pd.Series, metrica: str) -> ClassesMapa:
+    """Divide os valores em classes: 6 simétricas em torno do neutro (com sinal) ou 4 quantis (taxas)."""
+    escala, centro = ESCALAS_MAPA.get(metrica, ("divergente", 0.0))
+    valores = valores.astype(float)
+    if escala == "divergente":
+        desvio = (valores - centro).abs()
+        limite = float(desvio.quantile(PERCENTIL_LIMITE_ESCALA / 100)) or float(desvio.max()) or 1.0
+        zmin, zmax = centro - limite, centro + limite
+        cores = PALETAS_MAPA.get(metrica, c.CLASSES_DIVERGENTE)
+        passo = (zmax - zmin) / len(cores)
+        bordas = [zmin + passo * (i + 1) for i in range(len(cores) - 1)]
+        return ClassesMapa(cores, bordas, valores, zmin, zmax, [zmin + passo * (i + 0.5) for i in range(len(cores))])
+    bordas = sorted(set(float(valores.quantile(q)) for q in (0.25, 0.5, 0.75)))
+    cores = PALETAS_MAPA.get(metrica, c.CLASSES_SEQUENCIAL)[-(len(bordas) + 1):]
+    z = valores.map(lambda v: sum(v > b for b in bordas))
+    return ClassesMapa(cores, bordas, z, -0.5, len(cores) - 0.5, list(range(len(cores))))
+
+
+def _fmt_faixa(metrica: str, valor: float) -> str:
+    # Salário de entrada: "94%" do de quem saiu lê melhor numa faixa do que "6% abaixo".
+    return c.fmt_pct(valor, 0) if metrica == c.M_GAP_SAL else c.fmt_metrica(metrica, valor)
+
+
+def faixas_legenda(metricas: pd.DataFrame, metrica: str, rotulo: str) -> list[tuple[str, str, int]]:
+    """Itens da legenda lateral, do maior valor para o menor: (cor, faixa, nº de unidades na classe).
+
+    Usa as mesmas classes de `construir_mapa`; a contagem é de unidades
+    territoriais distintas (``rotulo``), não de municípios pintados.
+    """
+    unidades = metricas.drop_duplicates(rotulo)
+    validas = unidades[unidades[c.M_AMOSTRA_OK] & unidades[metrica].notna()]
+    if validas.empty:
+        return []
+    cl = classes_mapa(validas[metrica], metrica)
+    valores = validas[metrica].astype(float)
+    indice = valores.map(lambda v: sum(v > b for b in cl.bordas))
+    b = [_fmt_faixa(metrica, x) for x in cl.bordas]
+    faixas = ([f"até {b[0]}"] + [f"de {b[i]} a {b[i + 1]}" for i in range(len(b) - 1)] + [f"acima de {b[-1]}"]
+              if b else ["todas as unidades"])
+    itens = [(cor, faixa, int((indice == i).sum())) for i, (cor, faixa) in enumerate(zip(cl.cores, faixas))]
+    return itens[::-1]
+
+
 def construir_mapa(
     metricas: pd.DataFrame,
     geojson: dict | None,
@@ -82,6 +139,7 @@ def construir_mapa(
     destaque: list[str] | tuple[str, ...] = (),
     bolhas: pd.DataFrame | None = None,
     altura: int = 400,
+    legenda: bool = True,
 ) -> go.Figure:
     """Coroplético por município, em classes, colorido pela `metrica` da unidade territorial.
 
@@ -93,13 +151,14 @@ def construir_mapa(
     sem amostra suficiente ficam em cinza; as de ``destaque`` ganham contorno magenta.
     ``bolhas`` (``municipio``, nome e ``movimentacoes``) acrescenta a segunda
     camada: um círculo por município, com área proporcional ao volume.
+    Com ``legenda=False`` a figura sai sem barra de cores nem legenda: a página
+    desenha a legenda ao lado (ver `faixas_legenda`).
     """
     if geojson is None:
         return c.figura_vazia("Mapa indisponível: malha de municípios não encontrada.")
     if metricas is None or metricas.empty or metrica not in metricas.columns:
         return c.figura_vazia("Sem dados para o mapa nesta seleção.")
 
-    escala, centro = ESCALAS_MAPA.get(metrica, ("divergente", 0.0))
     definicao = c.DEFINICOES[metrica]
     validas = metricas[metricas[c.M_AMOSTRA_OK] & metricas[metrica].notna()]
     insuficientes = metricas[~metricas.index.isin(validas.index)]
@@ -125,31 +184,17 @@ def construir_mapa(
             name="Dado inexistente (amostra insuficiente)",
         ))
     if not validas.empty:
-        valores = validas[metrica].astype(float)
-        if escala == "divergente":
-            desvio = (valores - centro).abs()
-            limite = float(desvio.quantile(PERCENTIL_LIMITE_ESCALA / 100)) or float(desvio.max()) or 1.0
-            zmin, zmax = centro - limite, centro + limite
-            cores = PALETAS_MAPA.get(metrica, c.CLASSES_DIVERGENTE)
-            passo = (zmax - zmin) / len(cores)
-            bordas = [zmin + passo * (i + 1) for i in range(len(cores) - 1)]
-            z, ticks = valores, [zmin + passo * (i + 0.5) for i in range(len(cores))]
-        else:
-            bordas = sorted(set(float(valores.quantile(q)) for q in (0.25, 0.5, 0.75)))
-            cores = PALETAS_MAPA.get(metrica, c.CLASSES_SEQUENCIAL)[-(len(bordas) + 1):]
-            z = valores.map(lambda v: sum(v > b for b in bordas))
-            zmin, zmax = -0.5, len(cores) - 0.5
-            ticks = list(range(len(cores)))
+        cl = classes_mapa(validas[metrica], metrica)
         figura.add_trace(go.Choropleth(
             geojson=geojson, featureidkey="properties.chave_municipal",
-            locations=validas[c.COLUNA_MUNICIPIO].astype(str), z=z,
-            zmin=zmin, zmax=zmax, colorscale=_degraus(cores),
+            locations=validas[c.COLUNA_MUNICIPIO].astype(str), z=cl.z,
+            zmin=cl.zmin, zmax=cl.zmax, colorscale=_degraus(cl.cores), showscale=legenda,
             marker_line_width=0.3, marker_line_color="white",
             text=_hover(validas), hoverinfo="text",
             customdata=validas[rotulo_territorio].astype(str), name=definicao.rotulo,
             colorbar={"title": {"text": "Legenda", "side": "top"}, "orientation": "h",
                       "x": 0, "xanchor": "left", "y": -0.02, "yanchor": "top", "len": 1, "thickness": 12,
-                      "tickvals": ticks, "ticktext": _rotulos_classes(metrica, bordas), "outlinewidth": 0},
+                      "tickvals": cl.ticks, "ticktext": _rotulos_classes(metrica, cl.bordas), "outlinewidth": 0},
         ))
     alvo = metricas[metricas[rotulo_territorio].astype(str).isin([str(d) for d in destaque])]
     if not alvo.empty:
@@ -176,6 +221,9 @@ def construir_mapa(
                 hoverinfo="text", customdata=b[rotulo_territorio if rotulo_territorio in b else c.COLUNA_NOME_MUNICIPIO].astype(str),
             ))
     figura.update_geos(visible=False, bgcolor="rgba(0,0,0,0)", lonaxis_range=LIMITES_SC[0], lataxis_range=LIMITES_SC[1])
+    if not legenda:
+        figura.update_traces(showlegend=False)
+        return _layout(figura, "", altura, margin={"l": 0, "r": 0, "t": 10, "b": 10}, dragmode=False, showlegend=False)
     return _layout(figura, f"{definicao.rotulo} por território", altura,
                    margin={"l": 0, "r": 0, "t": 50, "b": 90}, dragmode=False,
                    legend={"orientation": "h", "x": 0, "y": -0.2, "yanchor": "top", "font": {"size": 13}})
