@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import os
-
 import pandas as pd
 import streamlit as st
 
@@ -265,12 +263,12 @@ def render(ctx: c.Contexto) -> None:
 
     st.subheader("Qualidade do código", anchor=False)
     testes = meta.get("testes")
-    repo = os.environ.get("DASHBOARD_REPO_URL", "").strip()
+    repo, commit = c.REPO_URL, meta.get("commit")
     st.markdown(
         (f"- **{testes} testes automatizados** (pytest + Hypothesis) cobrindo pipeline, métricas, regras e páginas.\n"
          if testes else "")
-        + f"- Código-fonte: {f'[{repo}]({repo})' if repo else 'repositório Git do projeto'}"
-        + (f" (commit `{meta.get('commit')}`)." if meta.get("commit") else ".")
+        + f"- Código-fonte (público): [{repo}]({repo})"
+        + (f" — commit do pipeline [`{commit}`]({repo}/commit/{commit})." if commit else ".")
     )
 
     st.subheader("Próximos passos", anchor=False)

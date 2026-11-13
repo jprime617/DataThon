@@ -400,7 +400,7 @@ As falas para as notas do apresentador estão na seção 3 (blocos "Fala").
 
 ## 8. Checklist do dia
 
-- [ ] Painel aberto **10 minutos antes** (`[[URL_PAINEL]]`), conferir se carregou. Checar se o App Service está com Always On (ENT-02).
+- [ ] Painel aberto **10 minutos antes** (`[[URL_PAINEL]]`), conferir se carregou. O plano Free não tem Always On (ENT-02): abrir e passar pelas 7 páginas para aquecer o cache.
 - [ ] Segunda aba com "O que fazer" já aberta, para o caso de pergunta.
 - [ ] Prints de todas as telas no notebook (plano B sem rede).
 - [ ] Cronômetro visível para quem apresenta; ensaio cronometrado ≤ 2:50.
