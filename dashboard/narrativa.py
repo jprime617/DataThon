@@ -566,3 +566,38 @@ def quebra_por_nivel(perfil: pd.DataFrame | None, macro: str = "") -> str:
     return (f"**{macro}**: mediana de admissão de " + " e ".join(partes)
             + f". {c.fmt_pct(tec, 0)} das movimentações da família são de nível Técnico: o salário médio dela "
               "reflete técnicos, não engenheiros. Medianas do período inteiro.")
+
+
+# --- TAX-04: auditoria da IA, descrita a partir da procedência gravada ---------------
+
+def _data(valor) -> str:
+    texto = str(valor or "")[:10]
+    return f"{texto[8:10]}/{texto[5:7]}/{texto[:4]}" if len(texto) == 10 else "—"
+
+
+def auditoria_ia(meta: dict, meta_r2: dict, divergencias: pd.DataFrame | None = None) -> str:
+    """Como a classificação foi feita e auditada: um processo só, coerente com `ia_cbo/` e os metadados."""
+    meta, meta_r2 = meta or {}, meta_r2 or {}
+    modelo = meta.get("modelo") or "modelo informado no pipeline"
+    linhas = [
+        f"**Classificação que vale (1ª rodada):** feita via interface de chat do modelo **{modelo}** em "
+        f"{_data(meta.get('gerado_em'))}, em lotes de até 100 códigos. Prompts e respostas estão versionados em "
+        "`ia_cbo/` (prompts/ e respostas/), e o pipeline lê as respostas desses arquivos."
+    ]
+    if meta_r2:
+        linhas.append(
+            f"**Auditoria (2ª rodada):** a mesma lista de códigos já tinha sido classificada antes, pela API do modelo "
+            f"**{meta_r2.get('modelo', '—')}** em {_data(meta_r2.get('gerado_em'))}, com o mesmo conjunto fechado de "
+            "famílias. Comparar as duas mede a estabilidade da classificação.")
+    if meta.get("concordancia_familia") is not None:
+        linhas.append(
+            f"**Concordância:** {c.fmt_pct(meta.get('concordancia_familia'))} na família e "
+            f"{c.fmt_pct(meta.get('concordancia_nivel'))} no nível, em {c.fmt_int(meta.get('cbos_comparados', 0))} "
+            "códigos comparados.")
+    if divergencias is not None and not divergencias.empty:
+        so_nivel = int((divergencias["macrofamilia_r1"] == divergencias["macrofamilia_r2"]).sum())
+        linhas.append(f"{so_nivel} das {len(divergencias)} divergências são só de nível (a família coincide).")
+    linhas.append(
+        "**Desempate:** quando as rodadas divergem, vale a 1ª. Ela usou o modelo mais capaz e exigiu justificativa "
+        "sempre que a família fugiu da sugerida pelo prefixo da CBO; a 2ª rodada serve só para medir a estabilidade.")
+    return "\n\n".join(linhas)

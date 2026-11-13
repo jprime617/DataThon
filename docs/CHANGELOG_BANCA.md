@@ -550,3 +550,34 @@ e Sul Catarinense → Vale do Itajaí (Metalmecânica, Qualificado: lá −783 c
 | Movimentações | 67.020 (90%) | 6.979 |
 | Mediana de admissão | R$ 2.775 | R$ 4.837 |
 | Mediana geral (antes, sem quebra) | R$ 2.886 | |
+
+---
+
+## TAX-04 · O texto da auditoria de IA se contradizia
+
+**O que de fato aconteceu** (conferido em `ia_cbo/`, `cbo_ia.py` e nos `.meta.json`):
+- **1ª rodada, a que vale:** modelo `claude-opus-5-5` via interface de
+  chat, em 12/11/2026, com 23 lotes de até 100 códigos. Prompts em
+  `ia_cbo/prompts/`, respostas em `ia_cbo/respostas/`; o pipeline lê os
+  arquivos (provedor `arquivo`).
+- **2ª rodada, a auditoria:** a classificação **anterior** dos mesmos
+  códigos, feita pelo pipeline via API do `gemini-3.1-flash-lite` em
+  11/11/2026, com o mesmo conjunto fechado de famílias. **Não** houve "2ª
+  rodada do mesmo modelo com a ordem embaralhada": esse caminho do código só
+  vale para a classificação via API.
+- Concordância: 91,4% na família e 92,2% no nível (2.206 CBOs). 158 das 348
+  divergências são só de nível.
+
+**O que mudou:**
+- `narrativa.auditoria_ia` gera o texto a partir dos metadados das duas
+  rodadas (`cbo_macrofamilias.csv.meta.json` e
+  `cbo_macrofamilias_gemini.csv.meta.json`) e descreve **só esse processo**.
+  O desempate ganhou justificativa: vale a 1ª rodada porque usou o modelo
+  mais capaz e exigiu justificativa sempre que a família fugiu do prefixo da
+  CBO; a 2ª só mede estabilidade. A regra explícita de desempate (P1) vem no
+  Lote D.
+- Saíram da tela "ClienteArquivo", "IA paga (chat)" e "mesma IA, 2ª rodada
+  com a ordem embaralhada". Ajustados também a Metodologia (premissas e
+  diagrama), o rodapé da ficha da mesorregião e a string que o pipeline
+  grava em `comparacao` (com o texto já gravado nos dois `.json`).
+- Teste: `test_auditoria_descreve_o_processo_real_dos_arquivos`.

@@ -22,7 +22,7 @@ digraph {
   mun [label="Municípios SC\\n(IBGE)"];
   limpeza [label="Limpeza e\\ndecodificação"];
   juncao [label="Junção por\\nmunicípio"];
-  ia [label="IA: CBO →\\nmacrofamília + nível\\n(2 rodadas)", fillcolor="#FFF1E0", color="#D55E00"];
+  ia [label="IA: CBO →\\nmacrofamília + nível\\n(classificação + auditoria)", fillcolor="#FFF1E0", color="#D55E00"];
   agreg [label="Agregação\\n(contagens aditivas,\\nperfil, metadados)"];
   blob [label="Azure Blob\\nStorage", fillcolor="#E0F0FF"];
   app [label="Azure App Service\\n(este painel)", fillcolor="#E0F0FF"];
@@ -41,7 +41,7 @@ LIMITES = """
 - **A RAIS só tem o vínculo CLT** (tipos 10–25 e 60–75): aprendizes, temporários e estatutários ficam fora; transferências (motivos 30–34) não contam como desligamento.
 - **Salários são declarados pelo empregador** e estão **deflacionados pelo INPC a preços de ago/2026**; as medianas do perfil, ao juntar células, são aproximadas pela mediana ponderada.
 - **IDHM é de 2010**; PIB per capita de 2023; população estimada 2026. Correlações territoriais não implicam causalidade.
-- **A classificação por IA é uma interpretação**, mitigada por regras explícitas (A–D), conjunto fechado e uma 2ª rodada com a ordem embaralhada.
+- **A classificação por IA é uma interpretação**, mitigada por regras explícitas (A–D), conjunto fechado de famílias, justificativa obrigatória quando foge do prefixo da CBO e uma auditoria contra uma classificação anterior feita por outro modelo (ver Que profissional falta → auditoria).
 - **Emprego formal CLT apenas**: informalidade, autônomos e PJ ficam fora.
 """
 

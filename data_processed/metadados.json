@@ -26,7 +26,7 @@
     "gerado_em": "2026-11-12T19:26:04",
     "concordancia_familia": 0.9138712601994561,
     "concordancia_nivel": 0.9220308250226654,
-    "comparacao": "IA paga (chat) × classificação anterior (cbo_macrofamilias_gemini.csv)",
+    "comparacao": "classificação via chat × classificação anterior via API (cbo_macrofamilias_gemini.csv)",
     "cbos_comparados": 2206,
     "nota": "classificação via chat; prompts e respostas em `ia_cbo/`",
     "nao_classificado_ponderado": 0.00010100872868996405

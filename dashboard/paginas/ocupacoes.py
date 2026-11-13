@@ -81,30 +81,23 @@ def render(ctx: c.Contexto) -> None:
             meta = (ctx.art.metadados or {}).get("ia", {})
             col1, col2, col3, col4 = st.columns(4)
             col1.metric("Concordância na família", c.fmt_pct(meta.get("concordancia_familia")), border=True,
-                        help="Comparação: " + meta.get("comparacao", "mesma IA, 2ª rodada com a ordem dos códigos embaralhada")
-                        + ".")
+                        help="Em quantas ocupações a classificação que vale e a classificação de auditoria deram a "
+                             "mesma macrofamília.")
             col2.metric("Concordância no nível", c.fmt_pct(meta.get("concordancia_nivel")), border=True,
                         help="Em quantas ocupações as duas classificações deram o mesmo nível de qualificação.")
             col3.metric("Não classificado", c.fmt_pct(meta.get("nao_classificado_ponderado"), 2), border=True,
                         help="Ponderado pelas movimentações.")
             col4.metric("Ocupações classificadas", c.fmt_int(len(mapa)) if mapa is not None else "—", border=True,
                         help="Códigos CBO distintos que aparecem nas movimentações e receberam macrofamília e nível.")
-            if meta.get("modelo"):
-                st.caption(f"Modelo: {meta.get('modelo')} ({meta.get('provedor', '')}), classificação de "
-                           f"{str(meta.get('gerado_em', ''))[:10]}. A IA roda no pipeline, nunca no painel."
-                           + (f" {meta['nota'][0].upper()}{meta['nota'][1:]}." if meta.get("nota") else "")
-                           + (f" Concordância medida em: {meta['comparacao']}." if meta.get("comparacao") else ""))
+            st.markdown(nar.auditoria_ia(meta, c.carregar_meta_rodada2(), divergencias))
             if divergencias is not None:
                 st.markdown("**Maiores divergências entre as rodadas, por volume**")
                 st.dataframe(divergencias.head(10).rename(columns={
                     "cbo2002ocupação": "CBO", "descricao": "Descrição", "movimentacoes": "Movimentações",
-                    "macrofamilia_r1": "Família (1ª)", "macrofamilia_r2": "Família (2ª)",
+                    "macrofamilia_r1": "Família (1ª, vale)", "macrofamilia_r2": "Família (2ª, auditoria)",
                     "nivel_r1": "Nível (1ª)", "nivel_r2": "Nível (2ª)"}),
                     hide_index=True, width="stretch",
                     column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
-                so_nivel = int((divergencias["macrofamilia_r1"] == divergencias["macrofamilia_r2"]).sum())
-                st.caption(f"Em divergência, vale a 1ª rodada. {so_nivel} das {len(divergencias)} divergências são só de "
-                           "nível, com a família igual nas duas rodadas.")
         with regras:
             st.markdown(REGRAS)
             st.caption(f"{len(MACROFAMILIAS) - 1} macrofamílias + Não classificado; "

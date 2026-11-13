@@ -889,3 +889,21 @@ def test_salario_da_familia_tecnica_vem_com_quebra_por_nivel():
     })
     texto = nar.quebra_por_nivel(perfil)
     assert "R$ 2.800 no nível Técnico" in texto and "R$ 5.000 no nível Superior" in texto and "90%" in texto
+
+
+# --- TAX-04: auditoria da IA descreve um processo só ---------------------------------
+
+def test_auditoria_descreve_o_processo_real_dos_arquivos():
+    import json
+    from pathlib import Path
+
+    raiz = Path(__file__).resolve().parent.parent / "data_processed"
+    meta = json.loads((raiz / "cbo_macrofamilias.csv.meta.json").read_text(encoding="utf-8"))
+    meta_r2 = c.carregar_meta_rodada2()
+    texto = nar.auditoria_ia(meta, meta_r2)
+    assert meta["modelo"] in texto and meta_r2["modelo"] in texto
+    assert "interface de chat" in texto and "API" in texto and "ia_cbo/" in texto
+    assert "Desempate" in texto and "vale a 1ª" in texto
+    for errado in ("embaralhad", "IA paga", "ClienteArquivo", "mesma IA"):
+        assert errado not in texto
+    assert "embaralhad" not in json.dumps(meta, ensure_ascii=False) and "IA paga" not in meta["comparacao"]

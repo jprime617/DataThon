@@ -100,7 +100,7 @@ def ficha_mesorregiao(ctx: c.Contexto, regiao: str, recs: list[c.Recomendacao]) 
                    f"   - Quem age: {r.quem_age} · Horizonte: {r.horizonte}.",
                    f"   - KPI e meta: {r.kpi}.",
                    f"   - Gatilho: {r.regra}.", f"   - Evidência: {r.evidencia}."]
-    linhas += ["", "_Fonte: Novo CAGED (MTE), movimentações; macrofamílias por IA com dupla rodada. "
+    linhas += ["", "_Fonte: Novo CAGED (MTE), movimentações; macrofamílias classificadas por IA e auditadas contra uma 2ª classificação. "
                "O CAGED mede fluxos, não vagas abertas._"]
     return "\n".join(linhas)
 

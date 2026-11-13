@@ -136,6 +136,7 @@ CAMINHO_GEOJSON = _RAIZ_PROJETO / "dashboard" / "geo" / "sc_municipios.geojson"
 CAMINHO_CBO = _DIR_DADOS / "cbo_macrofamilias.csv"
 CAMINHO_DIVERGENCIAS = _DIR_DADOS / "cbo_divergencias.csv"
 CAMINHO_PROMPT = _DIR_DADOS / "cbo_macrofamilias.csv.prompt.txt"
+CAMINHO_META_RODADA2 = _DIR_DADOS / "cbo_macrofamilias_gemini.csv.meta.json"   # TAX-04: a classificação de auditoria
 
 VAR_CREDENCIAL_AZURE = "AZURE_STORAGE_CONNECTION_STRING"
 VAR_CONTAINER_AZURE = "AZURE_BLOB_CONTAINER"
@@ -1424,6 +1425,14 @@ def carregar_cbo() -> tuple[pd.DataFrame | None, pd.DataFrame | None, str | None
     div = _ler(CAMINHO_DIVERGENCIAS, lambda c: pd.read_csv(c, dtype={"cbo2002ocupação": str}))
     prompt = _ler(CAMINHO_PROMPT, lambda c: Path(c).read_text(encoding="utf-8"))
     return mapa, div, prompt
+
+
+def carregar_meta_rodada2() -> dict:
+    """Procedência da classificação usada como 2ª rodada (auditoria)."""
+    try:
+        return json.loads(CAMINHO_META_RODADA2.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001
+        return {}
 
 
 def descricoes_cbo(mapa: pd.DataFrame | None = None) -> dict[str, str]:

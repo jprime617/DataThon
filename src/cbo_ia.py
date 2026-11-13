@@ -991,7 +991,7 @@ def classificar_cbos(
         rodada2 = _ler_mapeamento(referencia)
         comuns = {c: d for c, d in detalhes.items() if c in rodada2}
         extras = {
-            "comparacao": f"IA paga (chat) × classificação anterior ({referencia.name})",
+            "comparacao": f"classificação via chat × classificação anterior via API ({referencia.name})",
             "cbos_comparados": len(comuns),
             "nota": NOTA_ARQUIVO,
         }
