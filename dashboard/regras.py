@@ -304,6 +304,11 @@ ACAO_ALAVANCA = {
 }
 TOP_EXECUTIVO = 3
 
+# REC-05: simulador de custo da saída voluntária. Não há fonte no repositório
+# para o custo de repor um trabalhador: é premissa do time, e a tela diz isso.
+CUSTO_REPOSICAO_MIN, CUSTO_REPOSICAO_MAX, CUSTO_REPOSICAO_PADRAO = 1, 12, 3   # em salários
+FONTE_CUSTO_REPOSICAO = "premissa do time, ajuste conforme a realidade da empresa"
+
 # ---------------------------------------------------------------------------
 # NAR-02: "renda / escolaridade explicam?" — limiares da resposta à pergunta central
 # ---------------------------------------------------------------------------

@@ -719,3 +719,17 @@ def texto_decisoes_ia(dec: pd.DataFrame) -> str:
         texto += (f" O maior caso é **{a['descricao']}** ({a['nivel_grande_grupo']} → {a['nivel']}, "
                   f"{c.fmt_int(a['movimentacoes'])} movimentações).")
     return texto + " É o nível que separa as alavancas de formação e de automação em O que fazer."
+
+
+# --- REC-05: simulador de custo com a premissa e a limitação na tela ------------------
+
+def texto_custo_reposicao(t: pd.Series, salarios: int) -> str:
+    """Intervalo do custo na faixa da premissa, a fonte da premissa e o que o cálculo assume."""
+    minimo = c.custo_reposicao(t, c.CUSTO_REPOSICAO_MIN)
+    maximo = c.custo_reposicao(t, c.CUSTO_REPOSICAO_MAX)
+    return (f"Com {salarios} {'salário' if salarios == 1 else 'salários'} por reposição: "
+            f"{c.fmt_brl_escala(c.custo_reposicao(t, salarios))}. Na faixa da premissa "
+            f"({c.CUSTO_REPOSICAO_MIN} a {c.CUSTO_REPOSICAO_MAX} salários), de {c.fmt_brl_escala(minimo)} a "
+            f"{c.fmt_brl_escala(maximo)}. **Premissa:** o custo de repor um trabalhador em salários é "
+            f"{c.FONTE_CUSTO_REPOSICAO}; não há fonte citada. **O cálculo assume que todo desligamento a pedido é "
+            "reposto** por uma nova contratação. É ordem de grandeza para a seleção atual, não valor contábil.")

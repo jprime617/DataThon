@@ -133,6 +133,10 @@ from dashboard.regras import (  # noqa: F401
     FATOR_PREMIO_BAIXO,
     premio_baixo,
     MIN_MOV_PIOR_MUNICIPIO,
+    CUSTO_REPOSICAO_MAX,
+    CUSTO_REPOSICAO_MIN,
+    CUSTO_REPOSICAO_PADRAO,
+    FONTE_CUSTO_REPOSICAO,
 )
 
 _ETAPA = "dashboard"
@@ -1280,6 +1284,11 @@ def gerar_recomendacoes(
     for r in recs:
         r.prioridade = r.severidade * r.movimentacoes
     return sorted(recs, key=lambda r: r.prioridade, reverse=True)
+
+
+def custo_reposicao(t: pd.Series, salarios: float) -> float:
+    """REC-05: desligamentos a pedido × salário médio de desligamento × `salarios` (custo de repor cada um)."""
+    return float(t[COLUNA_DESLIGAMENTOS_A_PEDIDO]) * float(t[M_SAL_DESL]) * float(salarios)
 
 
 def _nivel_dominante(df: pd.DataFrame, por: list[str]) -> dict:

@@ -172,15 +172,17 @@ def render(ctx: c.Contexto) -> None:
                            file_name=f"ficha_{escolhida.lower().replace(' ', '_')}.md", icon=":material/download:")
 
     st.subheader("Quanto custa a saída voluntária?")
-    n = st.slider("Custo de repor um trabalhador, em salários (premissa ajustável)", 1, 12, 3, 1,
+    n = st.slider("Custo de repor um trabalhador, em salários (premissa ajustável)", c.CUSTO_REPOSICAO_MIN,
+                  c.CUSTO_REPOSICAO_MAX, c.CUSTO_REPOSICAO_PADRAO, 1,
                   help="Inclui recrutamento, seleção, treinamento e produtividade perdida até o novo "
-                       "contratado render plenamente. É uma premissa: ajuste à realidade da empresa.")
+                       f"contratado render plenamente. Fonte: {c.FONTE_CUSTO_REPOSICAO}.")
     t = c.total(ctx.df)
-    custo = t[c.COLUNA_DESLIGAMENTOS_A_PEDIDO] * t[c.M_SAL_DESL] * n
+    custo = c.custo_reposicao(t, n)
     col1, col2, col3 = st.columns(3)
     col1.metric("Desligamentos a pedido", c.fmt_int(t[c.COLUNA_DESLIGAMENTOS_A_PEDIDO]), border=True,
                 help="Quantas pessoas pediram para sair no período (tipo de desligamento 40 do CAGED).")
     col2.metric("Salário médio de quem sai", c.fmt_brl(t[c.M_SAL_DESL]), border=True, help=c.ajuda(c.M_SAL_DESL))
     col3.metric("Custo estimado de reposição", c.fmt_brl_escala(custo), border=True,
-                help="desligamentos a pedido × salário médio de desligamento × N salários")
-    st.caption("Estimativa de ordem de grandeza para a seleção atual, não um valor contábil.")
+                help="desligamentos a pedido × salário médio de desligamento × N salários; supõe que cada "
+                     "desligamento a pedido é reposto.")
+    st.caption(nar.texto_custo_reposicao(t, n))

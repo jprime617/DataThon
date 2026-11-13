@@ -240,3 +240,17 @@ def test_taxa_de_admissao_vai_para_a_tabela_de_alertas():
     assert {"Taxa de admissão", "Taxa de admissão no estado"} <= set(tabela.columns)
     assert tabela["Taxa de admissão no estado"].iloc[0] == "31,6%"   # 600 ÷ 1.900
     assert c.M_TAXA_ADM in c.DEFINICOES and c.M_TAXA_ADM in c.EXPLICACAO
+
+
+# --- REC-05: simulador de custo ---------------------------------------------------------
+
+
+def test_custo_de_reposicao_mostra_intervalo_premissa_e_limitacao():
+    t = pd.Series({c.COLUNA_DESLIGAMENTOS_A_PEDIDO: 100_000, c.M_SAL_DESL: 2_500.0})
+    assert c.custo_reposicao(t, 3) == pytest.approx(750_000_000)
+    texto = nar.texto_custo_reposicao(t, 3)
+    assert "R$ 750,0 mi" in texto
+    assert "de R$ 250,0 mi a R$ 3,0 bi" in texto                    # 1 a 12 salários, formatador único
+    assert c.FONTE_CUSTO_REPOSICAO in texto
+    assert "todo desligamento a pedido é reposto" in texto
+    assert "1 salário por" in nar.texto_custo_reposicao(t, 1)

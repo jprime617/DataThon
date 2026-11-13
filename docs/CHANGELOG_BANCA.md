@@ -716,3 +716,23 @@ CBO 766 (gráfica; o prefixo 76 sugere Têxtil).
 
 **Leitura:** os grupos em Apagão contratam mais que o resto, em proporção ao
 emprego que têm. A demanda existe; o problema é reter.
+
+---
+
+## REC-05 · Simulador de custo com a premissa citada
+
+- O simulador de "Quanto custa a saída voluntária?" usa o formatador único
+  (`fmt_brl_escala`) e, abaixo dos cartões, uma frase calculada
+  (`narrativa.texto_custo_reposicao`) com o **intervalo da premissa**, de 1 a
+  12 salários. A **fonte** diz "premissa do time, ajuste conforme a realidade
+  da empresa", porque não há fonte no repositório e nenhuma foi inventada. A
+  frase também traz a **limitação**: o cálculo assume que todo desligamento
+  a pedido é reposto.
+- Faixa e padrão da premissa em `regras.py` (`CUSTO_REPOSICAO_*`,
+  `FONTE_CUSTO_REPOSICAO`); cálculo em `comum.custo_reposicao`.
+
+| Transformação, set/25–ago/26 | Antes | Depois |
+|---|---|---|
+| Custo com 3 salários (212.533 a pedido × R$ 2.623) | R$ 1,7 bi | R$ 1,7 bi |
+| Intervalo da premissa na tela | — | R$ 557,5 mi a R$ 6,7 bi (1 a 12 salários) |
+| Fonte e limitação na tela | "premissa ajustável" | premissa do time; supõe que todo desligamento a pedido é reposto |
