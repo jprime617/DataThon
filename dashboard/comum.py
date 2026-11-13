@@ -87,6 +87,13 @@ from dashboard.regras import (  # noqa: F401
     inclui_construcao,
     LIMIAR_COMPRESSAO,
     LIMIAR_DESTAQUE_GAP_ESC,
+    LIMIAR_FORMACAO_GAP_ESC,
+    MACROFAMILIAS_FORA_FORMACAO,
+    MARGEM_FORMACAO_TECNICO,
+    N_CBOS_FORMACAO,
+    NIVEIS_ALVO_FORMACAO,
+    QUADRANTES_FORMACAO,
+    REGRA_ALAVANCA,
     LIMIAR_GAP_ESCOLARIDADE,
     MARGEM_SALARIAL_RELATIVA,
     MARGEM_SAIDA_VOLUNTARIA,
@@ -124,6 +131,7 @@ NOME_BLOB_AGREGADO = "caged_agregado.parquet"
 NOME_BLOB_PERFIL = "caged_perfil.parquet"
 NOME_BLOB_METADADOS = "metadados.json"
 NOME_BLOB_ESTOQUE = "rais_estoque.parquet"
+NOME_BLOB_CBO = "caged_cbo.parquet"   # Lote B: tabela por ocupação (opcional)
 
 # Colunas que o painel v2 exige no agregado. Uma cópia do Blob gerada pelo
 # pipeline antigo não as tem: nesse caso o painel usa a cópia local e avisa.
@@ -226,6 +234,7 @@ class Artefatos:
     origem: str | None
     avisos: tuple[str, ...] = ()
     motivo: str | None = None
+    cbo: pd.DataFrame | None = None   # tabela por CBO (mesma origem do agregado)
 
     @property
     def disponivel(self) -> bool:
@@ -310,7 +319,12 @@ def carregar_artefatos(
             meta = json.loads(baixar(credencial, NOME_BLOB_METADADOS).decode("utf-8"))
             estoque = pd.read_parquet(io.BytesIO(baixar(credencial, NOME_BLOB_ESTOQUE)))
             agregado = anexar_blocos(anexar_estoque(agregado, estoque, avisos))
-            return Artefatos(preparar_tipos(agregado), perfil, meta, "blob", tuple(avisos))
+            try:
+                cbo = ler_parquet_enxuto(io.BytesIO(baixar(credencial, NOME_BLOB_CBO)))
+            except Exception:  # noqa: BLE001 — opcional: sem ela, as listas de CBO somem
+                cbo = None
+                avisos.append("Tabela por ocupação (CBO) indisponível no Blob.")
+            return Artefatos(preparar_tipos(agregado), perfil, meta, "blob", tuple(avisos), cbo=cbo)
         except Exception as exc:  # noqa: BLE001
             avisos.append(f"Azure Blob não usado: {exc}. Exibindo a cópia local.")
     else:
@@ -323,7 +337,12 @@ def carregar_artefatos(
     if agregado is None:
         return Artefatos(None, None, {}, None, tuple(avisos),
                          "Dados agregados indisponíveis no Blob e na cópia local.")
-    return Artefatos(preparar_tipos(agregado), perfil, meta, "local", tuple(avisos))
+    try:
+        cbo = ler_parquet_enxuto(pasta / NOME_BLOB_CBO)
+    except Exception:  # noqa: BLE001
+        cbo = None
+        avisos.append("Tabela por ocupação (CBO) indisponível na cópia local.")
+    return Artefatos(preparar_tipos(agregado), perfil, meta, "local", tuple(avisos), cbo=cbo)
 
 
 def anexar_estoque(agregado: pd.DataFrame, estoque: pd.DataFrame | None, avisos: list[str]) -> pd.DataFrame:
@@ -470,6 +489,25 @@ def aplicar_filtros(
     ):
         mascara &= _mascara_dimensao(df, coluna, selecao)
     return df[mascara].copy()
+
+
+def filtrar_cbo(ctx: "Contexto") -> pd.DataFrame | None:
+    """A tabela por CBO no recorte atual (escopo, período, setor, macrofamília, nível).
+
+    A tabela não tem município: um filtro de micro/município usa as
+    mesorregiões que o contêm (como o perfil).
+    """
+    tabela = ctx.art.cbo
+    if tabela is None or tabela.empty:
+        return None
+    f = ctx.filtros
+    tabela = tabela[mascara_escopo(tabela, f.escopo)]
+    if f.meses:
+        meses = tabela[COLUNA_MES].astype(str)
+        tabela = tabela[(meses >= f.meses[0]) & (meses <= f.meses[1])]
+    regioes = sorted(ctx.df[COLUNA_REGIAO].astype(str).unique()) if f.territorios else []
+    return aplicar_filtros(tabela, regiao=regioes, **{COLUNA_SETOR: f.setores, COLUNA_MACROFAMILIA_CBO: f.macrofamilias,
+                                                      COLUNA_NIVEL_QUALIFICACAO: f.niveis})
 
 
 def mascara_escopo(df: pd.DataFrame, escopo: str) -> pd.Series:
@@ -850,6 +888,34 @@ def causas(linha: pd.Series, *, saida_ref: float, gap_ref: float, fracao_tecnica
     return selos
 
 
+def fracao_nivel_por_movimento(df: pd.DataFrame, por: list[str],
+                               niveis: tuple[str, ...]) -> tuple[pd.Series, pd.Series]:
+    """(fração das admissões, fração dos desligamentos) de cada grupo que está nos `niveis`."""
+    no_nivel = df[COLUNA_NIVEL_QUALIFICACAO].astype(str).isin(niveis)
+    chave = [df[c] for c in por]
+    saida = []
+    for coluna in (COLUNA_ADMISSOES, COLUNA_DESLIGAMENTOS):
+        soma = df[coluna].groupby(chave, observed=True).sum()
+        parte = df[coluna].where(no_nivel, 0).groupby(chave, observed=True).sum()
+        saida.append(parte / soma.where(soma > 0))
+    return saida[0], saida[1]
+
+
+def cbos_principais(cbos: pd.DataFrame | None, regiao: str, macro: str,
+                    descricoes: dict[str, str] | None = None, n: int = N_CBOS_FORMACAO) -> list[tuple[str, str, int]]:
+    """As `n` CBOs com mais movimentações do grupo: (código, descrição, movimentações)."""
+    if cbos is None or cbos.empty:
+        return []
+    sub = cbos[(cbos[COLUNA_REGIAO].astype(str) == regiao) & (cbos[COLUNA_MACROFAMILIA_CBO].astype(str) == macro)]
+    if sub.empty:
+        return []
+    codigos = sub["cbo"].astype(str).str.strip().str.zfill(6)
+    mov = (sub[COLUNA_ADMISSOES] + sub[COLUNA_DESLIGAMENTOS]).groupby(codigos).sum()
+    mov = mov[mov > 0].sort_values(ascending=False).head(n)
+    descricoes = descricoes or {}
+    return [(cod, descricoes.get(cod, "ocupação sem descrição"), int(v)) for cod, v in mov.items()]
+
+
 def fracao_por_nivel(df: pd.DataFrame, por: list[str], niveis: tuple[str, ...]) -> pd.Series:
     """Fração das movimentações de cada grupo que está nos `niveis` dados."""
     mov = df[COLUNA_ADMISSOES] + df[COLUNA_DESLIGAMENTOS]
@@ -888,6 +954,8 @@ def gerar_recomendacoes(
     *,
     mediana_regional: dict[tuple[str, str], float] | None = None,
     ref: pd.Series | None = None,
+    cbos: pd.DataFrame | None = None,
+    descricoes: dict[str, str] | None = None,
 ) -> list[Recomendacao]:
     """Avalia as 5 regras por mesorregião × macrofamília (com guarda de amostra).
 
@@ -905,7 +973,8 @@ def gerar_recomendacoes(
     if m.empty:
         return []
     frac_basico = fracao_por_nivel(df, por, ("Básico",))
-    frac_tecnica = fracao_por_nivel(df, por, NIVEIS_QUALIFICADOS)
+    tec_adm, tec_desl = fracao_nivel_por_movimento(df, por, NIVEIS_QUALIFICADOS)
+    precoce_ref = ref[M_PRECOCE] if M_PRECOCE in ref else float("nan")
     nivel_dominante = _nivel_dominante(df, por)
 
     # Saldo por região × macrofamília, só de unidades com amostra (mobilidade).
@@ -932,12 +1001,30 @@ def gerar_recomendacoes(
                 f"quem entra ganha {fmt_pct(gap, 0)} do salário de quem saiu (estado: {fmt_pct(gap_ref, 0)}); "
                 f"saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)} no estado{texto_ref}",
                 (gap_ref - gap) + (saida - saida_ref))
-        f_tec = float(frac_tecnica.get(chave, 0.0))
-        if pd.notna(u[M_GAP_ESC]) and u[M_GAP_ESC] <= LIMIAR_GAP_ESCOLARIDADE and f_tec >= 0.5:
-            add(ALAVANCA_FORMACAO,
-                f"gap de escolaridade ≤ {fmt_num(LIMIAR_GAP_ESCOLARIDADE, 2)} em macrofamília técnica (Técnico + Superior ≥ 50%)",
-                f"gap de escolaridade {fmt_num(u[M_GAP_ESC], 2)}; {fmt_pct(f_tec)} das movimentações em nível Técnico/Superior",
-                -u[M_GAP_ESC], alvo="Técnico/Superior")
+        # REC-01: formação profissional direcionada (regra em `regras.py`).
+        if (u["quadrante"] in QUADRANTES_FORMACAO and nivel in NIVEIS_ALVO_FORMACAO
+                and macro not in MACROFAMILIAS_FORA_FORMACAO):
+            sinais, peso = [], 0.0
+            gap_esc = u[M_GAP_ESC]
+            if pd.notna(gap_esc) and gap_esc < LIMIAR_FORMACAO_GAP_ESC:
+                sinais.append(f"entra gente menos escolarizada (gap {fmt_num(gap_esc, 2)} nível)")
+                peso += -gap_esc
+            precoce = u.get(M_PRECOCE)
+            if pd.notna(precoce) and pd.notna(precoce_ref) and precoce > precoce_ref:
+                sinais.append(f"desligamento precoce {fmt_pct(precoce)} vs {fmt_pct(precoce_ref)} no estado")
+                peso += precoce - precoce_ref
+            ta, td = tec_adm.get(chave, float("nan")), tec_desl.get(chave, float("nan"))
+            if pd.notna(ta) and pd.notna(td) and td - ta >= MARGEM_FORMACAO_TECNICO:
+                sinais.append(f"Técnico + Superior são {fmt_pct(ta)} dos admitidos e {fmt_pct(td)} dos desligados")
+                peso += td - ta
+            if sinais:
+                lista = cbos_principais(cbos, regiao, macro, descricoes)
+                ocupacoes = ", ".join(f"{d} ({cod})" for cod, d, _ in lista) or "as ocupações de maior volume do grupo"
+                add(ALAVANCA_FORMACAO,
+                    REGRA_ALAVANCA[ALAVANCA_FORMACAO],
+                    f"{u['quadrante']}; " + "; ".join(sinais),
+                    peso, acao=f"Turmas de qualificação/aprendizagem industrial para {ocupacoes} na mesorregião {regiao}",
+                    cbos=lista)
         if u["quadrante"] == Q_APAGAO and u[M_SALDO] > 0:
             retracao = {r_: s_ for (r_, m_), s_ in saldo_por.items() if m_ == macro and r_ != regiao and s_ < 0}
             if retracao:
@@ -1186,6 +1273,16 @@ def carregar_cbo() -> tuple[pd.DataFrame | None, pd.DataFrame | None, str | None
     return mapa, div, prompt
 
 
+def descricoes_cbo(mapa: pd.DataFrame | None = None) -> dict[str, str]:
+    """Código CBO com 6 dígitos (zeros à esquerda) → descrição oficial."""
+    if mapa is None:
+        mapa = carregar_cbo()[0]
+    if mapa is None or mapa.empty or "descricao" not in mapa:
+        return {}
+    codigos = mapa["cbo2002ocupação"].astype(str).str.strip().str.zfill(6)
+    return dict(zip(codigos, mapa["descricao"].astype(str)))
+
+
 
 # ---------------------------------------------------------------------------
 # Camada Streamlit (import tardio): contexto, filtros, cartões e proteção
@@ -1239,6 +1336,10 @@ def cbo_cache():
         return carregar_cbo()
 
     return _ler()
+
+
+def descricoes_cbo_cache() -> dict[str, str]:
+    return descricoes_cbo(cbo_cache()[0])
 
 
 def _meses(df: pd.DataFrame) -> list[str]:

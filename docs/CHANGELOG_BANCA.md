@@ -319,3 +319,47 @@ Abertura do painel: Indústria de transformação (C), set/25–ago/26.
 | Apagão / Retração / Expansão / Estagnação | (nomes antigos) | 13 / 20 / 14 / 16 |
 | Custo de reposição (3 salários) | R$ 2.174,6 mi | R$ 1,7 bi (transformação); R$ 2,2 bi em B–F |
 | Gap de escolaridade, Alimentos e bebidas | −0,73 | −0,73 (real; Oeste) |
+
+---
+
+## REC-01 · Alavanca "Formação profissional direcionada"
+
+- **Pipeline:** nova tabela `caged_cbo.parquet` (`agregador.agregar_cbo`):
+  mesorregião × seção × setor × macrofamília × nível × **CBO** × mês, com as
+  mesmas colunas aditivas e a mesma `preparar_base` do agregado (fecha
+  exatamente: 3.443.428 admissões, 3.328.264 desligamentos). Ela entra no
+  upload do notebook e é lida pelo painel da mesma origem do agregado (Blob
+  ou local). Se faltar, o painel segue sem a lista de CBOs e avisa.
+- **Regra** (`regras.py`, documentada na Metodologia em "Regras das
+  recomendações"): grupo mesorregião × macrofamília **industrial** em Apagão
+  ou Expansão acelerada, com nível-alvo Qualificado ou Técnico e ao menos um
+  sinal:
+  1. gap de escolaridade < −0,05;
+  2. desligamento precoce acima do estado;
+  3. Técnico + Superior ≥ 1 p.p. menos frequentes entre os admitidos do que
+     entre os desligados.
+
+  Limiares de materialidade: o plano pedia "gap < 0", mas −0,03 é ruído.
+  Ficam fora Administrativo e comercial e Serviços de apoio, porque não
+  cabe "aprendizagem industrial" para vendedor de varejo.
+- **Ação gerada** (sem nomes de curso inventados): "Turmas de
+  qualificação/aprendizagem industrial para *as 5 CBOs de maior volume do
+  grupo (descrição + código)* na mesorregião *X*". Na tela, aparece no cartão
+  da alavanca ("O que formar") e nas colunas "Ação" e "O que formar" da
+  tabela e do CSV.
+- Substitui a regra antiga de formação, que disparava 1 caso (gap ≤ −0,10 em
+  família técnica).
+- Testes: `test_tabela_por_cbo_fecha_com_o_agregado`,
+  `test_formacao_lista_as_cbos_de_maior_volume_com_descricao`,
+  `test_formacao_nao_dispara_fora_do_nivel_alvo`,
+  `test_formacao_nao_dispara_sem_sinal_de_falta_de_qualificacao`.
+
+| Recorte | Formação: antes | Formação: depois | Total de recomendações |
+|---|---|---|---|
+| Transformação | 1 | **7** | 18 → 24 |
+| Indústria B–F | 0 | **6** | 25 → 31 |
+
+Exemplo (maior prioridade): **Alimentos e bebidas – Oeste Catarinense**
+(Apagão; gap de escolaridade −0,95) → formar Magarefe (848520), Trabalhador
+de tratamento do leite (841505), Desossador (848515), Salsicheiro (848115) e
+Supervisor de produção da indústria alimentícia (840105).

@@ -137,7 +137,7 @@ LIMIAR_DESTAQUE_GAP_ESC = -0.30
 # ---------------------------------------------------------------------------
 
 ALAVANCA_SALARIO = "Revisar faixas salariais de entrada"
-ALAVANCA_FORMACAO = "Formação técnica e parcerias de qualificação"
+ALAVANCA_FORMACAO = "Formação profissional direcionada"
 ALAVANCA_MOBILIDADE = "Recrutamento inter-regional e mobilidade"
 ALAVANCA_AUTOMACAO = "Automação e redesenho de postos"
 ALAVANCA_RETENCAO = "Retenção não salarial"
@@ -166,3 +166,48 @@ CONTEXTO_SETOR = {
 }
 # Concentração que merece ser dita no achado de expansão (município com ≥ 50% do saldo).
 FRACAO_CONCENTRACAO_TEXTO = 0.5
+
+# ---------------------------------------------------------------------------
+# REC-01: regra da alavanca "Formação profissional direcionada"
+# ---------------------------------------------------------------------------
+# Grupo (mesorregião × macrofamília da IA) que CRESCE (Apagão ou Expansão
+# acelerada), com nível-alvo Qualificado ou Técnico, e ao menos um sinal de
+# falta de qualificação:
+#   (a) gap de escolaridade < 0 (entra gente menos escolarizada do que sai);
+#   (b) desligamento precoce acima do estado (o contratado não fica);
+#   (c) a fração de Técnico + Superior entre os admitidos é menor que entre os
+#       desligados (repõe com nível mais baixo).
+# O "o que formar" são as CBOs de maior volume do grupo (código + descrição).
+
+QUADRANTES_FORMACAO = (Q_APAGAO, Q_EXPANSAO)
+NIVEIS_ALVO_FORMACAO = ("Qualificado", "Técnico")
+# Materialidade: o plano pede "gap < 0", mas −0,03 nível é ruído (as
+# macrofamílias variam entre −0,12 e +0,07 no estado). Abaixo de −0,05 conta.
+LIMIAR_FORMACAO_GAP_ESC = -0.05
+# Diferença mínima entre a fração de Técnico + Superior nos desligados e nos admitidos.
+MARGEM_FORMACAO_TECNICO = 0.01
+# Formação profissional industrial não se aplica a funções de escritório, comércio e apoio.
+MACROFAMILIAS_FORA_FORMACAO = ("Administrativo e comercial", "Serviços de apoio e outros")
+N_CBOS_FORMACAO = 5
+
+# Regra de cada alavanca em linguagem leiga (Metodologia). Mantida ao lado dos
+# limiares para que o texto e o código não se desencontrem.
+REGRA_ALAVANCA = {
+    ALAVANCA_FORMACAO: (
+        "Grupo (mesorregião × macrofamília industrial) que cresce (Apagão ou Expansão acelerada), com nível-alvo "
+        "Qualificado ou Técnico e ao menos um sinal de falta de qualificação: gap de escolaridade abaixo de "
+        f"{str(LIMIAR_FORMACAO_GAP_ESC).replace('.', ',')} nível, desligamento precoce acima do estado, ou Técnico + "
+        f"Superior pelo menos {int(MARGEM_FORMACAO_TECNICO * 100)} p.p. menos frequentes entre os admitidos do que entre "
+        f"os desligados. Ficam fora {' e '.join(MACROFAMILIAS_FORA_FORMACAO)}. O \"o que formar\" são as "
+        f"{N_CBOS_FORMACAO} CBOs com mais movimentações no grupo."),
+    ALAVANCA_SALARIO: (
+        "Razão salário de entrada ÷ salário de saída 3 p.p. ou mais abaixo da do estado e saída voluntária 5 p.p. "
+        "ou mais acima da do estado."),
+    ALAVANCA_RETENCAO: (
+        "Saída voluntária 5 p.p. ou mais acima da do estado, com salário de entrada não pior que o do estado "
+        "(o salário não explica a saída)."),
+    ALAVANCA_MOBILIDADE: (
+        "Grupo em Apagão (cresce e não retém) com saldo positivo e a mesma macrofamília em retração em outra "
+        "mesorregião."),
+    ALAVANCA_AUTOMACAO: "Nível Básico com 50% ou mais das movimentações do grupo e saldo ≤ 0.",
+}

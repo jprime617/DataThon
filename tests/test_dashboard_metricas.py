@@ -644,3 +644,43 @@ def test_achado_de_expansao_por_encomenda_do_setor_naval():
     assert any(t.startswith("Maior tensão") for t in titulos)
     naval = next(a for a in achados if a.titulo.startswith("Expansão puxada"))
     assert "clickpetroleoegas.com.br" in naval.texto and "Vale do Itajaí" in naval.texto
+
+
+# --- REC-01: formação profissional direcionada --------------------------------
+
+def _grupo_formacao(nivel: str = "Técnico", adm: int = 200, desl: int = 200) -> pd.DataFrame:
+    return _df(_referencia(), _celula(admissoes=adm, desligamentos=desl, desligamentos_a_pedido=60,
+                                      nivel_qualificacao=nivel, **_salarios(2000, 2000),
+                                      soma_escolaridade_admissao=8 * adm, n_escolaridade_admissao=adm,
+                                      soma_escolaridade_desligamento=9 * desl, n_escolaridade_desligamento=desl))
+
+
+def test_formacao_lista_as_cbos_de_maior_volume_com_descricao():
+    cbos = pd.DataFrame({
+        "regiao": ["Norte Catarinense"] * 4 + ["Serrana"],
+        "macrofamilia_cbo": ["Metalmecânica e eletroeletrônica"] * 4 + ["Metalmecânica e eletroeletrônica"],
+        "cbo": ["724315", "724315", "721215", "10105", "999999"],
+        "admissoes": [50, 40, 60, 5, 900], "desligamentos": [50, 40, 50, 5, 900],
+    })
+    descr = c.descricoes_cbo(pd.DataFrame({"cbo2002ocupação": ["724315", "721215", "10105"],
+                                           "descricao": ["Soldador", "Operador de máquinas", "Oficial"]}))
+    recs = [r for r in c.gerar_recomendacoes(_grupo_formacao(), cbos=cbos, descricoes=descr)
+            if r.alavanca == c.ALAVANCA_FORMACAO and r.regiao == "Norte Catarinense"]
+    assert recs, "a regra de formação deveria disparar"
+    lista = recs[0].extras["cbos"]
+    assert [cod for cod, _, _ in lista] == ["724315", "721215", "010105"]   # por volume; Serrana fora
+    assert lista[0] == ("724315", "Soldador", 180)
+    assert "Soldador (724315)" in recs[0].extras["acao"] and "Norte Catarinense" in recs[0].extras["acao"]
+
+
+@pytest.mark.parametrize("nivel", ["Básico", "Superior"])
+def test_formacao_nao_dispara_fora_do_nivel_alvo(nivel):
+    assert c.ALAVANCA_FORMACAO not in _alavancas(_grupo_formacao(nivel=nivel))
+
+
+def test_formacao_nao_dispara_sem_sinal_de_falta_de_qualificacao():
+    df = _df(_referencia(), _celula(admissoes=200, desligamentos=200, desligamentos_a_pedido=60,
+                                    nivel_qualificacao="Técnico", **_salarios(2000, 2000),
+                                    soma_escolaridade_admissao=9 * 200, n_escolaridade_admissao=200,
+                                    soma_escolaridade_desligamento=9 * 200, n_escolaridade_desligamento=200))
+    assert c.ALAVANCA_FORMACAO not in _alavancas(df)

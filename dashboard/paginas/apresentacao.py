@@ -86,7 +86,8 @@ def _por_que(ctx: c.Contexto) -> None:
 
 def _o_que_fazer(ctx: c.Contexto) -> None:
     recs = c.gerar_recomendacoes(ctx.df, mediana_regional=recomendacoes.medianas_regionais(ctx),
-                                  ref=c.total(ctx.ref))
+                                  ref=c.total(ctx.ref), cbos=c.filtrar_cbo(ctx),
+                                  descricoes=c.descricoes_cbo_cache())
     if not recs:
         st.markdown("Nenhuma regra disparou com amostra suficiente.")
         return

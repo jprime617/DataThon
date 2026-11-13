@@ -155,6 +155,13 @@ def render(ctx: c.Contexto) -> None:
                f"≥ {c.MIN_SALARIOS} salários de admissão e de desligamento. Abaixo disso a célula fica em cinza "
                "e sai de rankings e da matriz.")
 
+    st.subheader("Regras das recomendações")
+    st.markdown("Cada recomendação de O que fazer sai de uma regra explícita, avaliada por mesorregião × "
+                "macrofamília (IA), só em grupos com ≥ 100 movimentações. A referência é o estado inteiro no "
+                "mesmo escopo e período.")
+    st.table(pd.DataFrame([{"Alavanca": a, "Quando dispara": r} for a, r in c.REGRA_ALAVANCA.items()])
+             .set_index("Alavanca"))
+
     st.subheader("Setores: divisão CNAE → setor")
     st.markdown("Na indústria de transformação (seção C), o setor agrupa divisões CNAE 2.0 (dois primeiros dígitos "
                 "da subclasse). Nas demais seções, o setor é a própria seção.")

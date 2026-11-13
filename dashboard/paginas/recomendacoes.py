@@ -31,7 +31,8 @@ def classificar_prioridade(recs: list[c.Recomendacao]) -> dict[int, str]:
 # Por que cada ação aparece, em linguagem leiga.
 POR_QUE_ALAVANCA = {
     c.ALAVANCA_SALARIO: "Quem entra ganha menos do que quem saiu, e muita gente pede para sair.",
-    c.ALAVANCA_FORMACAO: "Falta gente com formação técnica para as vagas que giram.",
+    c.ALAVANCA_FORMACAO: "O grupo cresce, mas repõe com gente menos qualificada ou o contratado não fica: "
+                         "formar para as ocupações que mais giram.",
     c.ALAVANCA_MOBILIDADE: "A mesma profissão sobra numa região e falta em outra.",
     c.ALAVANCA_AUTOMACAO: "Muitos postos de nível básico, e o emprego não cresce.",
     c.ALAVANCA_RETENCAO: "Saem muitos a pedido mesmo sem salário menor: o problema não é só dinheiro.",
@@ -89,7 +90,8 @@ def render(ctx: c.Contexto) -> None:
     if ctx.df.empty:
         st.info("Nenhuma movimentação com estes filtros.")
         return
-    recs = c.gerar_recomendacoes(ctx.df, mediana_regional=medianas_regionais(ctx), ref=c.total(ctx.ref))
+    recs = c.gerar_recomendacoes(ctx.df, mediana_regional=medianas_regionais(ctx), ref=c.total(ctx.ref),
+                                  cbos=c.filtrar_cbo(ctx), descricoes=c.descricoes_cbo_cache())
     prioridades = classificar_prioridade(recs)
     ref = c.total(ctx.df)
     st.markdown(
@@ -108,12 +110,17 @@ def render(ctx: c.Contexto) -> None:
                 st.caption(POR_QUE_ALAVANCA.get(alavanca, ""))
                 st.markdown("\n".join(f"- {r.macrofamilia} · {r.regiao}" for r in itens[:3])
                             + (f"\n\n…e mais {len(itens) - 3}" if len(itens) > 3 else ""))
+                if itens[0].extras.get("cbos"):  # REC-01: o que formar, na recomendação mais prioritária
+                    st.caption("O que formar (" + itens[0].regiao + "): "
+                               + ", ".join(f"{d} ({cod})" for cod, d, _ in itens[0].extras["cbos"]))
                 st.markdown(f"**{len(itens)}** {'recomendação' if len(itens) == 1 else 'recomendações'} · "
                             f"{c.fmt_int(sum(r.movimentacoes for r in itens))} movimentações")
 
         tabela = pd.DataFrame([{
             "Prioridade": prioridades[i], "Alavanca": r.alavanca, "Mesorregião": r.regiao,
             "Macrofamília (IA)": r.macrofamilia, "Nível-alvo": r.nivel_alvo, "Movimentações": int(r.movimentacoes),
+            "Ação": r.extras.get("acao", ""),
+            "O que formar (CBOs de maior volume)": "; ".join(f"{cod} {d}" for cod, d, _ in r.extras.get("cbos", [])),
             "Evidência": r.evidencia, "Gatilho": r.regra,
         } for i, r in enumerate(recs)])
         with st.expander(f"Ver as {len(recs)} recomendações numa tabela (com a evidência de cada uma)"):
