@@ -398,10 +398,32 @@ As falas para as notas do apresentador estão na seção 3 (blocos "Fala").
 
 ---
 
+## 7b. Slides finais conferidos (13/11)
+
+Os slides (`docs/Pitch_Executivo_Industria_SC.pdf`, 8 páginas) usam o recorte
+**Indústria (B–F)**, set/25–ago/26, e não o de abertura do painel
+(Transformação C, usado nas seções 2–5 deste documento). Conferidos com o
+código do painel nesse recorte:
+
+| Slide | Número | No painel (B–F) | Ok? |
+|---|---|---|---|
+| 2 | 1,14 mi movimentações · +2.726 · 47,7% a pedido | 1.139.762 · 2.726 · 47,7% | [x] |
+| 3 | 24 meses · 2,57 mi vínculos · 2.206 ocupações · 11 macrofamílias · 91,4% | iguais (11 + "Não classificado") | [x] |
+| 4 | 86 grupos: 18 Estagnação · 16 Expansão · 28 Retração · 24 Apagão | 86: 18 / 16 / 28 / 24 | [x] |
+| 4 | Alimentos – Oeste +4.071 e 61% a pedido; Têxtil – Vale −2.542; Construção – Vale 64% de rotatividade | 4.071 e 60,8%; −2.542; 64,2% | [x] |
+| 4 | Eletroeletrônico – Norte **+19% no ano**, +1.201 | saldo 1.201 ok; **variação do emprego 4,8%**; o "+19%" não aparece no painel | [ ] |
+| 5 | 69% saem com < 12 meses (68,9%); escolaridade −0,05; exceção Alimentos – Oeste −0,95 | 68,9%; −0,05; −0,95 (linha "Escolaridade" do Panorama) | [x] |
+| 6 | R$ 217 mi (10% menos pedidos de demissão × 3 salários) | R$ 217,5 mi | [x] |
+
+**Na demonstração ao vivo:** o painel abre em Transformação (C), com outros
+números (835.950 · 1.072 · 50,9% · 63 grupos). Antes de mostrar, troque o
+**Escopo** para "Indústria (B–F)" na barra lateral, ou explique a troca.
+
 ## 8. Checklist do dia
 
 - [ ] Painel aberto **10 minutos antes** (`[[URL_PAINEL]]`), conferir se carregou. O plano Free não tem Always On (ENT-02): abrir e passar pelas 7 páginas para aquecer o cache.
 - [ ] Segunda aba com "O que fazer" já aberta, para o caso de pergunta.
+- [ ] Escopo do painel em **Indústria (B–F)** para bater com os slides (seção 7b).
 - [ ] Prints de todas as telas no notebook (plano B sem rede).
 - [ ] Cronômetro visível para quem apresenta; ensaio cronometrado ≤ 2:50.
 - [ ] Quem passa os slides: `[[QUEM_PASSA_SLIDES]]`. Quem responde cada tema: dados `[[ ]]`, IA `[[ ]]`, recomendações `[[ ]]`.

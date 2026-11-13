@@ -13,7 +13,7 @@ O fluxo é linear: **ingestão → limpeza → cruzamento relacional → métric
 | Pipeline documentado (carga, exclusões MOV × EX, cruzamento com municípios, IA dos CBOs, exportação) | [`notebooks/01_pipeline.ipynb`](notebooks/01_pipeline.ipynb), executado e com as saídas; código em [`src/`](src/) |
 | Comunicação com a IA (prompts e respostas) | [`ia_cbo/`](ia_cbo/): 23 lotes de prompts, respostas, revisão manual e [`classificar.py`](ia_cbo/classificar.py) para repetir pela API |
 | Dashboard analítico (Python/Streamlit) | **https://datathon-caged-sc-br.azurewebsites.net/**; código em [`dashboard/`](dashboard/) |
-| Pitch executivo (3 min) | roteiro, números conferidos e respostas para a banca em [`docs/PITCH_APOIO.md`](docs/PITCH_APOIO.md); prints em [`docs/prints/`](docs/prints/) |
+| Pitch executivo (3 min) | slides em [`docs/Pitch_Executivo_Industria_SC.pdf`](docs/Pitch_Executivo_Industria_SC.pdf) (recorte Indústria B–F); roteiro e respostas para a banca em [`docs/PITCH_APOIO.md`](docs/PITCH_APOIO.md); prints em [`docs/prints/`](docs/prints/) |
 | Metodologia, premissas e limites | página Metodologia do painel; [`docs/CHANGELOG_BANCA.md`](docs/CHANGELOG_BANCA.md) e [`docs/ROADMAP.md`](docs/ROADMAP.md) |
 
 > O plano gratuito do Azure hiberna o painel: o primeiro acesso depois de uma pausa pode levar cerca de 1 minuto.
