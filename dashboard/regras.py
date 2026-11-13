@@ -248,3 +248,14 @@ KPI_RESERVA = (("saida_voluntaria", True),)   # quando nenhum candidato tem dado
 # Meta = andar esta fração da distância entre o grupo e o estado, no prazo abaixo.
 FRACAO_META_DISTANCIA = 0.5
 PRAZO_META_MESES = 12
+
+# REC-04: ação padrão de cada alavanca ({macro}, {regiao}); formação e atração
+# de talentos montam a própria ação (CBOs e par origem → destino).
+ACAO_ALAVANCA = {
+    ALAVANCA_SALARIO: "Revisar a faixa salarial de entrada de {macro} em {regiao}",
+    ALAVANCA_RETENCAO: "Programa de retenção não salarial para {macro} em {regiao}",
+    ALAVANCA_AUTOMACAO: "Avaliar automação e redesenho dos postos básicos de {macro} em {regiao}",
+    ALAVANCA_FORMACAO: "Turmas de qualificação/aprendizagem industrial para {macro} em {regiao}",
+    ALAVANCA_MOBILIDADE: "Atrair profissionais de {macro} para {regiao}",
+}
+TOP_EXECUTIVO = 3

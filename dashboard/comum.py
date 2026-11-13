@@ -99,7 +99,9 @@ from dashboard.regras import (  # noqa: F401
     KPI_RESERVA,
     PRAZO_META_MESES,
     QUEM_AGE,
+    ACAO_ALAVANCA,
     REGRA_ALAVANCA,
+    TOP_EXECUTIVO,
     LIMIAR_GAP_ESCOLARIDADE,
     MARGEM_SALARIAL_RELATIVA,
     MARGEM_SAIDA_VOLUNTARIA,
@@ -956,12 +958,11 @@ class Recomendacao:
     kpi: str = ""           # "saída voluntária do grupo 59,0% → 53,0% em 12 meses (estado: 47,0%)"
 
 
-def meta_kpi(alavanca: str, grupo: pd.Series, ref: pd.Series) -> str:
-    """KPI de acompanhamento com meta: andar `FRACAO_META_DISTANCIA` da distância até o estado.
+def _kpi_escolhido(alavanca: str, grupo: pd.Series, ref: pd.Series):
+    """(métrica, menor_melhor, valor, estado, pior?) do KPI da alavanca para o grupo, ou None.
 
-    Entre os candidatos da alavanca, usa o que está mais longe do estado, para
-    pior (distância relativa). Se o grupo já está melhor em todos, a meta é
-    manter o patamar do primeiro candidato.
+    Entre os candidatos, usa o que está mais longe do estado, para pior
+    (distância relativa); se nenhum está pior, o primeiro.
     """
     def _dados(cands):
         return [(n, menor, grupo.get(n), ref.get(n)) for n, menor in cands
@@ -969,7 +970,7 @@ def meta_kpi(alavanca: str, grupo: pd.Series, ref: pd.Series) -> str:
 
     candidatos = _dados(KPI_ALAVANCA.get(alavanca, KPI_RESERVA)) or _dados(KPI_RESERVA)
     if not candidatos:
-        return "—"
+        return None
 
     def _piora(item):
         _, menor, valor, estado = item
@@ -977,14 +978,66 @@ def meta_kpi(alavanca: str, grupo: pd.Series, ref: pd.Series) -> str:
         return diff / max(abs(estado), 0.05)
 
     piores = [x for x in candidatos if _piora(x) > 0]
-    nome, menor, valor, estado = max(piores, key=_piora) if piores else candidatos[0]
+    escolhido = max(piores, key=_piora) if piores else candidatos[0]
+    return (*escolhido, bool(piores))
+
+
+def meta_kpi(alavanca: str, grupo: pd.Series, ref: pd.Series) -> str:
+    """KPI de acompanhamento com meta: andar `FRACAO_META_DISTANCIA` da distância até o estado.
+
+    Se o grupo já está melhor em todos os candidatos, a meta é manter o patamar.
+    """
+    k = _kpi_escolhido(alavanca, grupo, ref)
+    if k is None:
+        return "—"
+    nome, _, valor, estado, pior = k
     rotulo = DEFINICOES[nome].rotulo.lower()
-    if not piores:
+    if not pior:
         return (f"{rotulo} do grupo: manter em {fmt_metrica(nome, valor)} ou melhor "
                 f"(estado: {fmt_metrica(nome, estado)})")
     alvo = valor - FRACAO_META_DISTANCIA * (valor - estado)
     return (f"{rotulo} do grupo: {fmt_metrica(nome, valor)} → {fmt_metrica(nome, alvo)} em {PRAZO_META_MESES} meses "
             f"(estado: {fmt_metrica(nome, estado)})")
+
+
+def evidencia_curta(alavanca: str, grupo: pd.Series, ref: pd.Series) -> str:
+    """"saída voluntária 64,0% (estado: 50,9%)": o número que sustenta a recomendação, em uma linha."""
+    k = _kpi_escolhido(alavanca, grupo, ref)
+    if k is None:
+        return ""
+    nome, _, valor, estado, _ = k
+    return f"{DEFINICOES[nome].rotulo.lower()} {fmt_metrica(nome, valor)} (estado: {fmt_metrica(nome, estado)})"
+
+
+def top_executivo(recs: list["Recomendacao"], n: int = TOP_EXECUTIVO) -> list["Recomendacao"]:
+    """REC-04: até `n` ações, uma por alavanca e de grupos (mesorregião × macrofamília) distintos.
+
+    As severidades de alavancas diferentes têm escalas diferentes, então a
+    prioridade só é comparada dentro de cada alavanca: dela sai a melhor
+    recomendação cujo grupo ainda não apareceu. Entre as alavancas, vencem as
+    de mais movimentações afetadas.
+    """
+    por_alavanca: dict[str, list[Recomendacao]] = {}
+    for r in sorted(recs, key=lambda r: r.prioridade, reverse=True):
+        por_alavanca.setdefault(r.alavanca, []).append(r)
+    ordem = sorted(por_alavanca, key=lambda a: por_alavanca[a][0].movimentacoes, reverse=True)
+    escolhidas, grupos = [], set()
+    for alavanca in ordem:
+        livre = next((r for r in por_alavanca[alavanca] if (r.regiao, r.macrofamilia) not in grupos), None)
+        if livre is not None:
+            escolhidas.append(livre)
+            grupos.add((livre.regiao, livre.macrofamilia))
+        if len(escolhidas) == n:
+            break
+    return sorted(escolhidas, key=lambda r: r.movimentacoes, reverse=True)
+
+
+def nome_curto_cbo(descricao: str) -> str:
+    """"Salsicheiro (Fabricacao de Linguica…)" → "salsicheiro"; "Auxiliar de Escritorio, em Geral" → "auxiliar de escritorio"."""
+    texto = str(descricao).split("(")[0].split(", em Geral")[0].strip()
+    if len(texto) > 30 and " e " in texto:  # "Trabalhador de Tratamento do Leite e Fabricacao…" → antes do " e "
+        texto = texto.split(" e ")[0]
+    return texto if texto.isupper() else texto.lower()
 
 
 def gerar_recomendacoes(
@@ -1029,6 +1082,8 @@ def gerar_recomendacoes(
         saida, gap = u[M_SAIDA_VOL], u[M_GAP_SAL]
 
         def add(alavanca, regra, evidencia, severidade, alvo=nivel, **extras):
+            extras.setdefault("acao", ACAO_ALAVANCA.get(alavanca, "").format(macro=macro, regiao=regiao))
+            extras.setdefault("destaque", evidencia_curta(alavanca, u, ref))
             recs.append(Recomendacao(regiao, macro, alavanca, regra, evidencia, alvo,
                                      float(severidade), mov, extras=extras,
                                      quem_age=QUEM_AGE.get(alavanca, "—"), horizonte=HORIZONTE.get(alavanca, "—"),

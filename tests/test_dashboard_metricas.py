@@ -744,3 +744,37 @@ def test_atracao_mostra_o_par_e_nao_fala_em_sobra():
     rec = next(r for r in c.gerar_recomendacoes(_mobilidade()) if r.alavanca == c.ALAVANCA_MOBILIDADE)
     assert rec.evidencia.startswith("Sul Catarinense → Norte Catarinense")
     assert "sobra" not in (rec.regra + rec.evidencia + c.REGRA_ALAVANCA[c.ALAVANCA_MOBILIDADE]).lower()
+
+
+# --- REC-04: Top 3 executivo -----------------------------------------------------
+
+def _rec(alavanca, regiao, macro, prioridade, mov):
+    return c.Recomendacao(regiao, macro, alavanca, "", "", "", 1.0, mov, prioridade=prioridade)
+
+
+def test_top_executivo_uma_por_alavanca_e_grupos_distintos():
+    recs = [
+        _rec(c.ALAVANCA_FORMACAO, "Oeste", "Alimentos", 10, 400),
+        _rec(c.ALAVANCA_RETENCAO, "Oeste", "Alimentos", 9, 400),
+        _rec(c.ALAVANCA_RETENCAO, "Oeste", "Operação", 5, 600),
+        _rec(c.ALAVANCA_MOBILIDADE, "Vale", "Metal", 3, 200),
+        _rec(c.ALAVANCA_AUTOMACAO, "Norte", "Apoio", 1, 50),
+    ]
+    top = c.top_executivo(recs)
+    assert len(top) == 3
+    assert len({r.alavanca for r in top}) == 3
+    assert len({(r.regiao, r.macrofamilia) for r in top}) == 3
+    assert [r.macrofamilia for r in top] == ["Operação", "Alimentos", "Metal"]   # por movimentações
+
+
+def test_top3_e_legivel_em_uma_linha_por_acao():
+    from dashboard.paginas.recomendacoes import texto_top3
+
+    r = _rec(c.ALAVANCA_FORMACAO, "Oeste Catarinense", "Alimentos e bebidas", 1, 40133)
+    r.extras = {"cbos": [("848520", "Magarefe", 1), ("841505", "Trabalhador de Tratamento do Leite e Fabricacao de "
+                         "Laticinios e Afins", 1), ("848515", "Desossador", 1), ("848115", "Salsicheiro", 1)],
+                "destaque": "escolaridade −0,95 (estado: −0,08)"}
+    r.quem_age, r.horizonte = "Federação–SENAI", "3–12 meses"
+    linha = texto_top3([r])
+    assert linha.startswith("1. **Formar magarefe, trabalhador de tratamento do leite e desossador em Oeste Catarinense.**")
+    assert "40.133 movimentações" in linha and "Federação–SENAI" in linha and "salsicheiro" not in linha

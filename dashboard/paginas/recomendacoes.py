@@ -40,6 +40,23 @@ POR_QUE_ALAVANCA = {
 }
 
 
+def acao_curta(r: c.Recomendacao) -> str:
+    """A ação em uma linha legível: na formação, só as 3 primeiras ocupações, pelo nome curto."""
+    if r.alavanca == c.ALAVANCA_FORMACAO and r.extras.get("cbos"):
+        nomes = [c.nome_curto_cbo(d) for _, d, _ in r.extras["cbos"][:3]]
+        lista = ", ".join(nomes[:-1]) + " e " + nomes[-1] if len(nomes) > 1 else nomes[0]
+        return f"Formar {lista} em {r.regiao}"
+    return r.extras.get("acao") or f"{r.alavanca}: {r.macrofamilia} em {r.regiao}"
+
+
+def texto_top3(top: list[c.Recomendacao]) -> str:
+    """REC-04: uma linha por ação: o quê, onde, o número que sustenta e quem age."""
+    return "\n".join(
+        f"{i}. **{acao_curta(r)}.** {r.extras.get('destaque', '')} · "
+        f"{c.fmt_int(r.movimentacoes)} movimentações · **{r.quem_age}**, {r.horizonte}."
+        for i, r in enumerate(top, 1))
+
+
 def agrupar_por_alavanca(recs: list[c.Recomendacao]) -> dict[str, list[c.Recomendacao]]:
     """Recomendações por alavanca, na ordem de prioridade da primeira de cada grupo."""
     grupos: dict[str, list[c.Recomendacao]] = {}
@@ -105,6 +122,12 @@ def render(ctx: c.Contexto) -> None:
     if not recs:
         st.info("Nenhuma regra disparou com dados suficientes nesta seleção.")
     else:
+        top3 = c.top_executivo(recs)
+        with st.container(border=True, key="rx-top3"):
+            st.markdown(f"#### As {len(top3)} ações de maior impacto")
+            st.markdown(texto_top3(top3))
+            st.caption("Uma por alavanca: a de maior prioridade (severidade × movimentações) dentro de cada uma; "
+                       "entre as alavancas, as de mais movimentações afetadas. Muda com os filtros.")
         st.subheader("Prioridades")
         grupos = agrupar_por_alavanca(recs)
         colunas = st.columns(min(3, len(grupos)))

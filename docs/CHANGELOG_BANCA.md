@@ -424,3 +424,33 @@ Pares no recorte padrão (exemplos): Vale do Itajaí → Oeste Catarinense
 (Alimentos e bebidas, Qualificado: lá −332 com 43,8% a pedido; aqui +2.389)
 e Sul Catarinense → Vale do Itajaí (Metalmecânica, Qualificado: lá −783 com
 42,8% a pedido; aqui +138).
+
+---
+
+## REC-04 · Top 3 executivo no início de "O que fazer"
+
+- Bloco **"As 3 ações de maior impacto"** acima dos cartões de prioridade.
+  Uma linha por ação: **o quê + onde**, a **evidência numérica** (o KPI que
+  sustenta a ação, contra o estado), as movimentações afetadas e **quem age +
+  horizonte**. Muda com os filtros.
+- Seleção (`comum.top_executivo`): dentro de cada alavanca, a recomendação de
+  maior prioridade (severidade × movimentações) cujo grupo ainda não
+  apareceu; entre as alavancas, as de mais movimentações afetadas. Motivo: as
+  severidades de alavancas diferentes têm escalas diferentes, e o top 3 cru
+  repetia o mesmo grupo (Alimentos – Oeste) três vezes.
+- Toda recomendação ganha uma ação (`regras.ACAO_ALAVANCA`). Na formação, o
+  Top 3 usa as 3 primeiras ocupações pelo nome curto
+  (`comum.nome_curto_cbo`).
+- Testes: `test_top_executivo_uma_por_alavanca_e_grupos_distintos`,
+  `test_top3_e_legivel_em_uma_linha_por_acao`.
+
+**Top 3 no recorte padrão (transformação, set/25–ago/26):**
+1. Programa de retenção não salarial para Operação de linha e processo em
+   Oeste Catarinense: saída voluntária 59,0% (estado: 50,9%), 61.032
+   movimentações. Empresa, 0–3 meses.
+2. Formar magarefe, trabalhador de tratamento do leite e desossador em Oeste
+   Catarinense: escolaridade de quem entra vs quem saiu −0,95 (estado:
+   −0,08), 40.133 movimentações. Federação–SENAI, 3–12 meses.
+3. Atrair profissionais de metalmecânica e eletroeletrônica (Qualificado) de
+   Sul Catarinense para Vale do Itajaí: desligamento precoce 67,2% (estado:
+   65,9%), 22.602 movimentações. Empresa + Poder público, 3–12 meses.
