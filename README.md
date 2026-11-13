@@ -4,7 +4,19 @@ Pipeline de dados e dashboard analítico do **Datathon CDIA 2026 — "Raio-X do 
 
 A solução responde à pergunta central de negócio: *quais regiões e setores industriais de SC enfrentam apagão de mão de obra ou expansão acelerada, e como os indicadores de renda e escolaridade explicam esses gargalos.*
 
-O fluxo é linear: **ingestão → limpeza → cruzamento relacional → métricas de negócio → enriquecimento de CBOs via IA → agregação → upload Azure → dashboard**. O volume bruto (~3,4 milhões de linhas do CAGED movimentado de SC) é processado uma única vez no pipeline; o dashboard consome apenas tabelas agregadas de poucos MB.
+O fluxo é linear: **ingestão → limpeza → cruzamento relacional → métricas de negócio → enriquecimento de CBOs via IA → agregação → upload Azure → dashboard**. O volume bruto (~6,8 milhões de linhas do Novo CAGED de SC, 24 meses de MOV + FOR − EXC) é processado uma única vez no pipeline; o dashboard consome apenas tabelas agregadas de poucos MB.
+
+## Entregáveis (Guia do Participante, §6)
+
+| Entregável | Onde está |
+|---|---|
+| Pipeline documentado (carga, exclusões MOV × EX, cruzamento com municípios, IA dos CBOs, exportação) | [`notebooks/01_pipeline.ipynb`](notebooks/01_pipeline.ipynb), executado e com as saídas; código em [`src/`](src/) |
+| Comunicação com a IA (prompts e respostas) | [`ia_cbo/`](ia_cbo/): 23 lotes de prompts, respostas, revisão manual e [`classificar.py`](ia_cbo/classificar.py) para repetir pela API |
+| Dashboard analítico (Python/Streamlit) | **https://datathon-caged-sc-br.azurewebsites.net/**; código em [`dashboard/`](dashboard/) |
+| Pitch executivo (3 min) | roteiro, números conferidos e respostas para a banca em [`docs/PITCH_APOIO.md`](docs/PITCH_APOIO.md); prints em [`docs/prints/`](docs/prints/) |
+| Metodologia, premissas e limites | página Metodologia do painel; [`docs/CHANGELOG_BANCA.md`](docs/CHANGELOG_BANCA.md) e [`docs/ROADMAP.md`](docs/ROADMAP.md) |
+
+> O plano gratuito do Azure hiberna o painel: o primeiro acesso depois de uma pausa pode levar cerca de 1 minuto.
 
 ## Fluxo completo (resumo)
 
@@ -13,7 +25,7 @@ Este é o caminho feliz ponta a ponta que um novo usuário segue. Cada passo é 
 1. Instalar **Python 3.11.9** (via pyenv) e criar o ambiente virtual (`.venv`) — ver [Pré-requisitos de ambiente](#pré-requisitos-de-ambiente).
 2. Instalar as dependências: `pip install -r requirements.txt`.
 3. Criar a conta de armazenamento no Azure e o container — ver [Passo 1 — Criar a conta de armazenamento no Azure](#passo-1--criar-a-conta-de-armazenamento-no-azure).
-4. Obter a chave do Claude (Anthropic) — ver [Passo 2 — Obter a chave do Claude (Anthropic)](#passo-2--obter-a-chave-do-claude-anthropic).
+4. Obter a chave do LLM (ou usar a classificação via chat) — ver [Passo 2 — Obter a chave do LLM externo](#passo-2--obter-a-chave-do-llm-externo).
 5. Exportar as variáveis de ambiente — ver [Passo 3 — Exportar as variáveis de ambiente](#passo-3--exportar-as-variáveis-de-ambiente).
 6. Executar o pipeline pelo notebook `notebooks/01_pipeline.ipynb`.
 7. Iniciar o dashboard: `streamlit run dashboard/app.py`.
