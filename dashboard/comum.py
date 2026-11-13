@@ -662,6 +662,35 @@ DEFINICOES: dict[str, Definicao] = {
 }
 
 
+# NAR-04: uma frase simples por indicador (tooltip). A fórmula vem depois, para quem quiser.
+EXPLICACAO: dict[str, str] = {
+    M_MOV: "Quantas contratações e desligamentos houve no período.",
+    M_SALDO: "Quantas vagas foram criadas (positivo) ou fechadas (negativo).",
+    M_SALDO_10K: "Saldo de vagas proporcional à população: compara territórios de tamanhos diferentes.",
+    M_SAIDA_VOL: "De cada 100 desligamentos, quantos foram pedido do próprio trabalhador.",
+    M_GAP_SAL: "Quanto quem é contratado ganha em relação a quem saiu.",
+    M_GAP_ESC: "Se quem entra estudou mais (positivo) ou menos (negativo) do que quem sai.",
+    M_SALDO_REL: "Quanto do movimento virou vaga nova.",
+    M_ESTOQUE: "Quantos empregos formais existiam em 31/12/2025.",
+    M_ROT_DESC: "Quanto da equipe foi trocada no período, sem contar quem pediu para sair, se aposentou ou morreu.",
+    M_VAR_REL: "Quanto o emprego cresceu ou encolheu, em % dos empregos existentes.",
+    M_ACEL: "Se o emprego está crescendo mais rápido (ou mais devagar) do que no ano anterior.",
+    M_PRECOCE: "De cada 100 desligados, quantos saíram antes de completar 1 ano na empresa.",
+    M_SAL_ADM: "Salário médio de quem foi contratado.",
+    M_SAL_DESL: "Salário médio de quem saiu.",
+    M_ESC_ADM: "Escolaridade média de quem foi contratado.",
+    COLUNA_IDHM_2010: "Índice de desenvolvimento humano do município (0 a 1).",
+    COLUNA_PIB_PER_CAPITA_2023: "Riqueza produzida no município por habitante.",
+}
+
+
+def ajuda(nome: str) -> str:
+    """Tooltip de um indicador: a frase simples e, depois, o cálculo."""
+    definicao = DEFINICOES.get(nome)
+    frase = EXPLICACAO.get(nome, "")
+    return f"{frase} Cálculo: {definicao.formula}." if definicao else frase
+
+
 def _divisao(numerador: pd.Series, denominador: pd.Series) -> pd.Series:
     """Divisão elemento a elemento com 0 no denominador → NaN."""
     den = denominador.astype("float64")
@@ -1719,7 +1748,7 @@ TEMAS_KPI = [
     ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K, M_VAR_REL, M_ACEL]),
     ("Renda", ":material/payments:", [M_GAP_SAL, M_SAL_ADM, M_SAL_DESL]),
     ("Escolaridade", ":material/school:", [M_GAP_ESC]),
-    ("Tensão", ":material/crisis_alert:", [M_ROT_DESC, M_SAIDA_VOL, M_PRECOCE]),
+    ("Perda de gente", ":material/crisis_alert:", [M_ROT_DESC, M_SAIDA_VOL, M_PRECOCE]),
 ]
 METRICAS_TEMAS = [m for _, _, ms in TEMAS_KPI for m in ms]
 
@@ -1760,9 +1789,9 @@ def cartoes_kpi(ctx: Contexto, metricas: list[str] | None = None) -> None:
 
     def _linha(nome: str) -> str:
         definicao = DEFINICOES[nome]
-        ajuda = definicao.formula
+        texto_ajuda = ajuda(nome)
         if nome == M_GAP_SAL and not atual[M_SALARIO_OK]:
-            ajuda += " — amostra salarial insuficiente nesta seleção."
+            texto_ajuda += " Amostra salarial insuficiente nesta seleção."
         delta = None if ref is None else delta_texto(nome, atual[nome], ref[nome], "vs estado")
         extra = ""
         if delta:
@@ -1772,7 +1801,7 @@ def cartoes_kpi(ctx: Contexto, metricas: list[str] | None = None) -> None:
                      f'{"↑" if subiu else "↓"} {html.escape(delta)}</span>')
         elif ref is not None and (fatia := participacao_estadual(nome, atual[nome], ref[nome])):
             extra = f'<span class="rx-delta rx-neutro">{html.escape(fatia)}</span>'
-        return (f'<div class="rx-linha" title="{html.escape(ajuda)}">'
+        return (f'<div class="rx-linha" title="{html.escape(texto_ajuda)}">'
                 f'<span class="rx-rotulo">{html.escape(definicao.rotulo)} <span class="rx-periodo">{periodo}</span></span>'
                 f'<span class="rx-valor"><b>{html.escape(fmt_metrica(nome, atual[nome]))}</b> '
                 f'<small>{html.escape(UNIDADES.get(nome, ""))}</small>{extra}</span></div>')

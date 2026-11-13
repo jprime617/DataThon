@@ -50,36 +50,47 @@ PROXIMOS = """
 - Intervalos de confiança por bootstrap; RAIS 2024 e estoque mensal rolado.
 """
 
-# Para a banca: cada requisito (.kiro/specs/.../requirements.md) e onde conferi-lo.
-REQUISITOS = [
-    ("R1", "Ingestão e validação dos dados de origem",
-     "Pipeline (`notebooks/01_pipeline.ipynb`, etapa 1); nesta página, em Procedência e no funil de linhas."),
-    ("R2", "Limpeza, tipos e decodificação",
-     "Funil desta página (linhas fora do período excluídas); regra de salário válido em Procedência."),
-    ("R3", "Cruzamento CAGED × municípios",
-     "Saldo por 10 mil hab. (Panorama) e população, IDHM e PIB na Ficha do território."),
-    ("R4", "Métricas de negócio",
-     "Indicadores do Panorama e tabela Definições desta página; rotatividade descontada no tema Tensão, ao lado da taxa oficial."),
-    ("R5", "Agrupamento de CBOs via IA",
-     "Página Que profissional falta: macrofamílias, regras A–D, prompt e concordância entre rodadas."),
-    ("R6", "Agregações para o painel",
-     "Tabelas pré-agregadas lidas pelo painel; botão Baixar dados filtrados (CSV) em cada página."),
-    ("R7.1", "No mínimo 3 KPIs",
-     "Panorama: coluna Principais (4 indicadores) e Ficha do território."),
-    ("R7.2", "Mapa de SC pelo saldo por 10 mil hab.",
-     "Panorama: escolha Saldo por 10 mil hab. e Município no mapa (escala divergente, legenda em faixas)."),
-    ("R7.3", "Ranking de seções por saldo",
-     "Panorama: tabela Seções, com a rotatividade descontada e a saída voluntária ao lado."),
-    ("R7.4", "Salário × escolaridade ordinal média",
-     "Por que acontece → Aprofundar: qualificação e retenção (dispersão por macrofamília)."),
-    ("R7.5–7.6", "Filtros e recorte vazio",
-     "Barra lateral (período, território, setor, macrofamília, nível); recorte vazio mostra aviso, sem erro."),
-    ("R7.7–7.8", "Leitura das tabelas e falha de dados",
-     "Procedência desta página (origem em uso); sem dados, o painel avisa e não desenha os gráficos."),
-    ("R8", "Reprodutibilidade e documentação",
-     "README, notebook do pipeline, testes automatizados e commit do pipeline em Procedência."),
-    ("R9", "Implantação no Azure",
-     "Este painel no Azure App Service, lendo do Azure Blob Storage (origem em Procedência)."),
+# NAR-04: onde conferir cada um dos 5 critérios oficiais da banca (e, à parte, a engenharia).
+CRITERIOS_BANCA = [
+    ("1. Compreensão do problema e do contexto industrial",
+     "Panorama → Resposta à pergunta central (apagão × expansão, com a definição do guia); escopo de abertura na "
+     "indústria de transformação; construção separada como rotatividade estrutural; Metodologia → os quatro quadrantes."),
+    ("2. Embasamento analítico e diagnóstico (premissas e limites)",
+     "Quem precisa de atenção (matriz e causas); Por que acontece (salário com a correção do viés de tempo de casa, "
+     "escolaridade, riqueza do município); Metodologia → índice, critérios de \"explica\", premissas e limites, "
+     "funil de linhas e sensibilidade dos pesos."),
+    ("3. Dashboard e storytelling",
+     "Panorama (resposta em três linhas, mapa, indicadores com explicação em cada um) → Quem precisa de atenção → "
+     "Por que acontece → O que fazer. Filtros na barra lateral; recorte vazio avisa, sem erro."),
+    ("4. Recomendações e valor de negócio (ligação com as macrofamílias da IA)",
+     "O que fazer → as 3 ações de maior impacto, as alavancas por regra explícita (formação com as CBOs a formar, "
+     "atração de talentos com o par origem → destino), quem age, horizonte e meta; Que profissional falta → a "
+     "classificação da IA e a auditoria."),
+    ("5. Pitch de 3 minutos",
+     "Roteiro: Panorama (resposta + mapa) → Quem precisa de atenção (matriz) → O que fazer (Top 3). O modo "
+     "apresentação resume os cinco passos."),
+]
+ENGENHARIA = [
+    ("Pipeline reprodutível", "notebooks/01_pipeline.ipynb do FTP do MTE ao Blob; README com o passo a passo."),
+    ("Classificação por IA", "Prompts e respostas versionados em ia_cbo/; concordância e divergências na auditoria."),
+    ("Implantação no Azure", "Este painel no Azure App Service, lendo do Azure Blob Storage (origem em Procedência)."),
+    ("Testes automatizados", "pytest + Hypothesis cobrindo pipeline, métricas, regras e páginas (ver Qualidade do código)."),
+]
+
+GLOSSARIO = [
+    ("Saldo", "Contratações menos desligamentos: positivo, o emprego cresceu; negativo, encolheu."),
+    ("Saída voluntária", "Desligamentos a pedido do próprio trabalhador, em % de todos os desligamentos."),
+    ("Rotatividade descontada", "Quanto da equipe foi trocada no período, descontando quem pediu para sair, se "
+     "aposentou, morreu ou foi transferido (definição do Ministério do Trabalho)."),
+    ("Desligamento precoce", "Quem saiu antes de completar 1 ano na empresa."),
+    ("p.p. (ponto percentual)", "Diferença entre duas porcentagens: de 47% para 52% são 5 p.p."),
+    ("z-score", "Quantos desvios-padrão um grupo está acima (positivo) ou abaixo (negativo) da média dos grupos. "
+     "Serve para somar indicadores de escalas diferentes."),
+    ("Dinamismo", "O quanto o emprego do grupo cresce, comparado aos outros grupos (eixo horizontal da matriz)."),
+    ("Tensão", "O quanto o grupo perde gente, comparado aos outros: troca de equipe, pedidos de saída e saídas "
+     "antes de 1 ano (eixo vertical da matriz)."),
+    ("Macrofamília (IA)", "Grupo de ocupações (CBO) parecidas, definido pela classificação por IA."),
+    ("Mesorregião", "Uma das 6 grandes regiões de SC definidas pelo IBGE."),
 ]
 
 
@@ -90,7 +101,7 @@ def _sensibilidade(ctx: c.Contexto) -> None:
     with st.expander("Sensibilidade: o top 10 de tensão muda com outros pesos?"):
         por = [c.COLUNA_REGIAO, c.COLUNA_SETOR]
         m = c.matriz_diagnostico(ctx.df, por)
-        st.caption("Unidade: mesorregião × setor. Pesos iniciais iguais (PLANEJAMENTO §7.1). Mude-os e veja quantas "
+        st.caption("Unidade: mesorregião × setor. Pesos iniciais iguais para os três sintomas. Mude-os e veja quantas "
                    "unidades permanecem no top 10 de tensão.")
         cols = st.columns(len(c.PESOS_TENSAO_PADRAO))
         pesos = {nome: col.slider(f"Peso: {c.ROTULO_COMPONENTE[nome]}", 0.0, 3.0, 1.0, 0.5)
@@ -115,6 +126,19 @@ def tabela_setores() -> pd.DataFrame:
         por_setor.setdefault(setor, []).append(divisao)
     return pd.DataFrame([{"Setor": s, "Divisões CNAE": ", ".join(f"{d:02d}" for d in ds)}
                          for s, ds in sorted(por_setor.items(), key=lambda x: x[1][0])])
+
+
+def _comparacao_regra_salarial(ctx: c.Contexto) -> str:
+    """Quantos grupos do recorte teriam o selo Salarial com o corte fixo antigo (< 0,95) e com a regra atual."""
+    m = c.agregar_metricas(ctx.df, [c.COLUNA_REGIAO, c.COLUNA_SETOR])
+    m = m[m[c.M_AMOSTRA_OK]].dropna(subset=[c.M_GAP_SAL])
+    if m.empty:
+        return ""
+    gap_ref = c.total(ctx.ref)[c.M_GAP_SAL]
+    antigo = int((m[c.M_GAP_SAL] < c.LIMIAR_COMPRESSAO).sum())
+    novo = int(sum(c.salario_pior_que_estado(g, gap_ref) for g in m[c.M_GAP_SAL]))
+    return (f"Neste recorte, o corte fixo antigo (< {c.fmt_num(c.LIMIAR_COMPRESSAO, 2)}) daria o selo a {antigo} "
+            f"dos {len(m)} grupos mesorregião × setor, sem separar nada; a regra relativa dá a {novo}.")
 
 
 def render(ctx: c.Contexto) -> None:
@@ -180,7 +204,7 @@ def render(ctx: c.Contexto) -> None:
                 "da subclasse). Nas demais seções, o setor é a própria seção.")
     st.table(tabela_setores().set_index("Setor"))
 
-    st.subheader("Índice: Tensão = sintomas; causas ficam no diagnóstico")
+    st.subheader("Como a matriz é calculada: Dinamismo (cresce?) e Tensão (perde gente?)")
     st.markdown(
         "- **Dinamismo** = média dos z-scores da **variação do emprego** (saldo ÷ estoque de 31/12/2025) e da **aceleração** "
         "(saldo de set/25–ago/26 menos o de set/24–ago/25, ÷ estoque), entre as unidades com amostra. Blocos de 12 "
@@ -195,9 +219,8 @@ def render(ctx: c.Contexto) -> None:
         f"o salário de entrada ser menor é o esperado: no estado, quem entra ganha "
         f"{c.fmt_pct(c.total(ctx.ref)[c.M_GAP_SAL], 0)} do salário de quem sai. Por isso a causa **Salarial** é relativa: "
         f"só acende quando a razão entrada/saída do grupo fica **{c.fmt_num(c.MARGEM_SALARIAL_RELATIVA * 100, 0)} p.p. "
-        "ou mais abaixo da razão do estado** (mesmo escopo e período). Com o corte fixo antigo (< 0,95), 55 dos 82 grupos "
-        "da indústria recebiam o selo, e ele não separava nada. A comparação dentro da mesma ocupação (CBO) é o passo "
-        "seguinte.\n"
+        "ou mais abaixo da razão do estado** (mesmo escopo e período). "
+        + _comparacao_regra_salarial(ctx) + "\n"
         "- **Saíram:** o giro (função exata do saldo relativo) e a aceleração entre semestres (media o calendário: "
         "dezembro concentra desligamentos); ela voltou na forma de blocos de 12 meses."
     )
@@ -211,8 +234,10 @@ def render(ctx: c.Contexto) -> None:
 
     _sensibilidade(ctx)
 
-    st.subheader("Requisitos do desafio: onde conferir")
-    st.table(pd.DataFrame(REQUISITOS, columns=["Requisito", "O quê", "Onde aparece"]).set_index("Requisito"))
+    st.subheader("Onde conferir cada critério da banca")
+    st.table(pd.DataFrame(CRITERIOS_BANCA, columns=["Critério", "Onde conferir"]).set_index("Critério"))
+    st.markdown("**Engenharia**")
+    st.table(pd.DataFrame(ENGENHARIA, columns=["Item", "Onde conferir"]).set_index("Item"))
 
     st.subheader("Premissas e limites")
     st.markdown(LIMITES)
@@ -229,3 +254,6 @@ def render(ctx: c.Contexto) -> None:
 
     st.subheader("Próximos passos")
     st.markdown(PROXIMOS)
+
+    st.subheader("Glossário")
+    st.markdown("\n".join(f"- **{termo}**: {texto}" for termo, texto in GLOSSARIO))

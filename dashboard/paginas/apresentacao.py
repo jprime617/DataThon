@@ -35,10 +35,10 @@ def _gancho(ctx: c.Contexto) -> None:
     st.markdown(nar.resposta_principal(ctx.df, ctx.filtros.escopo))
     t = c.total(ctx.df)
     cols = st.columns(3)
-    cols[0].metric("Movimentações na indústria", c.fmt_int(t[c.M_MOV]), border=True)
+    cols[0].metric("Movimentações", c.fmt_int(t[c.M_MOV]), border=True, help=c.ajuda(c.M_MOV))
     cols[1].metric("Saldo de vagas", c.fmt_int(t[c.M_SALDO]), border=True,
                    help=f"{c.fmt_pct(t[c.M_SALDO_REL])} das movimentações")
-    cols[2].metric("Desligamentos a pedido", c.fmt_pct(t[c.M_SAIDA_VOL]), border=True)
+    cols[2].metric("Desligamentos a pedido", c.fmt_pct(t[c.M_SAIDA_VOL]), border=True, help=c.ajuda(c.M_SAIDA_VOL))
     st.plotly_chart(fig.construir_serie_mensal(c.agregar_metricas(ctx.df, [c.COLUNA_MES]),
                                                "Todo mês a indústria contrata e desliga quase o mesmo tanto"),
                     width="stretch")

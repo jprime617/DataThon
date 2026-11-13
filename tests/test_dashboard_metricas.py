@@ -806,3 +806,51 @@ def test_resposta_central_e_calculada_e_reage_aos_filtros():
     obra = c.montar_contexto(art, c.Filtros(escopo=c.ESCOPO_INDUSTRIA, meses=("202509", "202608")))
     assert c.ROTULO_CONSTRUCAO in nar.resposta_central(obra.df, c.total(obra.ref)).onde
     assert nar.resposta_central(ctx.df.iloc[0:0]) is None
+
+
+# --- NAR-04: linguagem executiva ----------------------------------------------------
+
+def _strings_de_interface():
+    """Literais de texto do painel (comentários e docstrings ficam de fora)."""
+    import ast
+    from pathlib import Path
+
+    raiz = Path(__file__).resolve().parent.parent / "dashboard"
+    for arquivo in raiz.rglob("*.py"):
+        arvore = ast.parse(arquivo.read_text(encoding="utf-8"))
+        docstrings = {id(n.body[0].value) for n in ast.walk(arvore)
+                      if isinstance(n, (ast.Module, ast.FunctionDef, ast.ClassDef)) and n.body
+                      and isinstance(n.body[0], ast.Expr) and isinstance(n.body[0].value, ast.Constant)}
+        for no in ast.walk(arvore):
+            if isinstance(no, ast.Constant) and isinstance(no.value, str) and id(no) not in docstrings:
+                yield arquivo.name, no.value
+
+
+def test_nenhum_termo_interno_na_interface():
+    for arquivo, texto in _strings_de_interface():
+        for termo in ("ClienteArquivo", "IA paga", "PLANEJAMENTO", "§", "M3.C", "Requisitos do desafio"):
+            assert termo not in texto, f"{arquivo}: {termo!r} em {texto[:60]!r}"
+
+
+def test_todo_kpi_tem_help():
+    import ast
+    from pathlib import Path
+
+    for arquivo in (Path(__file__).resolve().parent.parent / "dashboard").rglob("*.py"):
+        for no in ast.walk(ast.parse(arquivo.read_text(encoding="utf-8"))):
+            if isinstance(no, ast.Call) and isinstance(no.func, ast.Attribute) and no.func.attr == "metric":
+                assert any(k.arg == "help" for k in no.keywords), f"{arquivo.name}:{no.lineno} sem help"
+
+
+def test_ajuda_tem_frase_simples_e_calculo():
+    for nome in c.DEFINICOES:
+        texto = c.ajuda(nome)
+        assert c.EXPLICACAO[nome] in texto and "Cálculo:" in texto
+
+
+def test_glossario_cobre_o_jargao():
+    from dashboard.paginas import metodologia
+
+    termos = " ".join(t for t, _ in metodologia.GLOSSARIO)
+    for jargao in ("Rotatividade descontada", "p.p.", "z-score", "Dinamismo", "Tensão"):
+        assert jargao in termos

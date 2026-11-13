@@ -67,12 +67,14 @@ def test_no_maximo_dois_graficos_a_vista_por_pagina():
         assert len(a_vista) <= 2, f"{arquivo.name}: {len(a_vista)} gráficos à vista"
 
 
-def test_metodologia_cobre_r1_a_r9_e_r7_4_tem_grafico():
-    """M3.C7: tabela requisito → onde aparece, e o R7.4 existe de fato."""
+def test_metodologia_cobre_os_5_criterios_da_banca_e_o_grafico_renda_escolaridade():
+    """NAR-04: "onde conferir" pelos 5 critérios oficiais; engenharia à parte."""
     import inspect
 
     from dashboard.paginas import causa_raiz, metodologia
 
-    ids = " ".join(r for r, _, _ in metodologia.REQUISITOS)
-    assert all(f"R{i}" in ids for i in range(1, 10))
+    criterios = " ".join(cr for cr, _ in metodologia.CRITERIOS_BANCA)
+    for nome in ("Compreensão", "Embasamento", "Dashboard", "Recomendações", "Pitch"):
+        assert nome in criterios
+    assert len(metodologia.CRITERIOS_BANCA) == 5 and metodologia.ENGENHARIA
     assert "c.M_ESC_ADM, c.M_SAL_ADM" in inspect.getsource(causa_raiz.render)

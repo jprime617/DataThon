@@ -83,10 +83,12 @@ def render(ctx: c.Contexto) -> None:
             col1.metric("Concordância na família", c.fmt_pct(meta.get("concordancia_familia")), border=True,
                         help="Comparação: " + meta.get("comparacao", "mesma IA, 2ª rodada com a ordem dos códigos embaralhada")
                         + ".")
-            col2.metric("Concordância no nível", c.fmt_pct(meta.get("concordancia_nivel")), border=True)
+            col2.metric("Concordância no nível", c.fmt_pct(meta.get("concordancia_nivel")), border=True,
+                        help="Em quantas ocupações as duas classificações deram o mesmo nível de qualificação.")
             col3.metric("Não classificado", c.fmt_pct(meta.get("nao_classificado_ponderado"), 2), border=True,
                         help="Ponderado pelas movimentações.")
-            col4.metric("Ocupações classificadas", c.fmt_int(len(mapa)) if mapa is not None else "—", border=True)
+            col4.metric("Ocupações classificadas", c.fmt_int(len(mapa)) if mapa is not None else "—", border=True,
+                        help="Códigos CBO distintos que aparecem nas movimentações e receberam macrofamília e nível.")
             if meta.get("modelo"):
                 st.caption(f"Modelo: {meta.get('modelo')} ({meta.get('provedor', '')}), classificação de "
                            f"{str(meta.get('gerado_em', ''))[:10]}. A IA roda no pipeline, nunca no painel."

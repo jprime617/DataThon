@@ -494,3 +494,31 @@ e Sul Catarinense → Vale do Itajaí (Metalmecânica, Qualificado: lá −783 c
 |---|---|---|
 | Correlação gap salarial × saída voluntária | −0,35 (B–F, 82 grupos) | −0,22 (transformação, 63) · −0,33 (B–F, 86) |
 | Gap de escolaridade do estado | −0,05 (B–F) | −0,08 (transformação) · −0,05 (B–F) |
+
+---
+
+## NAR-04 · Linguagem executiva e termos internos
+
+- **Termos internos** fora das strings de interface: "PLANEJAMENTO §7.1"
+  (sensibilidade dos pesos), referências de ciclo (M3.C…) e a tabela
+  "Requisitos do desafio R1–R9". "ClienteArquivo" e "IA paga (chat)" vinham
+  dos metadados da IA e eram exibidos crus; saem no TAX-04, junto com o
+  texto da auditoria. Teste:
+  `test_nenhum_termo_interno_na_interface` (varre os literais de texto do
+  painel, sem comentários e docstrings).
+- **"Onde conferir cada critério da banca"**: tabela com as 5 dimensões
+  oficiais (Compreensão, Embasamento, Dashboard, Recomendações, Pitch) e as
+  páginas e seções de cada uma, mais a subseção **Engenharia** (pipeline, IA,
+  Azure, testes).
+- **Tooltip simples em todo KPI:** `comum.EXPLICACAO` traz uma frase em
+  linguagem leiga por indicador, e `comum.ajuda()` junta frase + cálculo.
+  Vale para os cartões e todos os `st.metric`. Teste: `test_todo_kpi_tem_help`.
+  O tema "Tensão" dos indicadores virou "Perda de gente". O título técnico
+  "Índice: Tensão = sintomas…" virou "Como a matriz é calculada: Dinamismo
+  (cresce?) e Tensão (perde gente?)".
+- **Glossário** no fim da Metodologia: saldo, saída voluntária, rotatividade
+  descontada, desligamento precoce, p.p., z-score, Dinamismo, Tensão,
+  macrofamília, mesorregião.
+- O número fixo "55 dos 82 grupos" da Metodologia agora é **calculado** no
+  recorte (regra antiga × nova): hoje, 45 → 8 de 63 na transformação e
+  57 → 16 de 86 em B–F.

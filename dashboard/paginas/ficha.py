@@ -78,10 +78,10 @@ def render(ctx: c.Contexto) -> None:
     t, ref = c.total(dados), c.total(base)
     for col, m in zip(st.columns(len(c.KPIS_PADRAO)), c.KPIS_PADRAO):
         if m in c.METRICAS_ABSOLUTAS:  # BUG-01: absoluto → participação no estado, sem seta
-            col.metric(c.DEFINICOES[m].rotulo, c.fmt_metrica(m, t[m]), border=True, help=c.DEFINICOES[m].formula,
+            col.metric(c.DEFINICOES[m].rotulo, c.fmt_metrica(m, t[m]), border=True, help=c.ajuda(m),
                        delta=c.participacao_estadual(m, t[m], ref[m]), delta_color="off", delta_arrow="off")
         else:
-            col.metric(c.DEFINICOES[m].rotulo, c.fmt_metrica(m, t[m]), border=True, help=c.DEFINICOES[m].formula,
+            col.metric(c.DEFINICOES[m].rotulo, c.fmt_metrica(m, t[m]), border=True, help=c.ajuda(m),
                        delta=c.delta_texto(m, t[m], ref[m], "vs estado"),
                        delta_color="inverse" if m in c.METRICAS_INVERSAS else "normal")
     if not t[c.M_AMOSTRA_OK]:
