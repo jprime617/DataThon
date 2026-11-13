@@ -655,6 +655,48 @@ def agregar_perfil(df_metricas: pd.DataFrame) -> pd.DataFrame:
     return perfil
 
 
+# Tabela por ocupação (Lote B): o "o que formar" das recomendações e a razão
+# salarial dentro da mesma CBO. Mesmas colunas aditivas do agregado.
+COLUNA_CBO_AGREGADO = "cbo"
+COLUNAS_CBO = [
+    COLUNA_REGIAO,
+    COLUNA_SECAO_INDUSTRIAL,
+    COLUNA_SETOR,
+    COLUNA_ESCOPO_INDUSTRIAL,
+    COLUNA_MACROFAMILIA_CBO,
+    COLUNA_NIVEL_QUALIFICACAO,
+    COLUNA_CBO_AGREGADO,
+    COLUNA_MES,
+]
+
+
+def agregar_cbo(df_metricas: pd.DataFrame) -> pd.DataFrame:
+    """Uma linha por mesorregião × seção × setor × macrofamília × nível × CBO × mês.
+
+    Usa a mesma `preparar_base` do agregado (peso EXC, salário válido,
+    escolaridade ordinal), então as somas por CBO fecham com o agregado.
+    """
+    from src.cbo_ia import COLUNA_CBO
+
+    base = preparar_base(df_metricas)
+    cbo = df_metricas.loc[base.index, COLUNA_CBO] if COLUNA_CBO in df_metricas.columns else pd.Series("", index=base.index)
+    base[COLUNA_CBO_AGREGADO] = cbo.astype(str).str.strip().str.zfill(6)
+    base[COLUNA_REGIAO] = base[COLUNA_CHAVE_MUNICIPAL].map(
+        lambda chave: MESORREGIAO_POR_MUNICIPIO.get(str(chave), REGIAO_DESCONHECIDA)
+    )
+    base[COLUNA_ESCOPO_INDUSTRIAL] = base[COLUNA_SECAO].isin(_rotulos_secoes_industriais())
+    base = base.rename(columns={COLUNA_SECAO: COLUNA_SECAO_INDUSTRIAL, COLUNA_MACROFAMILIA: COLUNA_MACROFAMILIA_CBO,
+                                COLUNA_COMPETENCIA: COLUNA_MES})
+    base[COLUNA_MES] = base[COLUNA_MES].astype(str).str[:6]
+    tabela = base.groupby(COLUNAS_CBO, dropna=False, observed=True)[COLUNAS_ADITIVAS].sum().reset_index()
+    tabela = tabela[(tabela[COLUNA_ADMISSOES] != 0) | (tabela[COLUNA_DESLIGAMENTOS] != 0)]
+    for coluna in tabela.columns:
+        if coluna.startswith("soma_"):
+            tabela[coluna] = tabela[coluna].astype("float64").round(CASAS_DECIMAIS_METRICAS)
+    log_etapa(_ETAPA, f"tabela por CBO com {len(tabela)} linhas.")
+    return tabela.reset_index(drop=True)
+
+
 def montar_metadados(
     *,
     linhas_brutas: int,

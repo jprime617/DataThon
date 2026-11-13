@@ -157,3 +157,19 @@ def test_metadados_registram_linhas_por_tipo_para_o_funil(tmp_path):
     sem = montar_metadados(linhas_brutas=6, linhas_limpas=6, excluidas_competencia=0,
                            df_agregado=agregado, df_perfil=perfil, raiz=tmp_path)
     assert "por_tipo" not in sem["linhas"]
+
+
+def test_tabela_por_cbo_fecha_com_o_agregado():
+    """Lote B (REC-01/ANA-01): mesma base, mesmas somas, uma dimensão a mais (CBO)."""
+    from src.agregador import COLUNAS_CBO, agregar_cbo
+
+    df = _base()
+    df["cbo2002ocupação"] = ["763210", "763210", "724315", "724315", "715505", "715505"]
+    tabela = agregar_cbo(df)
+    agregado = agregar(preparar_base(_base()), _municipios())
+    for coluna in ("admissoes", "desligamentos", "desligamentos_a_pedido", "soma_salario_admissao",
+                   "n_salario_admissao", "soma_escolaridade_desligamento"):
+        assert tabela[coluna].sum() == agregado[coluna].sum(), coluna
+    assert set(COLUNAS_CBO) <= set(tabela.columns)
+    assert set(tabela["cbo"]) == {"763210", "724315", "715505"}
+    assert tabela["mes"].astype(str).eq("202509").all()
