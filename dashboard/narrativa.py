@@ -207,3 +207,55 @@ def legenda_mapa(metricas: pd.DataFrame, metrica: str, rotulo: str) -> str:
     return (f"{leitura} Pior situação: **{extremo[rotulo]}** "
             f"({definicao.rotulo.lower()}: {c.fmt_metrica(metrica, extremo[metrica])}). "
             f"Cinza = poucos dados.")
+
+
+def _lista(itens: list[str]) -> str:
+    """["a", "b", "c"] → "a, b e c"."""
+    return ", ".join(itens[:-1]) + " e " + itens[-1] if len(itens) > 1 else "".join(itens)
+
+
+# --- DATA-01: onde se concentra um gap de escolaridade fora da curva -----------
+
+def destaque_escolaridade(df: pd.DataFrame, perfil: pd.DataFrame | None = None) -> str | None:
+    """Nota sobre a macrofamília com gap de escolaridade ≤ `LIMIAR_DESTAQUE_GAP_ESC`.
+
+    Diz onde as admissões dela se concentram (mesorregião e municípios) e, com o
+    perfil, quanto dos admitidos e dos desligados tem até o fundamental
+    incompleto. ``None`` quando nenhuma macrofamília passa do limiar.
+    """
+    if df is None or df.empty:
+        return None
+    macros = c.agregar_metricas(df, [c.COLUNA_MACROFAMILIA_CBO])
+    macros = macros[macros[c.M_AMOSTRA_OK]
+                    & (macros[c.COLUNA_MACROFAMILIA_CBO].astype(str) != c.NAO_CLASSIFICADO)].dropna(subset=[c.M_GAP_ESC])
+    if macros.empty:
+        return None
+    pior = macros.loc[macros[c.M_GAP_ESC].idxmin()]
+    if pior[c.M_GAP_ESC] > c.LIMIAR_DESTAQUE_GAP_ESC:
+        return None
+    nome = str(pior[c.COLUNA_MACROFAMILIA_CBO])
+    demais = macros[macros[c.COLUNA_MACROFAMILIA_CBO].astype(str) != nome][c.M_GAP_ESC]
+    sub = df[df[c.COLUNA_MACROFAMILIA_CBO].astype(str) == nome]
+    regioes = c.agregar_metricas(sub, [c.COLUNA_REGIAO])
+    adm_total = float(regioes[c.COLUNA_ADMISSOES].sum()) or 1.0
+    topo = regioes.sort_values(c.COLUNA_ADMISSOES, ascending=False).iloc[0]
+    regiao = str(topo[c.COLUNA_REGIAO])
+    municipios = (sub[sub[c.COLUNA_REGIAO].astype(str) == regiao]
+                  .groupby(c.COLUNA_NOME_MUNICIPIO, observed=True)[c.COLUNA_ADMISSOES].sum()
+                  .sort_values(ascending=False).head(3).index.astype(str).tolist())
+    texto = (f"**{nome}** destoa: quem entra tem {c.fmt_num(-pior[c.M_GAP_ESC], 2)} nível de escolaridade "
+             f"a menos que quem sai")
+    if not demais.empty:
+        texto += (f" (nas demais macrofamílias, entre {c.fmt_num(demais.min(), 2)} e "
+                  f"{c.fmt_num(demais.max(), 2)})")
+    texto += (f". {c.fmt_pct(topo[c.COLUNA_ADMISSOES] / adm_total, 0)} das admissões estão em **{regiao}** "
+              f"(gap {c.fmt_num(topo[c.M_GAP_ESC], 2)}), sobretudo em {_lista(municipios)}.")
+    if perfil is not None and not perfil.empty:
+        p = perfil[perfil[c.COLUNA_MACROFAMILIA_CBO].astype(str) == nome]
+        baixa = p[c.COLUNA_FAIXA_ESCOLARIDADE].astype(str) == "Até fundamental incompleto"
+        adm, desl = p[c.COLUNA_ADMISSOES].sum(), p[c.COLUNA_DESLIGAMENTOS].sum()
+        if adm > 0 and desl > 0:
+            texto += (f" Até o fundamental incompleto: {c.fmt_pct(p.loc[baixa, c.COLUNA_ADMISSOES].sum() / adm)} "
+                      f"dos admitidos e {c.fmt_pct(p.loc[baixa, c.COLUNA_DESLIGAMENTOS].sum() / desl)} dos "
+                      "desligados (período inteiro).")
+    return texto + " O dado é real (códigos fora da escala 1–11 ficam fora da média); a causa pede investigação local."

@@ -7,6 +7,7 @@ import streamlit as st
 
 from dashboard import comum as c
 from dashboard import figuras as fig
+from dashboard import narrativa as nar
 from src.mapeamentos import FAIXAS_ESCOLARIDADE
 
 ORDEM_FAIXAS = [rotulo for _, rotulo in FAIXAS_ESCOLARIDADE]
@@ -125,6 +126,9 @@ def render(ctx: c.Contexto) -> None:
         macros = c.agregar_metricas(ctx.df, [c.COLUNA_MACROFAMILIA_CBO])
         macros = macros[macros[c.COLUNA_MACROFAMILIA_CBO].astype(str) != c.NAO_CLASSIFICADO]
         col1.plotly_chart(fig.construir_gap_escolaridade(macros, c.COLUNA_MACROFAMILIA_CBO), width="stretch")
+        nota_esc = nar.destaque_escolaridade(ctx.df, perfil)
+        if nota_esc:
+            col1.caption(nota_esc)
         rot = unidades[c.COLUNA_SETOR].astype(str) + " – " + unidades[c.COLUNA_REGIAO].astype(str)
         col2.plotly_chart(fig.construir_dispersao(unidades, rot, c.M_GAP_SAL, c.M_SAIDA_VOL,
                                                   "Salário explica a saída voluntária?"), width="stretch")

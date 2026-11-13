@@ -343,3 +343,34 @@ def test_dinamismo_cai_para_o_saldo_relativo_sem_estoque():
              _celula(setor="b", admissoes=100, desligamentos=200))
     m = c.matriz_diagnostico(df, [c.COLUNA_SETOR]).set_index(c.COLUNA_SETOR)
     assert m.loc["a", "dinamismo"] > 0 > m.loc["b", "dinamismo"]
+
+
+# --- DATA-01: nota do gap de escolaridade fora da curva ----------------------
+
+def _esc(macro: str, regiao: str, municipio: str, adm: int, esc_adm: float, desl: int, esc_desl: float) -> dict:
+    return _celula(macrofamilia_cbo=macro, regiao=regiao, municipio_nome=municipio,
+                   admissoes=adm, desligamentos=desl,
+                   soma_escolaridade_admissao=adm * esc_adm, n_escolaridade_admissao=adm,
+                   soma_escolaridade_desligamento=desl * esc_desl, n_escolaridade_desligamento=desl)
+
+
+def test_destaque_escolaridade_aponta_onde_o_gap_se_concentra():
+    df = _df(
+        _esc("Alimentos e bebidas", "Oeste Catarinense", "Chapecó", 300, 4.5, 300, 5.5),
+        _esc("Alimentos e bebidas", "Serrana", "Lages", 100, 6.0, 100, 6.0),
+        _esc("Têxtil, confecção, couro e calçados", "Vale do Itajaí", "Blumenau", 200, 6.3, 200, 6.3),
+    )
+    texto = nar.destaque_escolaridade(df)
+    assert texto is not None
+    assert "Alimentos e bebidas" in texto and "Oeste Catarinense" in texto and "Chapecó" in texto
+    assert "0,75" in texto       # gap da macrofamília: 4,875 − 5,625
+    assert "75%" in texto        # 300 de 400 admissões no Oeste
+
+
+def test_destaque_escolaridade_some_quando_nada_passa_do_limiar():
+    df = _df(
+        _esc("Alimentos e bebidas", "Oeste Catarinense", "Chapecó", 300, 5.4, 300, 5.5),
+        _esc("Têxtil, confecção, couro e calçados", "Vale do Itajaí", "Blumenau", 200, 6.3, 200, 6.3),
+    )
+    assert nar.destaque_escolaridade(df) is None
+    assert nar.destaque_escolaridade(df.iloc[0:0]) is None

@@ -120,3 +120,25 @@ def test_peso_exc_desconta_contagens_e_saldo():
     assert saldo_liquido(df, ["chave_municipal"])["saldo_liquido"].sum() == (2 - 4) + 2
     agregado = agregar(df, _municipios())
     assert (agregado["admissoes"] - agregado["desligamentos"]).sum() == agregado["saldo_liquido"].sum()
+
+
+def test_media_de_escolaridade_so_usa_codigos_validos():
+    """DATA-01: só os códigos 1–11 (e 80 = pós, 9,5) entram na média ordinal.
+
+    Códigos fora da escala (ex.: 99 = não identificado) não podem entrar nem na
+    soma nem no contador; senão puxariam a média de um grupo para cima ou para
+    baixo sem ser escolaridade de verdade.
+    """
+    from src.limpeza import derivar_escolaridade_ordinal
+
+    df = _base()
+    df["graudeinstrução"] = [7, 99, 9, 80, 0, 4]
+    df = derivar_escolaridade_ordinal(df.drop(columns=["escolaridade_ordinal"]))
+    base = preparar_base(df)
+    adm, desl = base["saldomovimentação"] == 1, base["saldomovimentação"] == -1
+    # Admissões: códigos 7 e 9 → ambos válidos.
+    assert base.loc[adm, "n_escolaridade_admissao"].sum() == 2
+    assert base.loc[adm, "soma_escolaridade_admissao"].sum() == 16.0
+    # Desligamentos: 99 e 0 ficam fora; 80 → 9,5; 4 → 4.
+    assert base.loc[desl, "n_escolaridade_desligamento"].sum() == 2
+    assert base.loc[desl, "soma_escolaridade_desligamento"].sum() == 13.5

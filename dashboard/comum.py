@@ -767,6 +767,9 @@ CAUSA_QUALIFICACAO = "Qualificação"
 CAUSA_RETENCAO = "Retenção"
 LIMIAR_GAP_ESCOLARIDADE = -0.10
 NIVEIS_QUALIFICADOS = ("Técnico", "Superior")
+# DATA-01: gap de escolaridade de uma macrofamília que merece nota explicativa
+# (bem abaixo das demais, que ficam entre −0,12 e +0,07 no estado).
+LIMIAR_DESTAQUE_GAP_ESC = -0.30
 
 
 def causas(linha: pd.Series, *, saida_ref: float, fracao_tecnica: float = 0.0) -> list[str]:
