@@ -425,3 +425,22 @@ def test_funil_mostra_a_sobra_quando_exc_nao_explica_tudo():
 def test_funil_sem_metadados_fica_vazio():
     assert nar.etapas_funil({}) == []
     assert nar.texto_funil([]) == ""
+
+
+# --- BUG-03: nota de dezembro só quando o pior mês é dezembro -----------------
+
+def _mensal(saldos: dict[str, int]) -> pd.DataFrame:
+    return pd.DataFrame({c.COLUNA_MES: list(saldos), c.M_SALDO: list(saldos.values())})
+
+
+def test_legenda_serie_cita_dezembro_quando_ele_e_o_pior_mes():
+    texto = nar.legenda_serie(_mensal({"202511": 50, "202512": -900, "202601": 120}))
+    assert "pior: dez/25" in texto and "Dezembro concentra" in texto
+
+
+@pytest.mark.parametrize("saldos", [
+    {"202512": -100, "202601": -1887, "202602": 30},   # Araranguá/Veículos: pior jan/26
+    {"202510": -500, "202512": 40, "202607": 1131},    # Itajaí/Veículos: pior out/25
+])
+def test_legenda_serie_nao_cita_dezembro_quando_o_pior_mes_e_outro(saldos):
+    assert "Dezembro" not in nar.legenda_serie(_mensal(saldos))

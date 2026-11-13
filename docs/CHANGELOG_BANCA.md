@@ -92,3 +92,17 @@ O CAGED não mostra a causa.
 | No período analisado | 6.782.144 | 0 | fora do período |
 | Movimentações válidas | 6.771.692 | 10.452 | exclusões declaradas (EXC) e as declarações que elas anulam |
 | Movimentações da indústria (B–F) | 2.282.348 | 4.489.344 | outras seções |
+
+---
+
+## BUG-03 · Frase fixa sobre dezembro
+
+- `narrativa.legenda_serie` só acrescenta "Dezembro concentra desligamentos
+  sazonais" quando o pior mês da série é dezembro e tem saldo negativo.
+- Testes com o pior mês em dezembro e fora dele (casos Araranguá/Veículos e
+  Itajaí/Veículos).
+
+| Recorte | Antes | Depois |
+|---|---|---|
+| Itajaí (micro) · Veículos | "…pior: out/25 (saldo −204). Dezembro concentra…" | "…pior: out/25 (saldo −204)." |
+| SC · indústria | "…pior: dez/25 (saldo −27.379). Dezembro concentra…" | igual (a frase vale) |

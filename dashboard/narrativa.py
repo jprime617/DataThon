@@ -178,9 +178,12 @@ def legenda_serie(mensal: pd.DataFrame) -> str:
         return ""
     melhor = mensal.loc[mensal[c.M_SALDO].idxmax()]
     pior = mensal.loc[mensal[c.M_SALDO].idxmin()]
-    return (f"Melhor mês: {c.rotulo_mes(melhor[c.COLUNA_MES])} (saldo {c.fmt_int(melhor[c.M_SALDO])}); "
-            f"pior: {c.rotulo_mes(pior[c.COLUNA_MES])} (saldo {c.fmt_int(pior[c.M_SALDO])}). "
-            "Dezembro concentra desligamentos sazonais.")
+    texto = (f"Melhor mês: {c.rotulo_mes(melhor[c.COLUNA_MES])} (saldo {c.fmt_int(melhor[c.M_SALDO])}); "
+             f"pior: {c.rotulo_mes(pior[c.COLUNA_MES])} (saldo {c.fmt_int(pior[c.M_SALDO])}).")
+    # BUG-03: a nota sazonal só vale quando o pior mês é mesmo dezembro.
+    if str(pior[c.COLUNA_MES]).endswith("12") and pior[c.M_SALDO] < 0:
+        texto += " Dezembro concentra desligamentos sazonais."
+    return texto
 
 
 # Como ler a cor de cada indicador do mapa, em linguagem leiga.
