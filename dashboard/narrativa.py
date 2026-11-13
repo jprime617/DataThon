@@ -636,7 +636,29 @@ def _data(valor) -> str:
     return f"{texto[8:10]}/{texto[5:7]}/{texto[:4]}" if len(texto) == 10 else "—"
 
 
-def auditoria_ia(meta: dict, meta_r2: dict, divergencias: pd.DataFrame | None = None) -> str:
+def texto_desempate(final: pd.DataFrame | None) -> str:
+    """TAX-04 P1: a regra explícita de desempate e, com o mapeamento final, quantas CBOs cada caminho decidiu."""
+    from src import cbo_ia
+
+    texto = ("**Desempate (regra explícita):** quando as rodadas divergem na família, vale a que concorda com a "
+             "família sugerida pelo prefixo da CBO. Exceção: se a 1ª fugiu do prefixo com justificativa registrada "
+             "(o prompt só permitia o desvio assim), vale a 1ª. Se o prefixo não resolve (não sugere família ou "
+             "nenhuma rodada concorda com ele), o caso vai para revisão manual em `ia_cbo/overrides.csv`; até lá, "
+             "vale a 1ª. Os overrides manuais são a palavra final.")
+    if final is None or final.empty or "origem" not in final:
+        return texto
+    cont = final["origem"].value_counts()
+    partes = [(cbo_ia.ORIGEM_PREFIXO, "pelo prefixo"), (cbo_ia.ORIGEM_JUSTIFICADA, "pela 1ª rodada justificada"),
+              (cbo_ia.ORIGEM_PENDENTE, "aguardando revisão manual (vale a 1ª)"),
+              (cbo_ia.ORIGEM_OVERRIDE, "por override manual")]
+    lista = [f"{c.fmt_int(int(cont.get(o, 0)))} {rotulo}" for o, rotulo in partes if cont.get(o, 0)]
+    mudou = int((final["macrofamilia"] != final["macrofamilia_ia"]).sum()) if "macrofamilia_ia" in final else 0
+    return (texto + f" Nas {c.fmt_int(len(final))} CBOs: " + ", ".join(lista)
+            + f". A família final difere da que a IA deu em {c.fmt_int(mudou)} CBO{'' if mudou == 1 else 's'}.")
+
+
+def auditoria_ia(meta: dict, meta_r2: dict, divergencias: pd.DataFrame | None = None,
+                 final: pd.DataFrame | None = None) -> str:
     """Como a classificação foi feita e auditada: um processo só, coerente com `ia_cbo/` e os metadados."""
     meta, meta_r2 = meta or {}, meta_r2 or {}
     modelo = meta.get("modelo") or "modelo informado no pipeline"
@@ -658,9 +680,7 @@ def auditoria_ia(meta: dict, meta_r2: dict, divergencias: pd.DataFrame | None = 
     if divergencias is not None and not divergencias.empty:
         so_nivel = int((divergencias["macrofamilia_r1"] == divergencias["macrofamilia_r2"]).sum())
         linhas.append(f"{so_nivel} das {len(divergencias)} divergências são só de nível (a família coincide).")
-    linhas.append(
-        "**Desempate:** quando as rodadas divergem, vale a 1ª. Ela usou o modelo mais capaz e exigiu justificativa "
-        "sempre que a família fugiu da sugerida pelo prefixo da CBO; a 2ª rodada serve só para medir a estabilidade.")
+    linhas.append(texto_desempate(final))
     return "\n\n".join(linhas)
 
 

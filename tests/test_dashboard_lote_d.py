@@ -400,3 +400,57 @@ def test_frase_do_cartao_diz_que_compara_a_mesma_ocupacao():
     frase = frase_porque(u, [c.CAUSA_SALARIAL], 0.47, 0.93, 0.96)
     assert frase.startswith("Na mesma ocupação, quem entra ganha 90%") and "(no estado, 96%)" in frase
     assert "na mesma ocupação" in nar.legenda_causas(pd.Series({c.M_GAP_SAL: 0.93}), 0.96)
+
+
+# --- TAX-04 (P1): regra explícita de desempate ----------------------------------------------
+
+OPERACAO, TEXTIL, APOIO = "Operação de linha e processo", "Têxtil, confecção, couro e calçados", "Serviços de apoio e outros"
+
+
+@pytest.mark.parametrize("codigo, r1, r2, just, esperado", [
+    ("784205", OPERACAO, OPERACAO, "", (OPERACAO, "IA (1ª rodada; as rodadas concordam)")),
+    ("784205", OPERACAO, APOIO, "", (OPERACAO, "desempate: família do prefixo")),       # 1ª = prefixo
+    ("766315", TEXTIL, OPERACAO, "", (TEXTIL, "desempate: família do prefixo")),         # 2ª desviou do prefixo 76
+    ("766315", OPERACAO, TEXTIL, "", (TEXTIL, "desempate: família do prefixo")),         # 1ª desviou sem justificar
+    ("766315", OPERACAO, TEXTIL, "766 é gráfica.", (OPERACAO, "desempate: 1ª rodada, desvio justificado")),
+    ("141510", APOIO, "Alimentos e bebidas", "", (APOIO, "desempate: prefixo não resolve, 1ª rodada até revisão manual")),
+    ("784205", OPERACAO, None, "", (OPERACAO, "IA (1ª rodada; sem 2ª rodada)")),
+])
+def test_regra_de_desempate(codigo, r1, r2, just, esperado):
+    from src.cbo_ia import desempatar
+
+    assert desempatar(codigo, r1, r2, just) == esperado
+
+
+def _csvs_ia(tmp_path):
+    r1 = pd.DataFrame({"cbo2002ocupação": ["766315", "784205", "141510"],
+                       "descricao": ["Operador de Acabamento", "Alimentador", "Gerente de Restaurante"],
+                       "macrofamilia": [OPERACAO, OPERACAO, APOIO], "nivel_qualificacao": ["Qualificado", "Básico", "Superior"],
+                       "lideranca": [False, False, True], "justificativa": ["", "", "Serviço."]})
+    r2 = r1.assign(macrofamilia=[TEXTIL, OPERACAO, "Alimentos e bebidas"], justificativa="")
+    r1.to_csv(tmp_path / "r1.csv", index=False)
+    r2.to_csv(tmp_path / "r2.csv", index=False)
+    return tmp_path / "r1.csv", tmp_path / "r2.csv"
+
+
+def test_mapeamento_final_aplica_o_desempate_e_sem_referencia_nao_muda(tmp_path):
+    from src.cbo_ia import aplicar_mapeamento, mapeamento_final
+
+    r1, r2 = _csvs_ia(tmp_path)
+    final = mapeamento_final(r1, caminho_referencia=r2).set_index("cbo")
+    assert final.loc["766315", "macrofamilia"] == TEXTIL                  # 1ª desviou do prefixo sem justificar
+    assert final.loc["766315", "macrofamilia_ia"] == OPERACAO
+    assert final.loc["141510", "origem"].startswith("desempate: prefixo não resolve")
+    df = pd.DataFrame({"cbo2002ocupação": ["766315", "784205"]})
+    assert aplicar_mapeamento(df, str(r1))["macrofamilia"].tolist() == [OPERACAO, OPERACAO]   # comportamento antigo
+    assert aplicar_mapeamento(df, str(r1), caminho_referencia=r2)["macrofamilia"].tolist() == [TEXTIL, OPERACAO]
+
+
+def test_auditoria_descreve_a_regra_e_conta_os_caminhos(tmp_path):
+    from src.cbo_ia import mapeamento_final
+
+    r1, r2 = _csvs_ia(tmp_path)
+    texto = nar.texto_desempate(mapeamento_final(r1, caminho_referencia=r2))
+    assert "regra explícita" in texto and "prefixo" in texto and "overrides.csv" in texto
+    assert "1 pelo prefixo" in texto and "1 aguardando revisão manual" in texto
+    assert "difere da que a IA deu em 1 CBO." in texto

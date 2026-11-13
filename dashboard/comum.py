@@ -157,6 +157,7 @@ CAMINHO_CBO = _DIR_DADOS / "cbo_macrofamilias.csv"
 CAMINHO_DIVERGENCIAS = _DIR_DADOS / "cbo_divergencias.csv"
 CAMINHO_PROMPT = _DIR_DADOS / "cbo_macrofamilias.csv.prompt.txt"
 CAMINHO_META_RODADA2 = _DIR_DADOS / "cbo_macrofamilias_gemini.csv.meta.json"   # TAX-04: a classificação de auditoria
+CAMINHO_CBO_FINAL = _DIR_DADOS / "cbo_classificacao_final.csv"   # TAX-04 P1 / TAX-03: o que o pipeline aplicou
 
 VAR_CREDENCIAL_AZURE = "AZURE_STORAGE_CONNECTION_STRING"
 VAR_CONTAINER_AZURE = "AZURE_BLOB_CONTAINER"
@@ -1651,6 +1652,14 @@ def carregar_cbo() -> tuple[pd.DataFrame | None, pd.DataFrame | None, str | None
     return mapa, div, prompt
 
 
+def carregar_cbo_final() -> pd.DataFrame | None:
+    """A classificação final (IA → desempate → overrides), com a origem de cada CBO, ou ``None``."""
+    try:
+        return pd.read_csv(CAMINHO_CBO_FINAL, dtype={"cbo": str}, keep_default_na=False)
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def carregar_meta_rodada2() -> dict:
     """Procedência da classificação usada como 2ª rodada (auditoria)."""
     try:
@@ -1763,6 +1772,16 @@ def cbo_cache():
     @st.cache_resource
     def _ler():
         return carregar_cbo()
+
+    return _ler()
+
+
+def cbo_final_cache() -> pd.DataFrame | None:
+    import streamlit as st
+
+    @st.cache_resource
+    def _ler():
+        return carregar_cbo_final()
 
     return _ler()
 

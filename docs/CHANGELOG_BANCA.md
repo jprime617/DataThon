@@ -840,3 +840,37 @@ ganha 96% do salário de quem sai. Só 2 dos 63 grupos ficam 3 p.p. ou mais
 abaixo disso. Mesmo assim, onde o salário de entrada é relativamente pior, a
 saída voluntária é maior (r = −0,39). Misturar ocupações diluía essa
 relação (−0,22).
+
+---
+
+## TAX-04 (P1) · Regra explícita de desempate entre as rodadas
+
+- **Regra** (`src.cbo_ia.desempatar`, aplicada por `mapeamento_final` depois
+  da saída da IA, no pipeline e no estoque da RAIS). Quando a 1ª rodada (a
+  que vale) e a 2ª (auditoria) divergem na família:
+  1. vale a rodada que concorda com a **família sugerida pelo prefixo da CBO**;
+  2. **exceção:** se a 1ª fugiu do prefixo **com justificativa registrada**,
+     vale a 1ª (o prompt só permitia o desvio assim; a decisão foi
+     explícita);
+  3. se o **prefixo não resolve** (não sugere família, ou nenhuma rodada
+     concorda com ele), o caso vai para **override manual**
+     (`ia_cbo/overrides.csv`, TAX-03); até lá, fica com a 1ª, marcado como
+     pendente.
+  O nível segue a 1ª rodada (ou o override).
+- **Hipótese do plano não adotada ao pé da letra.** "Prevalece sempre o
+  prefixo" reverteria **102 CBOs (108.629 movimentações)** em que a 1ª
+  rodada fugiu do prefixo com justificativa. Muitos desses desvios estão
+  certos e o prefixo errado: as CBOs 766 são da indústria **gráfica** e o
+  prefixo 76 manda para Têxtil; o Técnico em segurança do trabalho iria para
+  Administrativo; o Encanador, para Metalmecânica. Todos os 475 desvios da 1ª
+  rodada têm justificativa.
+- **Efeito nos dados:** nenhuma família muda pelo desempate. 2.016 CBOs têm
+  as rodadas de acordo; 27 se resolvem pelo prefixo (= 1ª rodada); 102 ficam
+  com a 1ª justificada; **61 dependem de revisão manual** (as de maior volume
+  são revisadas no TAX-03).
+- O pipeline grava `data_processed/cbo_classificacao_final.csv`, com a origem
+  de cada decisão. A auditoria de "Que profissional falta" descreve a regra e
+  conta os caminhos (`narrativa.texto_desempate`).
+- Testes: `test_regra_de_desempate`,
+  `test_mapeamento_final_aplica_o_desempate_e_sem_referencia_nao_muda`,
+  `test_auditoria_descreve_a_regra_e_conta_os_caminhos`.

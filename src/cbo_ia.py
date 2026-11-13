@@ -855,17 +855,151 @@ def _ler_mapeamento(caminho: Path) -> dict[str, dict[str, str]]:
     }
 
 
+# ---------------------------------------------------------------------------
+# TAX-04 (P1): regra explícita de desempate entre as rodadas
+# ---------------------------------------------------------------------------
+# Quando a 1ª rodada (a classificação que vale) e a 2ª (auditoria) divergem na
+# família, decide-se nesta ordem:
+#   1. a rodada que concorda com a família sugerida pelo prefixo da CBO (regra B);
+#   2. exceção: se a 1ª desviou do prefixo COM justificativa registrada (a regra B
+#      do prompt só permitia o desvio assim), vale a 1ª — a decisão foi explícita;
+#   3. se o prefixo não resolve (não sugere família ou nenhuma rodada concorda com
+#      ele), o caso vai para override manual (`ia_cbo/overrides.csv`); até lá, fica
+#      com a 1ª e marcado como pendente.
+# Os overrides manuais (TAX-03) vêm depois de tudo e são a palavra final.
+# O nível segue a 1ª rodada (ou o override): a regra é sobre a família.
+
+ORIGEM_IA = "IA (1ª rodada; as rodadas concordam)"
+ORIGEM_PREFIXO = "desempate: família do prefixo"
+ORIGEM_JUSTIFICADA = "desempate: 1ª rodada, desvio justificado"
+ORIGEM_PENDENTE = "desempate: prefixo não resolve, 1ª rodada até revisão manual"
+ORIGEM_SEM_AUDITORIA = "IA (1ª rodada; sem 2ª rodada)"
+ORIGEM_OVERRIDE = "override manual"
+
+CAMINHO_OVERRIDES = PASTA_IA_CBO / "overrides.csv"
+COLUNAS_OVERRIDES = ["cbo", "macrofamilia", "nivel", "justificativa", "autor"]
+NOME_CSV_FINAL = "cbo_classificacao_final.csv"
+
+
+def desempatar(codigo: str, familia_r1: str, familia_r2: object, justificativa_r1: object = "") -> tuple[str, str]:
+    """(família, origem) de uma CBO pela regra explícita de desempate (TAX-04 P1)."""
+    if not isinstance(familia_r2, str) or not familia_r2:
+        return familia_r1, ORIGEM_SEM_AUDITORIA
+    if familia_r1 == familia_r2:
+        return familia_r1, ORIGEM_IA
+    prefixo = familia_sugerida(codigo)
+    justificou = isinstance(justificativa_r1, str) and justificativa_r1.strip() != ""
+    if prefixo is not None and prefixo in (familia_r1, familia_r2):
+        if prefixo == familia_r2 and justificou:
+            return familia_r1, ORIGEM_JUSTIFICADA
+        return prefixo, ORIGEM_PREFIXO
+    return familia_r1, ORIGEM_PENDENTE
+
+
+def ler_overrides(caminho: str | os.PathLike | None = CAMINHO_OVERRIDES) -> pd.DataFrame:
+    """`ia_cbo/overrides.csv` validado (TAX-03): família e nível nos conjuntos fechados, um por CBO.
+
+    Ausente → tabela vazia. Raises `ErroDeValidacao` para família ou nível fora
+    do conjunto, CBO repetida ou sem justificativa/autor.
+    """
+    if caminho is None or not Path(caminho).is_file():
+        return pd.DataFrame(columns=COLUNAS_OVERRIDES)
+    tabela = pd.read_csv(caminho, dtype=str, keep_default_na=False)
+    faltam = [c for c in COLUNAS_OVERRIDES if c not in tabela.columns]
+    if faltam:
+        raise ErroDeValidacao(f"{caminho}: faltam as colunas {faltam}")
+    tabela = tabela[COLUNAS_OVERRIDES].copy()
+    tabela["cbo"] = tabela["cbo"].map(_normalizar_cbo).map(lambda c: _cbo6(c) if c else c)
+    tabela["macrofamilia"] = tabela["macrofamilia"].map(normalizar_macrofamilia)
+    erros = []
+    for i, linha in tabela.iterrows():
+        if not linha["cbo"]:
+            erros.append(f"linha {i + 2}: CBO inválida")
+        if linha["macrofamilia"] not in _MACROFAMILIAS_VALIDAS:
+            erros.append(f"linha {i + 2}: macrofamília fora do conjunto ({linha['macrofamilia']!r})")
+        if linha["nivel"] not in NIVEIS_QUALIFICACAO:
+            erros.append(f"linha {i + 2}: nível fora do conjunto ({linha['nivel']!r})")
+        if not linha["justificativa"].strip() or not linha["autor"].strip():
+            erros.append(f"linha {i + 2}: justificativa e autor são obrigatórios")
+    repetidas = tabela["cbo"][tabela["cbo"].duplicated()].tolist()
+    if repetidas:
+        erros.append(f"CBOs repetidas: {repetidas}")
+    if erros:
+        raise ErroDeValidacao(f"{caminho}: " + "; ".join(erros))
+    return tabela.reset_index(drop=True)
+
+
+def mapeamento_final(
+    caminho_csv: str | os.PathLike = CAMINHO_CSV_PADRAO,
+    *,
+    caminho_referencia: str | os.PathLike | None = None,
+    caminho_overrides: str | os.PathLike | None = None,
+) -> pd.DataFrame:
+    """A classificação que o pipeline aplica: IA (1ª rodada) → desempate → overrides.
+
+    Uma linha por CBO (6 dígitos) com a família e o nível finais, a `origem` da
+    decisão e o que a IA tinha dito (`macrofamilia_ia`, `nivel_ia`). Sem
+    `caminho_referencia` não há desempate; sem `caminho_overrides`, nenhum
+    override (comportamento anterior).
+    """
+    mapa = pd.read_csv(caminho_csv, dtype={COLUNA_CBO: str})
+    codigos = mapa[COLUNA_CBO].map(_normalizar_cbo)
+    mapa = mapa[codigos.notna()].copy()
+    mapa["cbo"] = codigos[codigos.notna()].map(_cbo6)
+    mapa[COLUNA_MACROFAMILIA] = mapa[COLUNA_MACROFAMILIA].map(normalizar_macrofamilia)
+    justificativas = (mapa[COLUNA_JUSTIFICATIVA] if COLUNA_JUSTIFICATIVA in mapa
+                      else pd.Series("", index=mapa.index)).fillna("").astype(str)
+    final = pd.DataFrame({
+        "cbo": mapa["cbo"].values,
+        COLUNA_DESCRICAO: mapa[COLUNA_DESCRICAO].values if COLUNA_DESCRICAO in mapa else "",
+        "macrofamilia_ia": mapa[COLUNA_MACROFAMILIA].values,
+        "nivel_ia": mapa[COLUNA_NIVEL].values,
+        "justificativa_ia": justificativas.values,
+    })
+    final["familia_r2"] = None
+    if caminho_referencia is not None and Path(caminho_referencia).is_file():
+        r2 = _ler_mapeamento(Path(caminho_referencia))
+        final["familia_r2"] = final["cbo"].map(lambda c: (r2.get(c) or r2.get(c.lstrip("0")) or {}).get("macrofamilia"))
+        decisao = [desempatar(c, f1, f2, j) for c, f1, f2, j in
+                   zip(final["cbo"], final["macrofamilia_ia"], final["familia_r2"], final["justificativa_ia"])]
+        final[COLUNA_MACROFAMILIA] = [d[0] for d in decisao]
+        final["origem"] = [d[1] for d in decisao]
+    else:
+        final[COLUNA_MACROFAMILIA] = final["macrofamilia_ia"]
+        final["origem"] = ORIGEM_SEM_AUDITORIA
+    final[COLUNA_NIVEL] = final["nivel_ia"]
+    final["justificativa_override"] = ""
+    final["autor_override"] = ""
+    overrides = ler_overrides(caminho_overrides) if caminho_overrides is not None else ler_overrides(None)
+    if not overrides.empty:
+        por_cbo = overrides.set_index("cbo")
+        alvo = final["cbo"].isin(por_cbo.index)
+        final.loc[alvo, COLUNA_MACROFAMILIA] = final.loc[alvo, "cbo"].map(por_cbo["macrofamilia"])
+        final.loc[alvo, COLUNA_NIVEL] = final.loc[alvo, "cbo"].map(por_cbo["nivel"])
+        final.loc[alvo, "justificativa_override"] = final.loc[alvo, "cbo"].map(por_cbo["justificativa"])
+        final.loc[alvo, "autor_override"] = final.loc[alvo, "cbo"].map(por_cbo["autor"])
+        final.loc[alvo, "origem"] = ORIGEM_OVERRIDE
+    return final
+
+
 def aplicar_mapeamento(
-    df: pd.DataFrame, caminho_csv: str = CAMINHO_CSV_PADRAO
+    df: pd.DataFrame,
+    caminho_csv: str = CAMINHO_CSV_PADRAO,
+    *,
+    caminho_referencia: str | os.PathLike | None = None,
+    caminho_overrides: str | os.PathLike | None = None,
 ) -> pd.DataFrame:
     """Anexa macrofamília e nível a partir de um `cbo_macrofamilias.csv` já gerado.
 
     Reaproveita a classificação persistida sem chamar o LLM_Externo de novo:
     mesma normalização de código e mesmo merge à esquerda de `classificar_cbos`.
+    Com `caminho_referencia` (2ª rodada) e `caminho_overrides`, aplica o
+    desempate (TAX-04 P1) e os overrides manuais (TAX-03): `mapeamento_final`.
     """
-    mapa = pd.read_csv(caminho_csv, dtype={COLUNA_CBO: str})
-    mapa[COLUNA_CBO] = mapa[COLUNA_CBO].map(_normalizar_cbo)
-    mapa[COLUNA_MACROFAMILIA] = mapa[COLUNA_MACROFAMILIA].map(normalizar_macrofamilia)
+    final = mapeamento_final(caminho_csv, caminho_referencia=caminho_referencia,
+                             caminho_overrides=caminho_overrides)
+    mapa = pd.DataFrame({COLUNA_CBO: final["cbo"].map(_normalizar_cbo),
+                         COLUNA_MACROFAMILIA: final[COLUNA_MACROFAMILIA], COLUNA_NIVEL: final[COLUNA_NIVEL]})
     chave = df[COLUNA_CBO].map(_normalizar_cbo)
     resultado = df.copy(deep=False)
     for coluna in (COLUNA_MACROFAMILIA, COLUNA_NIVEL):

@@ -111,7 +111,7 @@ def render(ctx: c.Contexto) -> None:
                         help="Ponderado pelas movimentações.")
             col4.metric("Ocupações classificadas", c.fmt_int(len(mapa)) if mapa is not None else "—", border=True,
                         help="Códigos CBO distintos que aparecem nas movimentações e receberam macrofamília e nível.")
-            st.markdown(nar.auditoria_ia(meta, c.carregar_meta_rodada2(), divergencias))
+            st.markdown(nar.auditoria_ia(meta, c.carregar_meta_rodada2(), divergencias, c.cbo_final_cache()))
             if divergencias is not None:
                 st.markdown("**Maiores divergências entre as rodadas, por volume**")
                 st.dataframe(divergencias.head(10).rename(columns={
