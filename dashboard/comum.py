@@ -2251,6 +2251,11 @@ def posicao_ranking(por: pd.DataFrame, coluna: str, metrica: str, alvo: str) -> 
 PLURAL_NIVEL = {NIVEL_MESO: "mesorregiões", NIVEL_MICRO: "microrregiões", NIVEL_MUNICIPIO: "municípios"}
 
 
+def plural(n, singular: str, plural_: str) -> str:
+    """BUG-05: "1 grupo", "3 grupos" (nunca "1 grupos")."""
+    return f"{fmt_int(n)} {singular if int(n) == 1 else plural_}"
+
+
 def plural_nivel(nivel: str, maiuscula: bool = False) -> str:
     """"Mesorregião" → "mesorregiões" (ou "Mesorregiões" com `maiuscula`)."""
     texto = PLURAL_NIVEL.get(nivel, nivel.lower())

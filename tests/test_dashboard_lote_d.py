@@ -585,3 +585,22 @@ def test_mapeamento_final_casa_cbo_do_grande_grupo_zero(tmp_path):
     for kwargs in ({}, {"caminho_referencia": tmp_path / "r2.csv"}):
         assert aplicar_mapeamento(df, str(tmp_path / "r1.csv"), **kwargs)["macrofamilia"].tolist() == \
             [APOIO, APOIO, APOIO, OPERACAO]
+
+
+# --- BUG-05 (complemento): plural com o número 1 ------------------------------------------
+
+
+def test_plural_com_um_e_com_varios():
+    assert c.plural(1, "grupo", "grupos") == "1 grupo" and c.plural(3, "grupo", "grupos") == "3 grupos"
+    assert c.plural(1200, "recomendação", "recomendações") == "1.200 recomendações"
+    texto = nar.contagem_quadrantes({c.Q_APAGAO: 1, c.Q_RETRACAO: 1})
+    assert texto.startswith(f"1 grupo em **{c.Q_APAGAO}**") and "1 grupos" not in texto
+    assert nar.contagem_quadrantes({c.Q_APAGAO: 13, c.Q_RETRACAO: 20}).startswith("13 grupos em")
+
+
+def test_resumo_de_causas_no_singular():
+    from dashboard.paginas.causa_raiz import resumo_causas
+
+    selos = pd.DataFrame({"Grupo": ["A"], "Causas": [c.CAUSA_SALARIAL], "Movimentações": [100]})
+    texto = resumo_causas(selos, 5)
+    assert "**1** grupo:" in texto and "grupos:" not in texto

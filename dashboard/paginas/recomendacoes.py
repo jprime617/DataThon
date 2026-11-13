@@ -120,7 +120,7 @@ def render(ctx: c.Contexto) -> None:
     prioridades = classificar_prioridade(recs)
     st.markdown(
         "Cada problema encontrado no diagnóstico aponta para uma **ação** que a empresa pode tomar. "
-        f"Ao todo, **{len(recs)} recomendações**, agrupadas abaixo por ação"
+        f"Ao todo, **{c.plural(len(recs), 'recomendação', 'recomendações')}**, agrupadas abaixo por ação"
         + (f", e {len(observacoes)} {'observação' if len(observacoes) == 1 else 'observações'}." if observacoes else ".")
     )
     if not recs:

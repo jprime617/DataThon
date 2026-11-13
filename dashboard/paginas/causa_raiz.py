@@ -80,7 +80,7 @@ def resumo_causas(selos: pd.DataFrame, total: int) -> str:
     textos = {c.CAUSA_SALARIAL: "o salário de entrada perde mais para o de quem saiu do que no estado",
               c.CAUSA_RETENCAO: "o problema é reter (o salário de entrada não é pior que o do estado)",
               c.CAUSA_QUALIFICACAO: "entra gente com menos estudo numa área técnica"}
-    linhas = [f"- **{selos['Causas'].str.contains(causa).sum()}** grupos: {texto}"
+    linhas = [f"- **{c.plural(selos['Causas'].str.contains(causa).sum(), 'grupo', 'grupos').replace(' ', '** ', 1)}: {texto}"
               for causa, texto in textos.items() if selos["Causas"].str.contains(causa).any()]
     return (f"Dos {total} grupos (setor × mesorregião) analisados:\n\n" + "\n".join(linhas)
             + "\n\nUm grupo pode ter mais de uma causa.")
@@ -255,7 +255,8 @@ def render(ctx: c.Contexto) -> None:
                          f"{len(validas)} municípios com ≥ 100 movimentações. Correlação não é causalidade; "
                          "o IDHM é de 2010.")
 
-    with st.expander(f"Ver os {len(selos)} grupos com causa identificada"):
+    with st.expander("Ver o grupo com causa identificada" if len(selos) == 1
+                     else f"Ver os {len(selos)} grupos com causa identificada"):
         if selos.empty:
             st.caption("Nenhum grupo com causa identificada nesta seleção.")
         else:

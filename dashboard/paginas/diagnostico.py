@@ -145,8 +145,8 @@ def render(ctx: c.Contexto) -> None:
     contagem = m["quadrante"].value_counts()
     excluidas = len(c.agregar_metricas(ctx.df, por).query(f"{c.M_MOV} > 0")) - len(m)
     st.caption(
-        nar.contagem_quadrantes(contagem) + f", de {len(m)} analisados"
-        + (f" ({excluidas} ficaram fora por ter poucos dados)" if excluidas else "")
+        nar.contagem_quadrantes(contagem) + f", de {c.plural(len(m), 'analisado', 'analisados')}"
+        + (f" ({excluidas} {'ficou' if excluidas == 1 else 'ficaram'} fora por ter poucos dados)" if excluidas else "")
         + ". As linhas pontilhadas marcam a média; quanto maior a bolha, mais movimentações."
     )
 
@@ -174,7 +174,8 @@ def render(ctx: c.Contexto) -> None:
             _cartoes(alerta, segunda, frac_tecnica, ref, CARTOES_MAX, 0, gap_ref_cbo)
         st.caption(nar.legenda_quadrantes_alerta() + " Cartão sem frase = salário, qualificação e retenção "
                    "não explicam sozinhos a tensão; o número mostra o sintoma que mais pesa.")
-        with st.expander(f"Ver as {len(tabela)} unidades em alerta numa tabela"):
+        with st.expander("Ver a unidade em alerta numa tabela" if len(tabela) == 1
+                         else f"Ver as {len(tabela)} unidades em alerta numa tabela"):
             st.dataframe(tabela, hide_index=True, width="stretch",
                          column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
             st.caption(nar.legenda_causas(ref, gap_ref_cbo))

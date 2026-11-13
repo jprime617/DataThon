@@ -96,7 +96,8 @@ def _o_que_fazer(ctx: c.Contexto) -> None:
     destaque = list({r.alavanca: r for r in reversed(recs)}.values())
     destaque = sorted(destaque, key=lambda r: r.prioridade, reverse=True)
     destaque += [r for r in recs if r not in destaque]
-    st.markdown(f"**{len(recs)} recomendações** em {len(alavancas)} alavancas, cada uma ligada a uma "
+    st.markdown(f"**{c.plural(len(recs), 'recomendação', 'recomendações')}** em "
+                f"{c.plural(len(alavancas), 'alavanca', 'alavancas')}, cada uma ligada a uma "
                 "macrofamília da IA. As prioritárias de cada alavanca:")
     cols = st.columns(3)
     for col, r in zip(cols, destaque[:3]):

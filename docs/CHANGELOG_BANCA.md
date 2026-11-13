@@ -995,3 +995,14 @@ a do Brasil** (rotatividade 27,4% × 27,6%). O que é local é **quem sai pedir
 para sair** (50,9% × 37,3%). Dos +13,6 p.p., cerca de +10,8 p.p. vêm do
 mercado de trabalho catarinense como um todo, que é aquecido, e +2,8 p.p.
 são próprios da transformação.
+
+---
+
+## BUG-05 (complemento) · Plural com o número 1
+
+- A verificação visual do Lote D achou "1 grupos em Apagão…" e "(1 ficaram
+  fora…)" em "Quem precisa de atenção" com um setor filtrado. Novo
+  formatador `comum.plural(n, singular, plural)`, usado na contagem dos
+  quadrantes, no rodapé da matriz, no resumo das causas, nos títulos das
+  tabelas e no total de recomendações (inclusive no modo apresentação).
+- Testes: `test_plural_com_um_e_com_varios`, `test_resumo_de_causas_no_singular`.

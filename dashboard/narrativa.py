@@ -454,7 +454,7 @@ def contagem_quadrantes(contagem, quadrantes=None) -> str:
     partes = [f"{int(contagem.get(q, 0))} em **{q}**" for q in quadrantes]
     if not partes:
         return ""
-    partes[0] = partes[0].replace(" em ", " grupos em ", 1)
+    partes[0] = f"{c.plural(contagem.get(quadrantes[0], 0), 'grupo', 'grupos')} em **{quadrantes[0]}**"
     return ", ".join(partes[:-1]) + " e " + partes[-1] if len(partes) > 1 else partes[0]
 
 
