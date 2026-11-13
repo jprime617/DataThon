@@ -6,14 +6,22 @@ depois) e `docs/MAPA_DO_CODIGO.md` (onde fica cada coisa).
 
 ## Onde paramos
 
-- **Lotes A e B concluídos**, com um commit por item, mergeados em
-  `dashboard-v2` e enviados ao GitHub. A suíte passa (338 testes, 6 pulados
-  por falta da base fornecida em `Dados/`).
+- **Lotes A, B e D concluídos**, com um commit por item, mergeados em
+  `dashboard-v2` e enviados ao GitHub. O Lote D foi feito na branch
+  `fix/banca-d`. Itens: TAX-02, ANA-02, TAX-05, NAR-05, ANA-03, REC-05,
+  REC-06, BUG-06, TAX-06, ANA-01 P1, TAX-04 P1, TAX-03 overrides, o
+  reprocessamento e ANA-04. Detalhes, antes e depois: `docs/CHANGELOG_BANCA.md`.
+- **O pipeline foi reprocessado** no Lote D (overrides e desempate): os
+  artefatos de `data_processed/` são novos e o `metadados.json` aponta o
+  commit. Totais conferidos: 3.443.428 admissões, 3.328.264 desligamentos,
+  estoque de 2.565.458.
+- **Novos artefatos que o painel lê da cópia local (vão no deploy, não no
+  Blob):** `data_processed/cbo_classificacao_final.csv` (classificação final
+  com a origem de cada decisão) e `data_processed/caged_brasil_secao.parquet`
+  (benchmark SC × Brasil).
 - **Nada foi publicado ainda:** nem no Azure Blob nem no App Service. A
-  produção ainda mostra a versão antiga.
-- Ordem combinada com o usuário: **Lote D (P1 + ANA-04) → Lote C
-  (publicação)**, pedindo o aval dele entre os lotes. O usuário pediu para
-  implementar **tudo**, incluindo o P2 ANA-04.
+  produção ainda mostra a versão antiga. **Próximo passo: Lote C, com o
+  usuário** (credencial do Azure e `az login`).
 - A branch `panorama-decisao` guarda um redesenho antigo do Panorama (WIP).
   Ela **não** entra no pitch; não mexa.
 
@@ -95,67 +103,29 @@ a tabela `caged_cbo.parquet` fecha com o agregado.
   classificação anterior via API do gemini-3.1-flash-lite (auditoria). O
   nome antigo "Engenharia, técnicos industriais e TI" é alias do novo.
 
-## Lote D (P1 + ANA-04): o que falta
+## Lote D (P1 + ANA-04): feito
 
-Na ordem do plano (seção 3, linha 10), com as notas do que já se sabe:
+Ver `docs/CHANGELOG_BANCA.md` (seção "Lote D"). Pontos que mudam a fala do
+pitch ou que o time precisa validar:
 
-1. **TAX-02** · Selo "Expansão concentrada": um mês ≥ 40% do saldo positivo
-   **ou** um município ≥ 80% do saldo, com limiares em `regras.py`. Deve
-   acender em autopeças – Vale do Itajaí (100% Navegantes). Já existe
-   `narrativa.concentracao_municipio`; aproveite. Mostrar o selo nos cartões
-   de alerta, nos achados e na ficha.
-2. **ANA-02** · Participação de admitidos × desligados com Médio completo ou
-   mais e com Superior completo, e o prêmio salarial (mediana Superior ÷
-   Médio), por grupo e macrofamília. O `caged_perfil.parquet` já tem
-   `faixa_escolaridade` e medianas. Destaque em "Por que acontece" onde o
-   prêmio é baixo.
-3. **TAX-05** · Quantas CBOs e movimentações a IA classificou **diferente da
-   família sugerida pelo prefixo** (`src.mapeamentos.FAMILIA_POR_PREFIXO_CBO`,
-   `src.cbo_ia.familia_sugerida`), com 5 exemplos de alto volume e a
-   justificativa (coluna `justificativa` do `cbo_macrofamilias.csv`).
-   Mostrar na aba de auditoria de "Que profissional falta".
-4. **NAR-05** · O mapa abre em Mesorregião com o volume desligado. "Pior
-   situação" usa o nível escolhido; em município, exigir ≥ 500 movimentações
-   (configurável).
-5. **TAX-03 (overrides)** · `ia_cbo/overrides.csv` (colunas `cbo,
-   macrofamilia, nivel, justificativa, autor`), aplicado **depois** da saída
-   da IA no pipeline (em `cbo_ia.aplicar_mapeamento`, ou logo depois no
-   notebook). Revisar as 30 CBOs de maior volume e as divergências de maior
-   volume (`data_processed/cbo_divergencias.csv`). O caso conhecido é 521135
-   Frentista em "Administrativo e comercial". Mostrar a contagem de
-   overrides na auditoria. **Pede reprocessamento.**
-6. **ANA-03** · Taxa de admissão = admissões ÷ estoque em 31/12/2025, por
-   grupo, no tooltip da matriz e na tabela de alertas, com definição na
-   Metodologia. O estoque já está no agregado (`M_ESTOQUE`).
-7. **REC-05** · Simulador de custo: usar o formatador `fmt_brl_escala` (já em
-   uso), mostrar o intervalo da premissa e a fonte. Não há fonte no repo,
-   então escrever "premissa do time, ajuste conforme a realidade da
-   empresa". Dizer que o cálculo assume que todo desligamento a pedido é
-   reposto.
-8. **REC-06** · Automação gera hoje 1 recomendação. Mostrar como
-   "observação", ou ajustar o limiar com justificativa.
-9. **BUG-06** · Cliques que copiam para a área de transferência: investigar
-   (provavelmente os links-âncora dos títulos) e usar `anchor=False` em
-   `st.title`, `st.header` e `st.subheader`.
-10. **TAX-06** · `ia_cbo/classificar.py` com `--help`: lê a lista de CBOs e
-    o mesmo prompt e chama a API em lotes, com a chave por variável de
-    ambiente. **Não executar.** O README explica as duas formas (chat
-    oficial e API).
-11. **ANA-01 P1** · Razão salarial entrada/saída **dentro da mesma CBO**
-    (média ponderada das razões por CBO, só CBOs com ≥ 30 salários de cada
-    lado). Já dá para fazer com `caged_cbo.parquet`, que tem soma e n de
-    salário por CBO e mês, **sem reprocessar**. Atualizar a frase da
-    Metodologia que diz "é o passo seguinte".
-12. **TAX-04 P1** · Regra explícita de desempate: prevalece a família do
-    prefixo da CBO; se o prefixo não resolve, override manual.
-13. **ANA-04 (P2, pedido pelo usuário)** · SC × Brasil para saída voluntária
-    e rotatividade por seção. Os `.7z` do CAGED baixados são **nacionais**:
-    dá para calcular o Brasil sem fonte nova (hoje `src.caged24` filtra
-    `uf == 42`). Também intervalos de confiança por bootstrap. Registrar em
-    `docs/ROADMAP.md` o que não couber.
+- **TAX-04 P1:** a regra "prevalece sempre o prefixo" **não** foi adotada ao
+  pé da letra (reverteria 102 desvios justificados, como o 766 gráfica →
+  Têxtil). Regra adotada: o prefixo desempata, mas o desvio justificado da
+  1ª rodada vale; se o prefixo não resolve, a CBO vai para revisão manual.
+- **TAX-03:** 12 overrides em `ia_cbo/overrides.csv`, com autor "revisão
+  assistida, a validar pela equipe". O único que muda dado é o Frentista
+  (nível Básico → Qualificado); a família dele é coerente com a CBO 5211.
+- **ANA-01 P1:** a causa Salarial usa a razão **dentro da mesma CBO**. A
+  chave `regras.RAZAO_SALARIAL_MESMA_CBO` volta para a razão bruta.
+- **ANA-04:** a saída voluntária de SC está muito acima da do Brasil
+  (+13,6 p.p. na transformação), mas a rotatividade é igual (27,4% × 27,6%).
+- **REC-06:** a automação virou observação, fora do Top 3.
+- O que não coube está em `docs/ROADMAP.md`.
 
-Fazer os itens de painel primeiro (1–4, 6–9, 11) e juntar os que exigem
-pipeline (5, 12) **numa única execução**.
+Para reprocessar de novo: os microdados não vão para o Git. Use as
+instruções de "Preparar a máquina nova" e rode também
+`python -m src.caged_brasil` (relê os 72 `.7z`; ~15 min) se quiser
+regenerar o benchmark nacional.
 
 ## Lote C: publicação (precisa do usuário)
 
@@ -164,7 +134,10 @@ pipeline (5, 12) **numa única execução**.
   Metodologia). Confirmar que o repositório é público.
 - **ENT-02:** Always On no App Service, ou o checklist "abrir o painel 10
   minutos antes".
-- **ENT-03:** testes → upload ao Blob de **5** artefatos juntos:
+- **ENT-03:** testes → upload ao Blob de **5** artefatos juntos (os dois
+  arquivos novos do Lote D, `cbo_classificacao_final.csv` e
+  `caged_brasil_secao.parquet`, são lidos da cópia local e vão no pacote do
+  App Service):
   `caged_agregado`, `caged_perfil`, `caged_cbo`, `rais_estoque` e
   `metadados.json`. O comando do README ainda lista 4; incluir
   `caged_cbo.parquet` (`NOME_BLOB_CBO` em `comum.py`). Depois, o deploy do
