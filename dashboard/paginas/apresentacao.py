@@ -60,8 +60,8 @@ def _quem(ctx: c.Contexto) -> None:
     relevantes = nar.unidades(ctx.df, relevantes=True)
     topo = (relevantes if not relevantes.empty else m).iloc[0]
     st.markdown(
-        f"De {len(m)} combinações mesorregião × setor, **{cont.get(c.Q_APAGAO, 0)}** estão em apagão "
-        f"(rotatividade crônica) e **{cont.get(c.Q_PRESSAO, 0)}** em expansão sob pressão. A mais tensa: "
+        f"De {len(m)} combinações mesorregião × setor: "
+        f"{nar.contagem_quadrantes(cont, tuple(c.QUADRANTES))}. A mais tensa: "
         f"**{topo[c.COLUNA_SETOR]} – {topo[c.COLUNA_REGIAO]}** ({topo['motor']})."
     )
     rotulo = m[c.COLUNA_SETOR].astype(str) + " – " + m[c.COLUNA_REGIAO].astype(str)

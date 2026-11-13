@@ -159,6 +159,11 @@ def render(ctx: c.Contexto) -> None:
         "dezembro concentra desligamentos); ela voltou na forma de blocos de 12 meses."
     )
 
+    st.markdown("**Os quatro quadrantes** (Dinamismo ≥ 0 = cresce muito; Tensão ≥ 0 = perde a equipe). "
+                "Pelo guia do desafio, apagão é demanda alta com escassez ou rotatividade forte: o grupo que "
+                "cresce e não retém.")
+    st.markdown("\n".join(f"- **{q}**: {d.eixos}." for q, d in c.QUADRANTES.items()))
+
     _sensibilidade(ctx)
 
     st.subheader("Requisitos do desafio: onde conferir")

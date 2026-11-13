@@ -130,3 +130,43 @@ O CAGED não mostra a causa.
   população parecida".
 - O teste `test_nenhum_plural_montado_com_s_nas_paginas` varre `dashboard/`
   atrás de `{…nivel…}s` e `+ "s"`: hoje, sem ocorrências.
+
+---
+
+## NAR-01 · Quadrantes alinhados à definição do guia
+
+- Nova fonte única de rótulos e regras: **`dashboard/regras.py`** (quadrantes,
+  causas, alavancas, limiares, guardas de amostra), reexportada por `comum`.
+  `quadrante()` e as cores, classes CSS e legendas saem de `regras.QUADRANTES`.
+- Mesma classificação (eixos e z-scores iguais), nomes novos:
+
+  | Posição na matriz | Antes | Depois |
+  |---|---|---|
+  | cresce muito + perde a equipe | Expansão sob pressão | **Apagão: cresce, mas não retém** |
+  | cresce muito + segura a equipe | Expansão saudável | **Expansão acelerada** |
+  | cresce pouco + perde a equipe | Apagão (rotatividade crônica) | **Retração com rotatividade** |
+  | cresce pouco + segura a equipe | Estagnação | **Estagnação** |
+
+- **Lógica ajustada, não só o texto:** o filtro de alerta usa
+  `QUADRANTES_ALERTA` (os que perdem a equipe). A regra de mobilidade, que
+  disparava em "Expansão sob pressão", agora dispara no novo Apagão (a mesma
+  posição). As cores seguem a gravidade: Apagão em vermelho, Retração em laranja.
+- Atualizados: matriz e legenda, cartões de alerta (CSS `rx-alerta-retracao`),
+  contagens ("X grupos em…", `narrativa.contagem_quadrantes`), modo
+  apresentação, Metodologia (definição dos 4 quadrantes) e o CSV de
+  diagnóstico (coluna `quadrante`).
+- Testes: `test_quadrantes` (mapeamento do guia),
+  `test_rotulos_dos_quadrantes_seguem_o_guia`,
+  `test_rotulos_antigos_nao_aparecem_no_codigo` (busca vazia em `dashboard/`
+  e `src/`) e `test_contagem_por_quadrante_bate_com_a_matriz`.
+
+Contagens no recorte padrão (mesorregião × setor, 82 grupos):
+
+| Quadrante novo | Grupos | Nome antigo do mesmo grupo |
+|---|---|---|
+| Apagão: cresce, mas não retém | 26 | Expansão sob pressão |
+| Retração com rotatividade | 25 | Apagão (rotatividade crônica) |
+| Expansão acelerada | 17 | Expansão saudável |
+| Estagnação | 14 | Estagnação |
+
+Mesorregião × macrofamília (66 grupos): Apagão 19 · Retração 15 · Expansão 11 · Estagnação 21.

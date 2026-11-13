@@ -322,3 +322,21 @@ def texto_funil(etapas: list[EtapaFunil]) -> str:
     if len(etapas) > 1 and etapas[-2].valor:
         frases[-1] = frases[-1][:-1] + f", {c.fmt_pct(etapas[-1].valor / etapas[-2].valor)} das movimentações válidas."
     return " ".join(frases)
+
+
+# --- NAR-01: textos dos quadrantes, sempre a partir de `regras.QUADRANTES` ------
+
+def contagem_quadrantes(contagem, quadrantes=None) -> str:
+    """"3 grupos em **Apagão: cresce, mas não retém**, 5 em **Retração com rotatividade**"."""
+    quadrantes = quadrantes or c.QUADRANTES_ALERTA
+    partes = [f"{int(contagem.get(q, 0))} em **{q}**" for q in quadrantes]
+    if not partes:
+        return ""
+    partes[0] = partes[0].replace(" em ", " grupos em ", 1)
+    return ", ".join(partes[:-1]) + " e " + partes[-1] if len(partes) > 1 else partes[0]
+
+
+def legenda_quadrantes_alerta() -> str:
+    """"Vermelho = Apagão: cresce, mas não retém (cresce muito e perde a equipe). Laranja = …"."""
+    return " ".join(f"{c.QUADRANTES[q].nome_cor.capitalize()} = {q} ({c.QUADRANTES[q].eixos})."
+                    for q in c.QUADRANTES_ALERTA)

@@ -17,8 +17,8 @@ def rotulo_unidade(m: pd.DataFrame, segunda: str) -> pd.Series:
 
 
 def tabela_alertas(m: pd.DataFrame, segunda: str, saida_ref: float, frac_tecnica: pd.Series) -> pd.DataFrame:
-    """Unidades em Apagão ou Expansão sob pressão, com motor e selos de causa."""
-    alerta = m[m["quadrante"].isin([c.Q_APAGAO, c.Q_PRESSAO])].copy()
+    """Unidades nos quadrantes de alerta (perdem a equipe), com motor e selos de causa."""
+    alerta = m[m["quadrante"].isin(c.QUADRANTES_ALERTA)].copy()
     # Unidades relevantes (≥ 1% das movimentações) primeiro; dentro de cada
     # grupo, da mais tensa para a menos tensa.
     piso = max(c.MIN_MOVIMENTACOES, nar.FRACAO_RELEVANCIA * float(m[c.M_MOV].sum()))
@@ -52,7 +52,7 @@ def sintoma_principal(u: pd.Series) -> str:
     """O sintoma com o maior z-score na unidade (o que mais puxa a tensão)."""
     presentes = [n for n in c.PESOS_TENSAO_PADRAO if pd.notna(u.get(f"z_{n}"))]
     return max(presentes, key=lambda n: u[f"z_{n}"]) if presentes else c.M_SAIDA_VOL
-_CLASSE_QUADRANTE = {c.Q_APAGAO: "apagao", c.Q_PRESSAO: "pressao"}
+_CLASSE_QUADRANTE = {q: d.classe for q, d in c.QUADRANTES.items()}
 
 
 def frase_porque(u: pd.Series, selos: list[str], saida_ref: float) -> str:
@@ -107,8 +107,7 @@ def render(ctx: c.Contexto) -> None:
     contagem = m["quadrante"].value_counts()
     excluidas = len(c.agregar_metricas(ctx.df, por).query(f"{c.M_MOV} > 0")) - len(m)
     st.caption(
-        f"{contagem.get(c.Q_APAGAO, 0)} grupos em **{c.Q_APAGAO}** e {contagem.get(c.Q_PRESSAO, 0)} em "
-        f"**{c.Q_PRESSAO}**, de {len(m)} analisados"
+        nar.contagem_quadrantes(contagem) + f", de {len(m)} analisados"
         + (f" ({excluidas} ficaram fora por ter poucos dados)" if excluidas else "")
         + ". As linhas pontilhadas marcam a média; quanto maior a bolha, mais movimentações."
     )
@@ -121,7 +120,7 @@ def render(ctx: c.Contexto) -> None:
     if tabela.empty:
         st.caption("Nenhuma unidade nos quadrantes de alerta.")
     else:
-        alerta = m[m["quadrante"].isin([c.Q_APAGAO, c.Q_PRESSAO])]
+        alerta = m[m["quadrante"].isin(c.QUADRANTES_ALERTA)]
         piso = max(c.MIN_MOVIMENTACOES, nar.FRACAO_RELEVANCIA * float(m[c.M_MOV].sum()))
         alerta = alerta.assign(_rel=alerta[c.M_MOV] >= piso).sort_values(["_rel", "tensao"], ascending=False)
         colunas = st.columns(3)
@@ -130,9 +129,8 @@ def render(ctx: c.Contexto) -> None:
                              fracao_tecnica=float(frac_tecnica.get((u[c.COLUNA_REGIAO], u[segunda]), 0.0)))
             with colunas[i % 3]:
                 _cartao(u, segunda, selos, ref, i)
-        st.caption(f"Laranja-escuro = {c.Q_APAGAO}: perde gente e cresce pouco. Amarelo = {c.Q_PRESSAO}: "
-                   "cresce, mas perde gente. Cartão sem frase = salário, qualificação e retenção não explicam "
-                   "sozinhos a tensão; o número mostra o sintoma que mais pesa.")
+        st.caption(nar.legenda_quadrantes_alerta() + " Cartão sem frase = salário, qualificação e retenção "
+                   "não explicam sozinhos a tensão; o número mostra o sintoma que mais pesa.")
         with st.expander(f"Ver as {len(tabela)} unidades em alerta numa tabela"):
             st.dataframe(tabela, hide_index=True, width="stretch",
                          column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})

@@ -21,7 +21,7 @@ Resumo para quem vai mexer no painel antes do pitch. Escrito no início do plano
 **`dashboard/comum.py`** (≈1.600 linhas) concentra quase toda a regra de negócio do painel:
 - carga dos artefatos, filtros (`Filtros`, `barra_lateral`, escopos `ESCOPO_INDUSTRIA`/`ESCOPO_ECONOMIA`);
 - métricas derivadas (`agregar_metricas`, `_derivar`, `DEFINICOES`, constantes `M_*`, `MIN_MOVIMENTACOES=100`, `MIN_SALARIOS=30`, `LIMIAR_COMPRESSAO=0,95`);
-- diagnóstico: `zscore`, `matriz_diagnostico`, `quadrante()` e os rótulos `Q_SAUDAVEL`, `Q_PRESSAO`, `Q_ESTAGNACAO` e `Q_APAGAO`;
+- diagnóstico: `zscore` e `matriz_diagnostico` (quadrantes, causas, alavancas e limiares vêm de **`dashboard/regras.py`**, a fonte única de rótulos e regras, reexportada por `comum`);
 - causas (`causas()`: Salarial, Qualificação e Retenção) e o motor de recomendações (`gerar_recomendacoes`, `ALAVANCA_*`);
 - formatadores pt-BR (`fmt_num`, `fmt_pct`, `fmt_brl`, `fmt_gap`, `fmt_metrica`) e `delta_texto` (delta "vs SC/estado");
 - cartões de KPI, CSS e tema dos gráficos.
@@ -41,7 +41,7 @@ Resumo para quem vai mexer no painel antes do pitch. Escrito no início do plano
 | O que fazer | `recomendacoes.py` | REC-01 a REC-06, BUG-04 (custo) |
 | Ficha do território | `ficha.py` | BUG-01, BUG-03, BUG-05 |
 | Metodologia | `metodologia.py` | BUG-02 (funil), NAR-04, ENT-01 |
-| Apresentação (oculta, com chave) | `apresentacao.py` | NAR-01 (usa "rotatividade crônica" e "expansão sob pressão") |
+| Apresentação (oculta, com chave) | `apresentacao.py` | NAR-01 (contagem por quadrante) |
 
 ## Pipeline × painel: o que dá para mudar sem reprocessar
 

@@ -225,7 +225,7 @@ def construir_matriz(matriz: pd.DataFrame, rotulo: pd.Series) -> go.Figure:
         return c.figura_vazia("Nenhuma unidade com amostra suficiente (≥ 100 movimentações).")
     figura = go.Figure()
     tamanho_ref = float(matriz[c.M_MOV].max()) or 1.0
-    for nome_q in (c.Q_APAGAO, c.Q_PRESSAO, c.Q_SAUDAVEL, c.Q_ESTAGNACAO):
+    for nome_q in c.QUADRANTES:
         parte = matriz[matriz["quadrante"] == nome_q]
         if parte.empty:
             continue
@@ -244,7 +244,8 @@ def construir_matriz(matriz: pd.DataFrame, rotulo: pd.Series) -> go.Figure:
         )
     figura.add_hline(y=0, line_color=c.COR_NEUTRA, line_dash="dot")
     figura.add_vline(x=0, line_color=c.COR_NEUTRA, line_dash="dot")
-    for x, y, texto in ((1, 1, c.Q_PRESSAO), (0, 1, c.Q_APAGAO), (1, 0, c.Q_SAUDAVEL), (0, 0, c.Q_ESTAGNACAO)):
+    for texto, q in c.QUADRANTES.items():  # cada rótulo no seu canto (cresce → direita; perde → em cima)
+        x, y = int(q.cresce), int(q.perde)
         figura.add_annotation(xref="paper", yref="paper", x=x, y=y, text=f"<b>{texto}</b>",
                               showarrow=False, xanchor="right" if x else "left",
                               yanchor="top" if y else "bottom", font={"size": 14, "color": c.CORES_QUADRANTE[texto]})

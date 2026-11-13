@@ -142,7 +142,8 @@ def test_zscore_padroniza_e_trata_constante_e_nan():
 
 
 @pytest.mark.parametrize(("dinamismo", "tensao", "esperado"), [
-    (1, 1, c.Q_PRESSAO), (1, -1, c.Q_SAUDAVEL), (-1, 1, c.Q_APAGAO), (-1, -1, c.Q_ESTAGNACAO), (0, 0, c.Q_PRESSAO),
+    # NAR-01: apagão (guia) = cresce E perde a equipe; expansão acelerada = cresce E segura.
+    (1, 1, c.Q_APAGAO), (1, -1, c.Q_EXPANSAO), (-1, 1, c.Q_RETRACAO), (-1, -1, c.Q_ESTAGNACAO), (0, 0, c.Q_APAGAO),
 ])
 def test_quadrantes(dinamismo, tensao, esperado):
     assert c.quadrante(dinamismo, tensao) == esperado
@@ -484,3 +485,33 @@ def test_nenhum_plural_montado_com_s_nas_paginas():
     for arquivo in (Path(__file__).resolve().parent.parent / "dashboard").rglob("*.py"):
         achados = padrao.findall(arquivo.read_text(encoding="utf-8"))
         assert not achados, f"{arquivo}: {achados}"
+
+
+
+# --- NAR-01: quadrantes alinhados ao guia, rótulos num lugar só ---------------
+
+def test_rotulos_dos_quadrantes_seguem_o_guia():
+    assert c.Q_APAGAO == "Apagão: cresce, mas não retém"
+    assert c.Q_EXPANSAO == "Expansão acelerada"
+    assert c.Q_RETRACAO == "Retração com rotatividade"
+    assert c.Q_ESTAGNACAO == "Estagnação"
+    assert set(c.QUADRANTES_ALERTA) == {c.Q_APAGAO, c.Q_RETRACAO}   # os que perdem a equipe
+
+
+def test_rotulos_antigos_nao_aparecem_no_codigo():
+    from pathlib import Path
+
+    raiz = Path(__file__).resolve().parent.parent
+    for arquivo in [*(raiz / "dashboard").rglob("*.py"), *(raiz / "src").rglob("*.py")]:
+        texto = arquivo.read_text(encoding="utf-8")
+        for antigo in ("rotatividade crônica", "Expansão sob pressão", "expansão sob pressão",
+                       "Expansão saudável", "Q_PRESSAO", "Q_SAUDAVEL"):
+            assert antigo not in texto, f"{arquivo.name}: {antigo}"
+
+
+def test_contagem_por_quadrante_bate_com_a_matriz():
+    m = pd.DataFrame({"quadrante": [c.Q_APAGAO, c.Q_APAGAO, c.Q_RETRACAO, c.Q_EXPANSAO]})
+    texto = nar.contagem_quadrantes(m["quadrante"].value_counts())
+    assert texto == f"2 grupos em **{c.Q_APAGAO}** e 1 em **{c.Q_RETRACAO}**"
+    todos = nar.contagem_quadrantes(m["quadrante"].value_counts(), tuple(c.QUADRANTES))
+    assert f"1 em **{c.Q_EXPANSAO}**" in todos and f"0 em **{c.Q_ESTAGNACAO}**" in todos

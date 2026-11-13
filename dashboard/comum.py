@@ -57,6 +57,34 @@ from src.logging_pipeline import log_etapa, obter_logger
 from src.rais import CHAVES_ESTOQUE, COLUNAS_ESTOQUE
 from src.mapeamentos import NAO_CLASSIFICADO
 
+# Rótulos e limiares de negócio: fonte única em `dashboard.regras` (regra 5 do
+# plano da banca). Reexportados aqui para que `c.Q_APAGAO` etc. continuem valendo.
+from dashboard.regras import (  # noqa: F401
+    ALAVANCA_AUTOMACAO,
+    ALAVANCA_FORMACAO,
+    ALAVANCA_MOBILIDADE,
+    ALAVANCA_RETENCAO,
+    ALAVANCA_SALARIO,
+    CAUSA_QUALIFICACAO,
+    CAUSA_RETENCAO,
+    CAUSA_SALARIAL,
+    CORES_QUADRANTE,
+    LIMIAR_COMPRESSAO,
+    LIMIAR_DESTAQUE_GAP_ESC,
+    LIMIAR_GAP_ESCOLARIDADE,
+    MARGEM_SAIDA_VOLUNTARIA,
+    MIN_MOVIMENTACOES,
+    MIN_SALARIOS,
+    NIVEIS_QUALIFICADOS,
+    Q_APAGAO,
+    Q_ESTAGNACAO,
+    Q_EXPANSAO,
+    Q_RETRACAO,
+    QUADRANTES,
+    QUADRANTES_ALERTA,
+    quadrante,
+)
+
 _ETAPA = "dashboard"
 
 # ---------------------------------------------------------------------------
@@ -449,9 +477,6 @@ def filtrar(df: pd.DataFrame, filtros: Filtros, *, ignorar: tuple[str, ...] = ()
 # Motor de métricas: somar as colunas aditivas, depois derivar as razões
 # ---------------------------------------------------------------------------
 
-MIN_MOVIMENTACOES = 100
-MIN_SALARIOS = 30
-LIMIAR_COMPRESSAO = 0.95
 
 M_MOV = "movimentacoes"
 M_SALDO = "saldo"
@@ -661,10 +686,7 @@ KPIS_PADRAO = [M_SALDO, M_SALDO_10K, M_SAIDA_VOL, M_GAP_SAL]
 # Diagnóstico: z-scores, matriz Dinamismo × Tensão e causas
 # ---------------------------------------------------------------------------
 
-Q_SAUDAVEL = "Expansão saudável"
-Q_PRESSAO = "Expansão sob pressão"
-Q_ESTAGNACAO = "Estagnação"
-Q_APAGAO = "Apagão (rotatividade crônica)"
+# Rótulos dos quadrantes e a função `quadrante` moram em `dashboard.regras` (NAR-01).
 
 # Tensão = só sintomas, com pesos iguais (M4.C6). A compressão salarial é causa
 # (ver `causas`), não sintoma. Sem o estoque da RAIS, os dois sintomas dela ficam
@@ -708,13 +730,6 @@ def _media_ponderada(componentes: pd.DataFrame, pesos: dict[str, float]) -> pd.S
         numerador += valor.fillna(0.0) * peso
         denominador += presente * peso
     return numerador / denominador.where(denominador > 0)
-
-
-def quadrante(dinamismo: float, tensao: float) -> str:
-    """Quadrante da matriz (PLANEJAMENTO §7.2); zero conta como "alto"."""
-    if dinamismo >= 0:
-        return Q_PRESSAO if tensao >= 0 else Q_SAUDAVEL
-    return Q_APAGAO if tensao >= 0 else Q_ESTAGNACAO
 
 
 def matriz_diagnostico(
@@ -762,14 +777,6 @@ def matriz_diagnostico(
     return m.sort_values("tensao", ascending=False)
 
 
-CAUSA_SALARIAL = "Salarial"
-CAUSA_QUALIFICACAO = "Qualificação"
-CAUSA_RETENCAO = "Retenção"
-LIMIAR_GAP_ESCOLARIDADE = -0.10
-NIVEIS_QUALIFICADOS = ("Técnico", "Superior")
-# DATA-01: gap de escolaridade de uma macrofamília que merece nota explicativa
-# (bem abaixo das demais, que ficam entre −0,12 e +0,07 no estado).
-LIMIAR_DESTAQUE_GAP_ESC = -0.30
 
 
 def causas(linha: pd.Series, *, saida_ref: float, fracao_tecnica: float = 0.0) -> list[str]:
@@ -788,7 +795,7 @@ def causas(linha: pd.Series, *, saida_ref: float, fracao_tecnica: float = 0.0) -
     if pd.notna(gap_esc) and gap_esc <= LIMIAR_GAP_ESCOLARIDADE and fracao_tecnica >= 0.5:
         selos.append(CAUSA_QUALIFICACAO)
     saida = linha.get(M_SAIDA_VOL)
-    if pd.notna(saida) and pd.notna(gap) and saida >= saida_ref + 0.05 and gap >= 1:
+    if pd.notna(saida) and pd.notna(gap) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA and gap >= 1:
         selos.append(CAUSA_RETENCAO)
     return selos
 
@@ -824,11 +831,6 @@ class Recomendacao:
     extras: dict = field(default_factory=dict)
 
 
-ALAVANCA_SALARIO = "Revisar faixas salariais de entrada"
-ALAVANCA_FORMACAO = "Formação técnica e parcerias de qualificação"
-ALAVANCA_MOBILIDADE = "Recrutamento inter-regional e mobilidade"
-ALAVANCA_AUTOMACAO = "Automação e redesenho de postos"
-ALAVANCA_RETENCAO = "Retenção não salarial"
 
 
 def gerar_recomendacoes(
@@ -870,7 +872,7 @@ def gerar_recomendacoes(
             recs.append(Recomendacao(regiao, macro, alavanca, regra, evidencia, alvo,
                                      float(severidade), mov, extras=extras))
 
-        if pd.notna(gap) and gap < LIMIAR_COMPRESSAO and pd.notna(saida) and saida >= saida_ref + 0.05:
+        if pd.notna(gap) and gap < LIMIAR_COMPRESSAO and pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA:
             ref_sal = mediana_regional.get(chave)
             texto_ref = f"; mediana regional de admissão {fmt_brl(ref_sal)}" if ref_sal else ""
             add(ALAVANCA_SALARIO,
@@ -883,12 +885,12 @@ def gerar_recomendacoes(
                 f"gap de escolaridade ≤ {fmt_num(LIMIAR_GAP_ESCOLARIDADE, 2)} em macrofamília técnica (Técnico + Superior ≥ 50%)",
                 f"gap de escolaridade {fmt_num(u[M_GAP_ESC], 2)}; {fmt_pct(f_tec)} das movimentações em nível Técnico/Superior",
                 -u[M_GAP_ESC], alvo="Técnico/Superior")
-        if u["quadrante"] == Q_PRESSAO and u[M_SALDO] > 0:
+        if u["quadrante"] == Q_APAGAO and u[M_SALDO] > 0:
             retracao = {r_: s_ for (r_, m_), s_ in saldo_por.items() if m_ == macro and r_ != regiao and s_ < 0}
             if retracao:
                 origem = min(retracao, key=retracao.get)
                 add(ALAVANCA_MOBILIDADE,
-                    "expansão sob pressão aqui e retração da mesma macrofamília em outra mesorregião",
+                    f"grupo em {Q_APAGAO} aqui e retração da mesma macrofamília em outra mesorregião",
                     f"saldo {fmt_int(u[M_SALDO])} aqui; {origem} com saldo {fmt_int(retracao[origem])} na mesma macrofamília",
                     float(u[M_SALDO_REL]), origem=origem)
         f_bas = float(frac_basico.get(chave, 0.0))
@@ -899,7 +901,7 @@ def gerar_recomendacoes(
                 "nível Básico ≥ 50% e saldo ≤ 0",
                 f"{fmt_pct(f_bas)} em nível Básico; saldo {fmt_int(u[M_SALDO])}",
                 f_bas - 0.5, alvo="Básico")
-        if pd.notna(saida) and saida >= saida_ref + 0.05 and pd.notna(gap) and gap >= 1:
+        if pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA and pd.notna(gap) and gap >= 1:
             add(ALAVANCA_RETENCAO,
                 "saída voluntária ≥ referência + 5 p.p. com gap de reposição ≥ 1 (salário não explica)",
                 f"saída voluntária {fmt_pct(saida)} vs {fmt_pct(saida_ref)}; quem entra ganha {fmt_gap(gap)} de quem saiu",
@@ -1059,12 +1061,6 @@ COR_TENSAO = "#D55E00"    # vermelhão: tensão / apagão
 COR_EXPANSAO = "#0072B2"  # azul: expansão
 COR_NEUTRA = "#8C8C8C"    # cinza: neutro ou amostra insuficiente
 COR_DESTAQUE = "#0F4C81"  # cor de marca (acento do tema)
-CORES_QUADRANTE = {
-    Q_SAUDAVEL: COR_EXPANSAO,
-    Q_PRESSAO: "#E69F00",
-    Q_ESTAGNACAO: COR_NEUTRA,
-    Q_APAGAO: COR_TENSAO,
-}
 PALETA_CATEGORICA = ["#0072B2", "#E69F00", "#009E73", "#CC79A7", "#56B4E9", "#D55E00", "#F0E442", "#000000", "#999999", "#882255", "#44AA99", "#117733"]
 ESCALA_DIVERGENTE = [[0.0, COR_TENSAO], [0.5, "#F2F2F2"], [1.0, COR_EXPANSAO]]
 ESCALA_TENSAO = [[0.0, "#FBE3D6"], [1.0, COR_TENSAO]]
@@ -1371,11 +1367,11 @@ _CSS = """
 /* Cartões de alerta do Diagnóstico: faixa à esquerda na cor do quadrante + rótulo (nunca só cor) */
 [class*="st-key-rx-alerta-"] {border-left: 6px solid var(--rx-suave) !important;}
 [class*="st-key-rx-alerta-apagao"] {border-left-color: #D55E00 !important;}
-[class*="st-key-rx-alerta-pressao"] {border-left-color: #E69F00 !important;}
+[class*="st-key-rx-alerta-retracao"] {border-left-color: #E69F00 !important;}
 .rx-semaforo {display: inline-flex; align-items: center; gap: .4rem; font-weight: 700; font-size: .9rem; color: var(--rx-texto);}
 .rx-semaforo::before {content: ""; width: .8rem; height: .8rem; border-radius: 50%; background: currentColor;}
 .rx-semaforo.rx-apagao::before {background: #D55E00;}
-.rx-semaforo.rx-pressao::before {background: #E69F00;}
+.rx-semaforo.rx-retracao::before {background: #E69F00;}
 """
 
 
