@@ -298,3 +298,24 @@ estaleiros existem e respondem por 37% do saldo.
 | Grupos meso × setor, transformação | 59 | 63 |
 | Apagão / Retração / Expansão / Estagnação (transformação) | 15 / 17 / 15 / 12 | 13 / 20 / 14 / 16 |
 | Grupos meso × setor, B–F | 82 | 86 |
+
+---
+
+## Lote A · números finais (após TAX-01 reprocessado)
+
+Abertura do painel: Indústria de transformação (C), set/25–ago/26.
+
+| Número do pitch | Versão publicada (B–F, "Veículos") | Agora (transformação, setores 29/30) |
+|---|---|---|
+| Movimentações | 1.139.762 | 835.950 |
+| Saldo | 2.726 | 1.072 |
+| Saída voluntária | 47,7% | 50,9% |
+| Salário de quem entra vs quem saiu | 6% abaixo | 7% abaixo |
+| Maior tensão | Construção – Vale do Itajaí | Metalurgia e produtos de metal – Sul Catarinense (construção à parte) |
+| Expansão mais acelerada | Veículos – Vale do Itajaí, saldo 2.530 | Veículos automotores e autopeças – Vale do Itajaí, saldo 1.602 (100% Navegantes) |
+| Construção naval – Vale do Itajaí | — | saldo 928, Apagão: cresce, mas não retém |
+| Grupos com causa Salarial | 55 / 82 | 8 / 63 (B–F: 16 / 86) |
+| Grupos com causa Retenção | 0 / 82 | 3 / 63 (B–F: 5 / 86) |
+| Apagão / Retração / Expansão / Estagnação | (nomes antigos) | 13 / 20 / 14 / 16 |
+| Custo de reposição (3 salários) | R$ 2.174,6 mi | R$ 1,7 bi (transformação); R$ 2,2 bi em B–F |
+| Gap de escolaridade, Alimentos e bebidas | −0,73 | −0,73 (real; Oeste) |
