@@ -516,3 +516,18 @@ def test_auditoria_lista_os_overrides():
                          "macrofamilia": ["Administrativo e comercial"], "nivel_qualificacao": ["Básico"]})
     assert explorador(mapa, final).iloc[0]["nivel_qualificacao"] == "Qualificado"
     assert tabela_overrides(None).empty and explorador(mapa, None) is mapa
+
+
+def test_mapeamento_final_casa_cbo_do_grande_grupo_zero(tmp_path):
+    """Regressão: o CAGED traz "10105" e o mapeamento final usa "010105"."""
+    from src.cbo_ia import aplicar_mapeamento
+
+    r1 = pd.DataFrame({"cbo2002ocupação": ["10105", "784205"], "descricao": ["Oficial", "Alimentador"],
+                       "macrofamilia": [APOIO, OPERACAO], "nivel_qualificacao": ["Qualificado", "Básico"],
+                       "lideranca": [False, False], "justificativa": ["", ""]})
+    r1.to_csv(tmp_path / "r1.csv", index=False)
+    r1.to_csv(tmp_path / "r2.csv", index=False)
+    df = pd.DataFrame({"cbo2002ocupação": ["10105", "010105", 10105, "784205"]})
+    for kwargs in ({}, {"caminho_referencia": tmp_path / "r2.csv"}):
+        assert aplicar_mapeamento(df, str(tmp_path / "r1.csv"), **kwargs)["macrofamilia"].tolist() == \
+            [APOIO, APOIO, APOIO, OPERACAO]

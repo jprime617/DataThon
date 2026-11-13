@@ -998,9 +998,11 @@ def aplicar_mapeamento(
     """
     final = mapeamento_final(caminho_csv, caminho_referencia=caminho_referencia,
                              caminho_overrides=caminho_overrides)
-    mapa = pd.DataFrame({COLUNA_CBO: final["cbo"].map(_normalizar_cbo),
-                         COLUNA_MACROFAMILIA: final[COLUNA_MACROFAMILIA], COLUNA_NIVEL: final[COLUNA_NIVEL]})
-    chave = df[COLUNA_CBO].map(_normalizar_cbo)
+    # Chave com 6 dígitos dos dois lados: o grande grupo 0 chega como "10105" no
+    # CAGED e na RAIS, e o mapeamento final usa "010105".
+    mapa = pd.DataFrame({COLUNA_CBO: final["cbo"], COLUNA_MACROFAMILIA: final[COLUNA_MACROFAMILIA],
+                         COLUNA_NIVEL: final[COLUNA_NIVEL]})
+    chave = df[COLUNA_CBO].map(_normalizar_cbo).map(lambda c: _cbo6(c) if c else c)
     resultado = df.copy(deep=False)
     for coluna in (COLUNA_MACROFAMILIA, COLUNA_NIVEL):
         resultado[coluna] = chave.map(dict(zip(mapa[COLUNA_CBO], mapa[coluna])))
