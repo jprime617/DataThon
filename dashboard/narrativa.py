@@ -45,6 +45,7 @@ def unidades(df: pd.DataFrame, *, relevantes: bool = False) -> pd.DataFrame:
     # NAR-03: transformação (seção C) e construção (seção F) identificadas.
     m["transformacao"] = c.marcar_secao(m, df, por, c.SECAO_TRANSFORMACAO)
     m["construcao"] = c.marcar_secao(m, df, por, c.SECAO_CONSTRUCAO)
+    m = c.anexar_concentracao(m, df, por)  # TAX-02
     if relevantes and not m.empty:
         piso = max(c.MIN_MOVIMENTACOES, FRACAO_RELEVANCIA * float(m[c.M_MOV].sum()))
         m = m[m[c.M_MOV] >= piso]
@@ -126,11 +127,34 @@ def concentracao_municipio(df: pd.DataFrame, regiao: str, setor: str) -> tuple[s
     return str(saldo.idxmax()), float(saldo.max()) / total
 
 
-def nota_expansao(df: pd.DataFrame, regiao: str, setor: str) -> str:
-    """TAX-01: concentração municipal do saldo (calculada) e contexto externo com fonte, se houver."""
+def texto_concentrada(u: pd.Series, com_rotulo: bool = True) -> str:
+    """TAX-02: "**Expansão concentrada**: 43% do saldo positivo veio de jul/26 e 95%, de Navegantes. …" ou ""."""
+    if not bool(u.get("concentrada", False)):
+        return ""
+    partes = []
+    fm, fu = u.get("fracao_mes"), u.get("fracao_municipio")
+    if (int(u.get("n_meses") or 0) >= c.MIN_MESES_CONCENTRACAO and pd.notna(fm)
+            and fm >= c.LIMIAR_CONCENTRACAO_MES):
+        partes.append(f"{c.fmt_pct(fm, 0)} do saldo positivo veio de {c.rotulo_mes(u['mes_pico'])}")
+    if int(u.get("n_municipios") or 0) >= 2 and pd.notna(fu) and fu >= c.LIMIAR_CONCENTRACAO_MUNICIPIO:
+        partes.append(f"{c.fmt_pct(fu, 0)}" + (", de " if partes else " do saldo positivo veio de ")
+                      + str(u["municipio_pico"]))
+    frase = " e ".join(partes)
+    frase = f"**{c.SELO_CONCENTRADA}**: {frase}" if com_rotulo else frase[0].upper() + frase[1:]
+    return (frase
+            + ". Pode ser um projeto com data para acabar, não uma tendência do setor.")
+
+
+def nota_expansao(df: pd.DataFrame, regiao: str, setor: str, selo: str = "") -> str:
+    """TAX-01: concentração municipal do saldo (calculada) e contexto externo com fonte, se houver.
+
+    Com o selo de expansão concentrada (TAX-02), ele substitui a frase do município.
+    """
     partes = []
     conc = concentracao_municipio(df, regiao, setor)
-    if conc and conc[1] >= c.FRACAO_CONCENTRACAO_TEXTO:
+    if selo:
+        partes.append(" " + selo)
+    elif conc and conc[1] >= c.FRACAO_CONCENTRACAO_TEXTO:
         partes.append(f" {c.fmt_pct(min(conc[1], 1.0), 0)} do saldo vem de **{conc[0]}**"
                       + (" (os demais municípios somam saldo negativo)." if conc[1] > 1 else "."))
     if setor in c.CONTEXTO_SETOR:
@@ -192,7 +216,7 @@ def principais_achados(df: pd.DataFrame, limite: int = 6) -> list[Achado]:
                    "que no ano anterior."
                    if pd.notna(e[c.M_VAR_REL]) and pd.notna(e[c.M_ACEL])
                    else f" ({c.fmt_pct(e[c.M_SALDO_REL])} das movimentações).")
-                + nota_expansao(df, str(e[c.COLUNA_REGIAO]), str(e[c.COLUNA_SETOR])),
+                + nota_expansao(df, str(e[c.COLUNA_REGIAO]), str(e[c.COLUNA_SETOR]), texto_concentrada(e)),
                 _filtro_unidade(e[c.COLUNA_REGIAO], e[c.COLUNA_SETOR]), float(e["dinamismo"]),
             ))
         # TAX-01: setor com contexto externo documentado (ex.: construção naval) ganha um
@@ -207,7 +231,8 @@ def principais_achados(df: pd.DataFrame, limite: int = 6) -> list[Achado]:
                 f"Expansão puxada por encomendas: {setor}",
                 f"**{setor}** em **{n[c.COLUNA_REGIAO]}**: saldo {c.fmt_int(n[c.M_SALDO])}"
                 + (f", emprego {c.fmt_pct(n[c.M_VAR_REL])} maior no ano" if pd.notna(n[c.M_VAR_REL]) else "")
-                + f"; está em **{n['quadrante']}**." + nota_expansao(df, str(n[c.COLUNA_REGIAO]), setor),
+                + f"; está em **{n['quadrante']}**."
+                + nota_expansao(df, str(n[c.COLUNA_REGIAO]), setor, texto_concentrada(n)),
                 _filtro_unidade(n[c.COLUNA_REGIAO], setor), float(n["dinamismo"]) * 0.9,
             ))
         z_comp = c.zscore(1 - m[c.M_GAP_SAL])
@@ -462,7 +487,9 @@ class RespostaCentral:
 def _lista_grupos(grupos: pd.DataFrame) -> str:
     return " e ".join(
         f"**{g[c.COLUNA_SETOR]} – {g[c.COLUNA_REGIAO]}** (saldo {c.fmt_int(g[c.M_SALDO])}, "
-        f"rotatividade {c.fmt_pct(g[c.M_ROT_DESC])})" for _, g in grupos.iterrows())
+        f"rotatividade {c.fmt_pct(g[c.M_ROT_DESC])}"
+        + ("; " + c.SELO_CONCENTRADA.lower() if bool(g.get("concentrada", False)) else "") + ")"
+        for _, g in grupos.iterrows())
 
 
 def resposta_central(df: pd.DataFrame, ref: pd.Series | None = None, n: int = 2) -> RespostaCentral | None:

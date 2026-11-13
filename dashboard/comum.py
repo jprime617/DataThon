@@ -122,6 +122,11 @@ from dashboard.regras import (  # noqa: F401
     quadrante,
     salario_nao_explica,
     salario_pior_que_estado,
+    LIMIAR_CONCENTRACAO_MES,
+    LIMIAR_CONCENTRACAO_MUNICIPIO,
+    MIN_MESES_CONCENTRACAO,
+    SELO_CONCENTRADA,
+    expansao_concentrada,
 )
 
 _ETAPA = "dashboard"
@@ -946,6 +951,61 @@ def causas(linha: pd.Series, *, saida_ref: float, gap_ref: float, fracao_tecnica
     if pd.notna(saida) and saida >= saida_ref + MARGEM_SAIDA_VOLUNTARIA and salario_nao_explica(gap, gap_ref):
         selos.append(CAUSA_RETENCAO)
     return selos
+
+
+# TAX-02: colunas que `concentracao_saldo` acrescenta a cada grupo.
+COLUNAS_CONCENTRACAO = ["fracao_mes", "mes_pico", "n_meses", "fracao_municipio", "municipio_pico",
+                        "n_municipios", "concentrada"]
+
+
+def _pico(df: pd.DataFrame, saldo: pd.Series, por: list[str], dimensao: str) -> pd.DataFrame:
+    """Por grupo: a unidade de `dimensao` com o maior saldo, a fração dela no saldo positivo e quantas há."""
+    t = pd.DataFrame({**{c: df[c].astype(str) for c in por}, "d": df[dimensao].astype(str), "s": saldo})
+    t = t.groupby([*por, "d"], sort=False)["s"].sum().reset_index()
+    t["positivo"] = t["s"].clip(lower=0)
+    t = t.sort_values("s", ascending=False, kind="stable")
+    r = t.groupby(por, sort=False).agg(pico=("d", "first"), maximo=("s", "first"),
+                                       soma_positiva=("positivo", "sum"), n=("d", "size"))
+    r["fracao"] = r["maximo"] / r["soma_positiva"].where(r["soma_positiva"] > 0)
+    return r
+
+
+def concentracao_saldo(df: pd.DataFrame, por: list[str]) -> pd.DataFrame:
+    """TAX-02: quanto do saldo positivo de cada grupo vem de um único mês e de um único município.
+
+    Índice = as chaves de `por` (como texto). `concentrada` aplica a regra de
+    `regras.expansao_concentrada` (limiares lá).
+    """
+    if df is None or df.empty:
+        return pd.DataFrame(columns=[*por, *COLUNAS_CONCENTRACAO]).set_index(por)
+    saldo = (df[COLUNA_ADMISSOES] - df[COLUNA_DESLIGAMENTOS]).astype("float64")
+    mes = _pico(df, saldo, por, COLUNA_MES)
+    mun = _pico(df, saldo, por, COLUNA_NOME_MUNICIPIO)
+    total = pd.DataFrame({c: df[c].astype(str) for c in por}).assign(s=saldo).groupby(por, sort=False)["s"].sum()
+    r = pd.DataFrame({
+        "fracao_mes": mes["fracao"], "mes_pico": mes["pico"], "n_meses": mes["n"],
+        "fracao_municipio": mun["fracao"], "municipio_pico": mun["pico"], "n_municipios": mun["n"],
+    })
+    r["concentrada"] = [expansao_concentrada(float(total.get(k, 0.0)), fm, int(nm), fu, int(nu))
+                        for k, fm, nm, fu, nu in zip(r.index, r["fracao_mes"], r["n_meses"],
+                                                     r["fracao_municipio"], r["n_municipios"])]
+    return r
+
+
+def anexar_concentracao(m: pd.DataFrame, df: pd.DataFrame, por: list[str]) -> pd.DataFrame:
+    """A matriz `m` com as colunas de `concentracao_saldo` (grupos sem dado: não concentrado)."""
+    resultado = m.copy()
+    if m.empty:
+        for coluna in COLUNAS_CONCENTRACAO:
+            resultado[coluna] = pd.Series(dtype="object")
+        return resultado
+    conc = concentracao_saldo(df, por)
+    chaves = pd.MultiIndex.from_arrays([m[c].astype(str) for c in por]) if len(por) > 1 else m[por[0]].astype(str)
+    alinhado = conc.reindex(chaves)
+    for coluna in COLUNAS_CONCENTRACAO:
+        resultado[coluna] = alinhado[coluna].to_numpy()
+    resultado["concentrada"] = resultado["concentrada"].fillna(False).astype(bool)
+    return resultado
 
 
 def fracao_nivel_por_movimento(df: pd.DataFrame, por: list[str],

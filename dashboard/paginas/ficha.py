@@ -97,6 +97,11 @@ def render(ctx: c.Contexto) -> None:
         principal = setores.sort_values(c.M_MOV, ascending=False).iloc[0]
         col1.caption(f"**{principal[c.COLUNA_SETOR]}** concentra {c.fmt_pct(principal[c.M_MOV] / setores[c.M_MOV].sum())} "
                      "das movimentações.")
+        # TAX-02: setor do território cujo saldo depende de um mês ou de um município.
+        for _, u in c.anexar_concentracao(setores[setores[c.M_AMOSTRA_OK]], dados, [c.COLUNA_SETOR]).iterrows():
+            if u["concentrada"]:
+                col1.caption(f":material/my_location: {u[c.COLUNA_SETOR]} (saldo {c.fmt_int(u[c.M_SALDO])}): "
+                             + nar.texto_concentrada(u))
     mensal = c.agregar_metricas(dados, [c.COLUNA_MES])
     col2.plotly_chart(fig.construir_serie_mensal(mensal, "Mês a mês"), width="stretch")
     col2.caption(nar.legenda_serie(mensal))

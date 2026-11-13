@@ -169,6 +169,32 @@ CONTEXTO_SETOR = {
 FRACAO_CONCENTRACAO_TEXTO = 0.5
 
 # ---------------------------------------------------------------------------
+# TAX-02: selo "Expansão concentrada" (projeto com data para acabar, não tendência)
+# ---------------------------------------------------------------------------
+# Num grupo (território × setor ou macrofamília) que abriu vagas, o selo acende
+# quando um único mês responde por ≥ 40% do saldo positivo OU um único município
+# por ≥ 80% dele. "Saldo positivo" = soma só dos meses (ou municípios) que
+# abriram vagas: com o saldo líquido no denominador, um grupo de saldo 6 com um
+# município +44 e outros −38 daria 733% e o selo acenderia em metade dos grupos.
+
+SELO_CONCENTRADA = "Expansão concentrada"
+LIMIAR_CONCENTRACAO_MES = 0.40
+LIMIAR_CONCENTRACAO_MUNICIPIO = 0.80
+# Com poucos meses no filtro, um mês ter 40% é o normal (3 meses = 33% cada).
+MIN_MESES_CONCENTRACAO = 6
+
+
+def expansao_concentrada(saldo: float, fracao_mes: float, n_meses: int,
+                         fracao_municipio: float, n_municipios: int) -> bool:
+    """TAX-02: o saldo positivo do grupo depende de um mês ou de um município?"""
+    if not saldo == saldo or saldo <= 0:
+        return False
+    por_mes = n_meses >= MIN_MESES_CONCENTRACAO and fracao_mes == fracao_mes and fracao_mes >= LIMIAR_CONCENTRACAO_MES
+    por_mun = (n_municipios >= 2 and fracao_municipio == fracao_municipio
+               and fracao_municipio >= LIMIAR_CONCENTRACAO_MUNICIPIO)
+    return bool(por_mes or por_mun)
+
+# ---------------------------------------------------------------------------
 # REC-01: regra da alavanca "Formação profissional direcionada"
 # ---------------------------------------------------------------------------
 # Grupo (mesorregião × macrofamília da IA) que CRESCE (Apagão ou Expansão

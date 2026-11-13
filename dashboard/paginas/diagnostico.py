@@ -41,6 +41,7 @@ def tabela_alertas(m: pd.DataFrame, segunda: str, ref: pd.Series, frac_tecnica: 
             "Salário de quem entra vs quem saiu": c.fmt_gap(u[c.M_GAP_SAL]),
             "Mesma razão no estado": c.fmt_gap(ref[c.M_GAP_SAL]),
             "Saldo": c.fmt_int(u[c.M_SALDO]),
+            "Selo": c.SELO_CONCENTRADA if bool(u.get("concentrada", False)) else "—",
         })
     return pd.DataFrame(linhas)
 
@@ -82,9 +83,14 @@ def _cartao(u: pd.Series, segunda: str, selos: list[str], ref: pd.Series, i: int
     with st.container(border=True, key=f"rx-alerta-{_CLASSE_QUADRANTE[quadrante]}-{i}"):
         st.markdown(f"**{u[segunda]}**  \n{u[c.COLUNA_REGIAO]}")
         st.html(f'<span class="rx-semaforo rx-{_CLASSE_QUADRANTE[quadrante]}">{quadrante}</span>')
+        selo = nar.texto_concentrada(u, com_rotulo=False)  # TAX-02
+        if selo:
+            st.badge(c.SELO_CONCENTRADA, icon=":material/my_location:", color="violet")
         frase = frase_porque(u, selos, ref[c.M_SAIDA_VOL], ref[c.M_GAP_SAL])
         if frase:
             st.markdown(frase)
+        if selo:
+            st.caption(selo)
         a, b = st.columns(2)
         nome = sintoma_principal(u)
         a.metric(ROTULO_SINTOMA[nome], c.fmt_pct(u[nome], 0),
@@ -121,6 +127,7 @@ def render(ctx: c.Contexto) -> None:
         st.info("Nenhuma unidade com ≥ 100 movimentações nesta seleção.")
         return
     m["construcao"] = c.marcar_secao(m, ctx.df, por, c.SECAO_CONSTRUCAO)
+    m = c.anexar_concentracao(m, ctx.df, por)  # TAX-02
 
     st.plotly_chart(fig.construir_matriz(m, rotulo_unidade(m, segunda)), width="stretch")
     contagem = m["quadrante"].value_counts()

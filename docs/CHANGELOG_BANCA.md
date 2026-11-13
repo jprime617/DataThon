@@ -581,3 +581,35 @@ e Sul Catarinense → Vale do Itajaí (Metalmecânica, Qualificado: lá −783 c
   diagrama), o rodapé da ficha da mesorregião e a string que o pipeline
   grava em `comparacao` (com o texto já gravado nos dois `.json`).
 - Teste: `test_auditoria_descreve_o_processo_real_dos_arquivos`.
+
+---
+
+# Lote D (P1 + ANA-04)
+
+Recorte de referência do Lote D: o padrão de abertura do painel, escopo
+**Indústria de transformação (C)**, set/25–ago/26, Santa Catarina inteira.
+
+---
+
+## TAX-02 · Selo "Expansão concentrada"
+
+- **Regra** (`regras.expansao_concentrada`, limiares em `regras.py`): num grupo
+  que abriu vagas, o selo acende quando **um mês responde por ≥ 40% do saldo
+  positivo** (com ≥ 6 meses no filtro) **ou um município por ≥ 80%** (com ≥ 2
+  municípios no grupo).
+- **Ajuste do plano:** o denominador é o **saldo positivo** (soma só dos
+  meses/municípios que abriram vagas), não o saldo líquido. Com o líquido, um
+  grupo de saldo 6 com um município em +44 e os demais em −38 daria 733%, e o
+  selo acendia em 14 dos 28 grupos que cresceram, sem discriminar nada.
+- Onde aparece: cartões de alerta e tabela de "Quem precisa de atenção"
+  (coluna "Selo"), achados do Panorama (substitui a frase do município),
+  "Onde" da resposta à pergunta central e ficha do território (por setor).
+- Cálculo em `comum.concentracao_saldo` / `anexar_concentracao`; frase em
+  `narrativa.texto_concentrada`. Testes em `tests/test_dashboard_lote_d.py`.
+
+| Indicador | Antes | Depois |
+|---|---|---|
+| Grupos mesorregião × setor com saldo > 0 e selo (transformação) | — | 5 de 28 |
+| Idem, Indústria B–F | — | 8 de 41 |
+| Autopeças – Vale do Itajaí | sem selo | **Expansão concentrada**: 43% do saldo positivo em jul/26; 95% em Navegantes |
+| Construção naval – Vale do Itajaí | sem selo | sem selo (18% num mês; 63% em Navegantes) |
