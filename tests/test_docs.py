@@ -6,7 +6,7 @@ requisitos:
 - `requirements.txt` existe e fixa TODAS as dependências com versão exata (`==`),
   sem faixas (`>=`, `<=`, `~=`, `>`, `<`, `*`, ou intervalos separados por vírgula).
   (R8.2)
-- `README.md` existe e contém as seções exigidas: pré-requisitos de ambiente,
+- `docs/COMO_RODAR.md` (linkado no `README.md`) existe e contém as seções exigidas: pré-requisitos de ambiente,
   comandos de instalação de dependências, comandos de execução do pipeline e
   comando para iniciar o dashboard. (R8.8)
 - README documenta as premissas obrigatórias: (a) exclusões já aplicadas na
@@ -24,6 +24,8 @@ import pytest
 RAIZ = Path(__file__).resolve().parent.parent
 REQUIREMENTS = RAIZ / "requirements.txt"
 README = RAIZ / "README.md"
+# O passo a passo técnico saiu do README (visão geral para a banca) para este guia.
+GUIA = RAIZ / "docs" / "COMO_RODAR.md"
 
 
 # ---------------------------------------------------------------------------
@@ -48,7 +50,7 @@ def _linhas_de_dependencia(texto: str) -> list[str]:
 
 
 def _ler_readme() -> str:
-    return README.read_text(encoding="utf-8")
+    return GUIA.read_text(encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -106,6 +108,8 @@ def test_requirements_fixa_versoes_exatas():
 # ---------------------------------------------------------------------------
 def test_readme_existe():
     assert README.is_file(), "README.md deve existir na raiz do projeto"
+    assert GUIA.is_file(), "docs/COMO_RODAR.md deve existir"
+    assert "docs/COMO_RODAR.md" in README.read_text(encoding="utf-8"), "README deve linkar o guia técnico"
 
 
 def test_readme_tem_pre_requisitos_de_ambiente():

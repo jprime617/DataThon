@@ -128,7 +128,7 @@ def _argumentos(argv=None) -> argparse.Namespace:
         description="Classifica as CBOs pela API com os mesmos prompts de ia_cbo/prompts/ (usados no chat) e grava "
                     "as respostas no formato que o pipeline lê (LLM_PROVIDER=arquivo).",
         epilog=f"A chave da API vem da variável de ambiente {VAR_CREDENCIAL_LLM} e nunca é gravada. "
-               "A execução oficial do painel foi via chat; ver ia_cbo/COMO_USAR.md e o README.")
+               "A execução oficial do painel foi via chat; ver ia_cbo/COMO_USAR.md e docs/COMO_RODAR.md.")
     p.add_argument("--provedor", choices=[PROVEDOR_ANTHROPIC, PROVEDOR_GEMINI], default=PROVEDOR_ANTHROPIC,
                    help="API a chamar (padrão: %(default)s)")
     p.add_argument("--modelo", help=f"modelo (padrão: {MODELOS_PADRAO[PROVEDOR_ANTHROPIC]}, o mesmo do chat, na "

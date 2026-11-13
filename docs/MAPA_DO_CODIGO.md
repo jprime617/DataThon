@@ -60,5 +60,5 @@ Os do painel são `tests/test_dashboard_*.py`; os de regras de métrica, `tests/
 
 ## Deploy
 
-Azure App Service (Linux, `startup.sh`), com deploy via `az webapp deploy` (README, seção de deploy). Não há CI. **A CLI `az` não está instalada neste ambiente.**
+Azure App Service (Linux, `startup.sh`), com deploy via `az webapp deploy` (`docs/COMO_RODAR.md`, seção de deploy). Não há CI. **A CLI `az` não está instalada neste ambiente.**
 Repositório: `github.com/jprime617/DataThon`. Branch principal: `dashboard-v2` (tags `entrega-v1` e `entrega-v2`).

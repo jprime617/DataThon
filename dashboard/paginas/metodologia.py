@@ -71,7 +71,7 @@ CRITERIOS_BANCA = [
      "apresentação resume os cinco passos."),
 ]
 ENGENHARIA = [
-    ("Pipeline reprodutível", "notebooks/01_pipeline.ipynb do FTP do MTE ao Blob; README com o passo a passo."),
+    ("Pipeline reprodutível", "notebooks/01_pipeline.ipynb do FTP do MTE ao Blob; docs/COMO_RODAR.md com o passo a passo."),
     ("Classificação por IA", "Prompts e respostas versionados em ia_cbo/; concordância e divergências na auditoria."),
     ("Implantação no Azure", "Este painel no Azure App Service, lendo do Azure Blob Storage (origem em Procedência)."),
     ("Testes automatizados", "pytest + Hypothesis cobrindo pipeline, métricas, regras e páginas (ver Qualidade do código)."),

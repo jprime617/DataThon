@@ -168,7 +168,7 @@ O escopo cobre o pipeline completo (ingestão → limpeza → cruzamento relacio
 5. THE Pipeline SHALL ler duas credenciais distintas exclusivamente de variáveis de ambiente, sem registrar os valores em arquivos versionados no repositório: (a) a credencial de API do LLM_Externo e (b) as credenciais de acesso ao Azure (Blob_Storage e App_Service).
 6. IF o enriquecimento via IA requer a credencial do LLM_Externo e a variável de ambiente correspondente está ausente ou vazia, THEN THE Pipeline SHALL interromper a execução antes de chamar a API externa e exibir uma mensagem de erro indicando que a credencial do LLM_Externo não foi fornecida. *(Não se aplica ao modo arquivo, R5.10, que não chama API.)*
 7. IF o upload das tabelas agregadas para o Blob_Storage requer a credencial de acesso ao Azure e a variável de ambiente correspondente está ausente ou vazia, THEN THE Pipeline SHALL interromper a etapa de upload antes de chamar o Azure e exibir uma mensagem de erro indicando que a credencial de acesso ao Azure não foi fornecida.
-8. THE Pipeline SHALL disponibilizar um arquivo README que descreve, no mínimo: os pré-requisitos de ambiente, os comandos para instalar as dependências, os comandos para executar o pipeline e os comandos para iniciar o dashboard.
+8. THE Pipeline SHALL disponibilizar um README de visão geral para a banca e, linkado nele, o guia técnico `docs/COMO_RODAR.md`, que descreve, no mínimo: os pré-requisitos de ambiente, os comandos para instalar as dependências, os comandos para executar o pipeline e os comandos para iniciar o dashboard.
 
 ### Requirement 9: Implantação no Azure com conta de estudante
 
