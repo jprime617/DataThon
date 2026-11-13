@@ -63,3 +63,32 @@ O CAGED não mostra a causa.
 | Tela | Antes | Depois |
 |---|---|---|
 | Ficha, Grande Florianópolis, Saldo | −1.913 · "−4.639 vs estado" | −1.913 · "estado: 2.726" |
+
+---
+
+## BUG-02 · Funil de linhas não fechava
+
+- **Onde saíam as 10.452 linhas:** o bruto tem MOV + FOR + EXC. Cada linha
+  EXC (exclusão declarada) tem peso −1 em `agregador.preparar_base`: ela sai
+  e anula a declaração que corrige. A queda entre as linhas no período e as
+  movimentações é, portanto, 2 × EXC (10.452 = 2 × 5.226). *Conferência com
+  os microdados: ver a nota de verificação abaixo.*
+- **Pipeline:** `montar_metadados(linhas_por_tipo=...)` grava
+  `linhas.por_tipo` (MOV, FOR, EXC) no `metadados.json`, e o notebook passa a
+  contagem por `tipo_arquivo`. Com isso, o funil confere `perda == 2 × EXC`
+  e mostra qualquer sobra como "outras perdas".
+- **Painel:** `narrativa.etapas_funil` monta as etapas na ordem do processo,
+  cada queda com o motivo. `narrativa.texto_funil` gera a legenda a partir
+  dos números (some o "0 linhas fora do período foram excluídas" sem
+  contexto). O gráfico fixa a ordem de cima para baixo e mostra a perda de
+  cada etapa.
+- Testes: `test_funil_fecha_a_soma_e_nomeia_cada_queda`,
+  `test_funil_mostra_a_sobra_quando_exc_nao_explica_tudo`,
+  `test_metadados_registram_linhas_por_tipo_para_o_funil`.
+
+| Etapa | Valor | Saem | Motivo |
+|---|---|---|---|
+| Linhas lidas do CAGED (SC) | 6.782.144 | — | MOV + FOR + EXC |
+| No período analisado | 6.782.144 | 0 | fora do período |
+| Movimentações válidas | 6.771.692 | 10.452 | exclusões declaradas (EXC) e as declarações que elas anulam |
+| Movimentações da indústria (B–F) | 2.282.348 | 4.489.344 | outras seções |

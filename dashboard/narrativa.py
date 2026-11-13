@@ -259,3 +259,63 @@ def destaque_escolaridade(df: pd.DataFrame, perfil: pd.DataFrame | None = None) 
                       f"dos admitidos e {c.fmt_pct(p.loc[baixa, c.COLUNA_DESLIGAMENTOS].sum() / desl)} dos "
                       "desligados (período inteiro).")
     return texto + " O dado é real (códigos fora da escala 1–11 ficam fora da média); a causa pede investigação local."
+
+
+# --- BUG-02: funil do pipeline, cada queda com o motivo -------------------------
+
+@dataclass
+class EtapaFunil:
+    rotulo: str
+    valor: int
+    perda: int = 0       # quanto saiu em relação à etapa anterior
+    motivo: str = ""     # por que saiu
+
+
+def etapas_funil(linhas: dict) -> list[EtapaFunil]:
+    """Etapas do funil do pipeline (de cima para baixo, na ordem do processo).
+
+    As linhas lidas são MOV + FOR + EXC. Cada linha EXC (exclusão declarada)
+    sai e anula a declaração que ela corrige: a queda entre as linhas no período
+    e as movimentações é 2 × EXC. Com ``por_tipo`` nos metadados, o funil confere
+    essa conta; a diferença que sobrar aparece como "outras perdas", nunca some.
+    """
+    if not linhas:
+        return []
+    brutas = int(linhas.get("brutas", 0))
+    fora = int(linhas.get("excluidas_competencia", 0))
+    no_periodo = int(linhas.get("apos_limpeza", brutas - fora))
+    movs = int(linhas.get("movimentacoes_agregadas", 0))
+    industria = int(linhas.get("movimentacoes_industria", 0))
+    por_tipo = linhas.get("por_tipo") or {}
+    etapas = [EtapaFunil("Linhas lidas do CAGED (SC)", brutas, 0,
+                         "MOV + FOR + EXC" if por_tipo else "")]
+    etapas.append(EtapaFunil("No período analisado", no_periodo, brutas - no_periodo, "fora do período"))
+    perda = no_periodo - movs
+    if "EXC" in por_tipo:
+        exc = int(por_tipo["EXC"])
+        motivo = f"{c.fmt_int(exc)} exclusões declaradas (EXC), cada uma anulando a declaração que corrige"
+        if perda != 2 * exc:
+            motivo += f"; outras perdas: {c.fmt_int(perda - 2 * exc)}"
+    else:
+        motivo = "exclusões declaradas (EXC) e as declarações que elas anulam"
+    etapas.append(EtapaFunil("Movimentações válidas", movs, perda, motivo))
+    etapas.append(EtapaFunil("Movimentações da indústria (seções B–F)", industria, movs - industria,
+                             "movimentações de outras seções (agro, comércio, serviços, governo)"))
+    return etapas
+
+
+def texto_funil(etapas: list[EtapaFunil]) -> str:
+    """Uma frase por queda do funil, com o número e o motivo (nada escrito à mão)."""
+    if not etapas:
+        return ""
+    frases = [f"{c.fmt_int(etapas[0].valor)} linhas lidas"
+              + (f" ({etapas[0].motivo})" if etapas[0].motivo else "") + "."]
+    for e in etapas[1:]:
+        destino = e.rotulo[0].lower() + e.rotulo[1:]
+        if e.perda:
+            frases.append(f"Saem {c.fmt_int(e.perda)}: {e.motivo} → {c.fmt_int(e.valor)} {destino}.")
+        else:
+            frases.append(f"Nenhuma linha {e.motivo}.")
+    if len(etapas) > 1 and etapas[-2].valor:
+        frases[-1] = frases[-1][:-1] + f", {c.fmt_pct(etapas[-1].valor / etapas[-2].valor)} das movimentações válidas."
+    return " ".join(frases)

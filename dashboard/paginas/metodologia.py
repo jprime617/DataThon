@@ -9,6 +9,7 @@ import streamlit as st
 
 from dashboard import comum as c
 from dashboard import figuras as fig
+from dashboard import narrativa as nar
 
 ARQUITETURA = """
 digraph {
@@ -131,14 +132,10 @@ def render(ctx: c.Contexto) -> None:
         st.caption(f":material/info: {aviso}")
 
     if linhas:
-        etapas = [("Linhas no arquivo bruto", linhas.get("brutas", 0)),
-                  ("Após filtro de competência", linhas.get("apos_limpeza", 0)),
-                  ("Movimentações agregadas", linhas.get("movimentacoes_agregadas", 0)),
-                  ("Indústria (seções B–F)", linhas.get("movimentacoes_industria", 0))]
+        etapas = nar.etapas_funil(linhas)
         st.plotly_chart(fig.construir_funil(etapas), width="stretch")
-        st.caption(f"{c.fmt_int(linhas.get('excluidas_competencia', 0))} linhas fora do período foram excluídas. "
-                   f"Agregado: {c.fmt_int(linhas.get('agregado', 0))} linhas; perfil: "
-                   f"{c.fmt_int(linhas.get('perfil', 0))} linhas.")
+        st.caption(nar.texto_funil(etapas) + f" Agregado: {c.fmt_int(linhas.get('agregado', 0))} linhas; "
+                   f"perfil: {c.fmt_int(linhas.get('perfil', 0))} linhas.")
 
     st.subheader("Definições")
     st.table(pd.DataFrame([{"Indicador": d.rotulo, "Fórmula": d.formula} for d in c.DEFINICOES.values()])

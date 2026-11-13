@@ -396,3 +396,32 @@ def test_participacao_estadual_no_mesmo_sinal_e_com_sinais_opostos():
     assert c.participacao_estadual(c.M_SALDO, 0, 2726) == "0,0% do saldo estadual"
     assert c.participacao_estadual(c.M_SALDO, 10, 0) is None
     assert c.participacao_estadual(c.M_SAIDA_VOL, 0.5, 0.4) is None  # taxa: usa delta_texto
+
+
+# --- BUG-02: funil do pipeline fecha a conta e diz o motivo de cada queda -----
+
+_LINHAS = {"brutas": 6_782_144, "excluidas_competencia": 0, "apos_limpeza": 6_782_144,
+           "movimentacoes_agregadas": 6_771_692, "movimentacoes_industria": 2_282_348}
+
+
+def test_funil_fecha_a_soma_e_nomeia_cada_queda():
+    etapas = nar.etapas_funil({**_LINHAS, "por_tipo": {"MOV": 6_700_000, "FOR": 76_918, "EXC": 5_226}})
+    assert [e.valor for e in etapas] == [6_782_144, 6_782_144, 6_771_692, 2_282_348]
+    for anterior, e in zip(etapas, etapas[1:]):
+        assert anterior.valor - e.perda == e.valor   # cada queda é explicada pela perda da etapa
+        assert e.motivo
+    assert "5.226 exclusões declaradas (EXC)" in etapas[2].motivo
+    assert "outras perdas" not in etapas[2].motivo   # 10.452 = 2 × 5.226
+    texto = nar.texto_funil(etapas)
+    assert "Saem 10.452" in texto and "Nenhuma linha fora do período" in texto
+    assert "0 linhas fora do período foram excluídas" not in texto
+
+
+def test_funil_mostra_a_sobra_quando_exc_nao_explica_tudo():
+    etapas = nar.etapas_funil({**_LINHAS, "por_tipo": {"EXC": 5_000}})
+    assert "outras perdas: 452" in etapas[2].motivo
+
+
+def test_funil_sem_metadados_fica_vazio():
+    assert nar.etapas_funil({}) == []
+    assert nar.texto_funil([]) == ""

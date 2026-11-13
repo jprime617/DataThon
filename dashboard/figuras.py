@@ -387,13 +387,22 @@ def construir_barras(metricas: pd.DataFrame, categoria: str, metrica: str, titul
                    xaxis={"title": c.DEFINICOES[metrica].rotulo, "range": _folga_x(dados[metrica], 0.45)})
 
 
-def construir_funil(etapas: list[tuple[str, int]]) -> go.Figure:
-    """Funil de volumes do pipeline (bruto → limpo → agregado → indústria)."""
+def construir_funil(etapas: list) -> go.Figure:
+    """Funil do pipeline, de cima para baixo na ordem do processo (BUG-02).
+
+    Aceita `narrativa.EtapaFunil` (rótulo, valor, perda, motivo) ou pares
+    (rótulo, valor). Cada barra mostra o valor e, quando houve queda, quanto saiu.
+    """
     if not etapas:
         return c.figura_vazia("Metadados indisponíveis.")
+    rotulos = [getattr(e, "rotulo", None) or e[0] for e in etapas]
+    valores = [getattr(e, "valor", None) if hasattr(e, "valor") else e[1] for e in etapas]
+    perdas = [getattr(e, "perda", 0) for e in etapas]
+    textos = [c.fmt_int(v) + (f"  (−{c.fmt_int(p)})" if p else "") for v, p in zip(valores, perdas)]
+    cores = [c.COR_DESTAQUE, c.COR_DESTAQUE, "#5B8DB8", c.COR_EXPANSAO, c.COR_EXPANSAO]
     figura = go.Figure(go.Funnel(
-        y=[e[0] for e in etapas], x=[e[1] for e in etapas],
-        text=[c.fmt_int(e[1]) for e in etapas], textinfo="text+percent initial",
-        marker={"color": [c.COR_DESTAQUE, c.COR_DESTAQUE, "#5B8DB8", c.COR_EXPANSAO][: len(etapas)]},
+        y=rotulos, x=valores, text=textos, textinfo="text", textposition="inside",
+        marker={"color": cores[: len(etapas)]}, hoverinfo="y+text",
     ))
+    figura.update_yaxes(categoryorder="array", categoryarray=rotulos, autorange="reversed")
     return _layout(figura, "Do arquivo bruto à indústria: volume em cada etapa", 340)

@@ -142,3 +142,18 @@ def test_media_de_escolaridade_so_usa_codigos_validos():
     # Desligamentos: 99 e 0 ficam fora; 80 → 9,5; 4 → 4.
     assert base.loc[desl, "n_escolaridade_desligamento"].sum() == 2
     assert base.loc[desl, "soma_escolaridade_desligamento"].sum() == 13.5
+
+
+def test_metadados_registram_linhas_por_tipo_para_o_funil(tmp_path):
+    """BUG-02: o funil precisa saber quantas linhas EXC entraram no bruto."""
+    from src.agregador import montar_metadados
+
+    agregado = agregar(preparar_base(_base()), _municipios())
+    perfil = agregar_perfil(preparar_base(_base()))
+    meta = montar_metadados(linhas_brutas=8, linhas_limpas=8, excluidas_competencia=0,
+                            df_agregado=agregado, df_perfil=perfil, raiz=tmp_path,
+                            linhas_por_tipo={"MOV": 6, "FOR": 1, "EXC": 1})
+    assert meta["linhas"]["por_tipo"] == {"MOV": 6, "FOR": 1, "EXC": 1}
+    sem = montar_metadados(linhas_brutas=6, linhas_limpas=6, excluidas_competencia=0,
+                           df_agregado=agregado, df_perfil=perfil, raiz=tmp_path)
+    assert "por_tipo" not in sem["linhas"]

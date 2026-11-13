@@ -665,11 +665,14 @@ def montar_metadados(
     meta_ia: dict | None = None,
     raiz: str | os.PathLike[str] = ".",
     teto_salario_valido: float | None = None,
+    linhas_por_tipo: dict[str, int] | None = None,
 ) -> dict:
     """Reúne a procedência dos artefatos para o `metadados.json`.
 
     Os volumes de movimentação saem do próprio agregado (soma das contagens),
     de modo que o funil exibido no painel seja coerente com o que ele agrega.
+    ``linhas_por_tipo`` (MOV, FOR, EXC) explica a queda entre as linhas lidas e
+    as movimentações: cada linha EXC sai e anula a declaração que corrige (BUG-02).
     """
     import subprocess
 
@@ -707,6 +710,7 @@ def montar_metadados(
             "movimentacoes_industria": int(movimentos[industria].sum()),
             "agregado": int(len(df_agregado)),
             "perfil": int(len(df_perfil)),
+            **({"por_tipo": {str(k): int(v) for k, v in linhas_por_tipo.items()}} if linhas_por_tipo else {}),
         },
         "ia": {
             **(meta_ia or {}),
