@@ -4,6 +4,38 @@ Documento de passagem entre sessões. Leia junto com `PLANO_CORRECOES_DATATHON.m
 (o plano), `docs/CHANGELOG_BANCA.md` (o que foi feito, com números de antes e
 depois) e `docs/MAPA_DO_CODIGO.md` (onde fica cada coisa).
 
+## ⚠ Próxima sessão de código: retomar o Lote C (publicação)
+
+**O Lote C está em andamento e é a primeira coisa a fazer na próxima sessão.**
+Trabalhe na branch `fix/banca-c`; ela também foi mergeada em `dashboard-v2`
+para este documento ficar visível.
+
+- **Já feito no Lote C:**
+  - **ENT-03 (preparo):** trava de consistência. O `metadados.json` leva o
+    SHA-256 de cada artefato, e o painel recusa um Blob com arquivos de
+    execuções diferentes.
+  - **ENT-04 (rascunho):** `docs/PITCH_APOIO.md`, com o roteiro de 3 minutos,
+    o briefing para os slides, as respostas para a banca e a tabela de
+    números a conferir. Os números ainda precisam ser confirmados no painel
+    publicado.
+- **Falta, nesta ordem:**
+  1. **ENT-01:** link do repositório (público) na barra lateral e na
+     Metodologia, com o commit linkado.
+  2. **ENT-02:** Always On no App Service, ou o checklist "abrir 10 minutos
+     antes".
+  3. **ENT-03:** testes → upload ao Blob dos 5 artefatos juntos, com o
+     `metadados.json` por último → `az webapp deploy` → conferir as 7 páginas
+     no endereço público, inclusive com recorte vazio. Critério: **nenhum
+     aviso amarelo no topo**, e a Metodologia com "Origem em uso: Azure Blob
+     Storage" e "commit do pipeline: 7245713".
+  4. **ENT-04:** conferir os números de `docs/PITCH_APOIO.md` (seção 5) no
+     painel publicado, preencher o commit e as URLs, e tirar os prints.
+  5. Merge de `fix/banca-c` em `dashboard-v2`, push e relatório final
+     (seção 5 do plano).
+- **Precisa do usuário:** `AZURE_STORAGE_CONNECTION_STRING` num `.env` (nunca
+  no chat), `az login` (instalar a CLI `az` antes) e a confirmação de que o
+  repositório é público.
+
 ## Onde paramos
 
 - **Lotes A, B e D concluídos**, com um commit por item, mergeados em
@@ -21,7 +53,7 @@ depois) e `docs/MAPA_DO_CODIGO.md` (onde fica cada coisa).
   (benchmark SC × Brasil).
 - **Nada foi publicado ainda:** nem no Azure Blob nem no App Service. A
   produção ainda mostra a versão antiga. **Próximo passo: Lote C, com o
-  usuário** (credencial do Azure e `az login`).
+  usuário** (ver a seção do topo).
 - A branch `panorama-decisao` guarda um redesenho antigo do Panorama (WIP).
   Ela **não** entra no pitch; não mexa.
 
