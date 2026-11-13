@@ -18,7 +18,16 @@ para este documento ficar visível.
     o briefing para os slides, as respostas para a banca e a tabela de
     números a conferir. Os números ainda precisam ser confirmados no painel
     publicado.
-- **Falta, nesta ordem:**
+- **Feito em 13/11 (João):** ENT-01 (link do repositório), ENT-02 (F1 sem
+    Always On → checklist) e ENT-03: os 5 artefatos no Blob (`metadados.json`
+    por último) e o deploy do commit `c8d6954` (tag local `deploy-20261113`).
+    As 7 páginas abrem na URL pública sem exceção e sem aviso amarelo;
+    a Metodologia mostra "Origem em uso: Azure Blob Storage" e o commit
+    `7245713`. A suíte inteira não rodou antes do deploy (pressa); só
+    `test_dashboard_metricas` e `test_dashboard_lote_d` (183 verdes).
+  - **Rollback:** `bash ~/Documentos/DataThon-rollback/20261113-0825/VOLTAR.sh`
+    (blobs de 12/11 + pacote da tag `entrega-v2`).
+- **Falta, nesta ordem (itens 1–3 feitos acima):**
   1. **ENT-01:** link do repositório (público) na barra lateral e na
      Metodologia, com o commit linkado.
   2. **ENT-02:** Always On no App Service, ou o checklist "abrir 10 minutos

@@ -416,8 +416,8 @@ As falas para as notas do apresentador estão na seção 3 (blocos "Fala").
 |---|---|---|
 | `[[NOME_EQUIPE]]`, `[[LOGO_EQUIPE]]` | identidade do grupo | — |
 | `[[APRESENTADOR_1..5]]`, `[[QUEM_PASSA_SLIDES]]` | divisão das falas | — |
-| `[[URL_PAINEL]]` | endereço público do painel | `https://datathon-caged-sc-br.azurewebsites.net/` (confirmar após o deploy) |
+| `[[URL_PAINEL]]` | endereço público do painel | `https://datathon-caged-sc-br.azurewebsites.net/` (confirmado em 13/11) |
 | `[[URL_REPOSITORIO]]` | repositório público | `https://github.com/jprime617/DataThon` (confirmar que está público) |
 | `[[QR_CODE_PAINEL]]` | QR para `[[URL_PAINEL]]` | gerar depois do deploy |
-| `[[COMMIT_PUBLICADO]]` | hash mostrado na Metodologia | depois do deploy |
+| `[[COMMIT_PUBLICADO]]` | hash mostrado na Metodologia | pipeline `7245713`; painel `c8d6954` |
 | `[[PRINT_PANORAMA_RESPOSTA]]`, `[[PRINT_MATRIZ]]`, `[[PRINT_SC_BRASIL]]`, `[[PRINT_TOP3]]` | prints do painel publicado | tirar depois do deploy, na resolução do projetor |
