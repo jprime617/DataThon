@@ -14,8 +14,7 @@ def medianas_regionais(ctx: c.Contexto) -> dict[tuple[str, str], float]:
     perfil = ctx.art.perfil
     if perfil is None:
         return {}
-    if ctx.filtros.escopo == c.ESCOPO_INDUSTRIA:
-        perfil = perfil[perfil[c.COLUNA_ESCOPO_INDUSTRIAL]]
+    perfil = perfil[c.mascara_escopo(perfil, ctx.filtros.escopo)]
     med = c.medianas_perfil(perfil, [c.COLUNA_REGIAO, c.COLUNA_MACROFAMILIA_CBO])
     return {(r, m): v for r, m, v in zip(med[c.COLUNA_REGIAO], med[c.COLUNA_MACROFAMILIA_CBO], med["mediana_admissao"])}
 

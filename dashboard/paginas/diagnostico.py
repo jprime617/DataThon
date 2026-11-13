@@ -30,6 +30,7 @@ def tabela_alertas(m: pd.DataFrame, segunda: str, saida_ref: float, frac_tecnica
         selos = c.causas(u, saida_ref=saida_ref, fracao_tecnica=float(frac_tecnica.get(chave, 0.0)))
         linhas.append({
             "Unidade": f"{u[segunda]} – {u[c.COLUNA_REGIAO]}",
+            "Grupo": c.ROTULO_CONSTRUCAO if bool(u.get("construcao", False)) else "Transformação e demais",
             "Quadrante": u["quadrante"],
             "Causas": ", ".join(selos) or "—",
             "Movimentações": int(u[c.M_MOV]),
@@ -91,6 +92,20 @@ def _cartao(u: pd.Series, segunda: str, selos: list[str], ref: pd.Series, i: int
                  delta_color="off", delta_arrow="off")
 
 
+def _cartoes(alerta: pd.DataFrame, segunda: str, saida_ref: float, frac_tecnica: pd.Series,
+             ref: pd.Series, maximo: int, inicio: int) -> None:
+    """Até `maximo` cartões de alerta em 3 colunas (`inicio` mantém as chaves únicas)."""
+    if alerta.empty:
+        st.caption("Nenhum grupo em alerta nesta lista.")
+        return
+    colunas = st.columns(3)
+    for i, (_, u) in enumerate(alerta.head(maximo).iterrows()):
+        selos = c.causas(u, saida_ref=saida_ref,
+                         fracao_tecnica=float(frac_tecnica.get((u[c.COLUNA_REGIAO], u[segunda]), 0.0)))
+        with colunas[i % 3]:
+            _cartao(u, segunda, selos, ref, inicio + i)
+
+
 def render(ctx: c.Contexto) -> None:
     st.title("Quem precisa de atenção urgente?")
     c.cabecalho(ctx)
@@ -102,6 +117,7 @@ def render(ctx: c.Contexto) -> None:
     if m.empty:
         st.info("Nenhuma unidade com ≥ 100 movimentações nesta seleção.")
         return
+    m["construcao"] = c.marcar_secao(m, ctx.df, por, c.SECAO_CONSTRUCAO)
 
     st.plotly_chart(fig.construir_matriz(m, rotulo_unidade(m, segunda)), width="stretch")
     contagem = m["quadrante"].value_counts()
@@ -123,12 +139,18 @@ def render(ctx: c.Contexto) -> None:
         alerta = m[m["quadrante"].isin(c.QUADRANTES_ALERTA)]
         piso = max(c.MIN_MOVIMENTACOES, nar.FRACAO_RELEVANCIA * float(m[c.M_MOV].sum()))
         alerta = alerta.assign(_rel=alerta[c.M_MOV] >= piso).sort_values(["_rel", "tensao"], ascending=False)
-        colunas = st.columns(3)
-        for i, (_, u) in enumerate(alerta.head(CARTOES_MAX).iterrows()):
-            selos = c.causas(u, saida_ref=saida_ref,
-                             fracao_tecnica=float(frac_tecnica.get((u[c.COLUNA_REGIAO], u[segunda]), 0.0)))
-            with colunas[i % 3]:
-                _cartao(u, segunda, selos, ref, i)
+        # NAR-03: com a construção no recorte, ela vira uma lista à parte (rotatividade estrutural).
+        obra = alerta[alerta["construcao"]]
+        demais = alerta[~alerta["construcao"]]
+        if c.inclui_construcao(ctx.filtros.escopo) and not obra.empty:
+            st.markdown(f"##### {nar.rotulo_lista_principal(demais, ctx.df, por)}")
+            _cartoes(demais, segunda, saida_ref, frac_tecnica, ref, CARTOES_MAX, 0)
+            st.markdown(f"##### {c.ROTULO_CONSTRUCAO}")
+            st.caption("Na construção, parte da troca de equipe é estrutural: a obra termina e o time sai. "
+                       "Compare a construção com ela mesma, não com a transformação.")
+            _cartoes(obra, segunda, saida_ref, frac_tecnica, ref, 3, CARTOES_MAX)
+        else:
+            _cartoes(alerta, segunda, saida_ref, frac_tecnica, ref, CARTOES_MAX, 0)
         st.caption(nar.legenda_quadrantes_alerta() + " Cartão sem frase = salário, qualificação e retenção "
                    "não explicam sozinhos a tensão; o número mostra o sintoma que mais pesa.")
         with st.expander(f"Ver as {len(tabela)} unidades em alerta numa tabela"):

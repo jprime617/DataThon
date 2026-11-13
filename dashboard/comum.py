@@ -68,7 +68,19 @@ from dashboard.regras import (  # noqa: F401
     CAUSA_QUALIFICACAO,
     CAUSA_RETENCAO,
     CAUSA_SALARIAL,
+    AJUDA_ESCOPO,
     CORES_QUADRANTE,
+    ESCOPO_ECONOMIA,
+    ESCOPO_INDUSTRIA,
+    ESCOPO_PADRAO,
+    ESCOPO_TRANSFORMACAO,
+    ESCOPOS,
+    FRACAO_CONSTRUCAO,
+    NOME_ESCOPO,
+    ROTULO_CONSTRUCAO,
+    SECAO_CONSTRUCAO,
+    SECAO_TRANSFORMACAO,
+    inclui_construcao,
     LIMIAR_COMPRESSAO,
     LIMIAR_DESTAQUE_GAP_ESC,
     LIMIAR_GAP_ESCOLARIDADE,
@@ -376,8 +388,6 @@ def preparar_tipos(df: pd.DataFrame) -> pd.DataFrame:
 # Filtros
 # ---------------------------------------------------------------------------
 
-ESCOPO_INDUSTRIA = "Indústria (B–F)"
-ESCOPO_ECONOMIA = "Toda a economia"
 NIVEL_MESO = "Mesorregião"
 NIVEL_MICRO = "Microrregião"
 NIVEL_MUNICIPIO = "Município"
@@ -392,7 +402,7 @@ COLUNA_POR_NIVEL_TERRITORIAL = {
 class Filtros:
     """Estado dos filtros globais (persistido em `st.session_state`)."""
 
-    escopo: str = ESCOPO_INDUSTRIA
+    escopo: str = ESCOPO_PADRAO
     meses: tuple[str, str] | None = None
     nivel_territorial: str = NIVEL_MESO
     territorios: tuple[str, ...] = ()
@@ -455,13 +465,42 @@ def aplicar_filtros(
     return df[mascara].copy()
 
 
+def mascara_escopo(df: pd.DataFrame, escopo: str) -> pd.Series:
+    """Linhas do escopo (agregado, perfil ou estoque): C, B–F ou toda a economia (NAR-03)."""
+    if escopo == ESCOPO_TRANSFORMACAO and COLUNA_SECAO_INDUSTRIAL in df.columns:
+        return df[COLUNA_SECAO_INDUSTRIAL].astype(str) == SECAO_TRANSFORMACAO
+    if escopo in (ESCOPO_TRANSFORMACAO, ESCOPO_INDUSTRIA) and COLUNA_ESCOPO_INDUSTRIAL in df.columns:
+        return df[COLUNA_ESCOPO_INDUSTRIAL].astype(bool)
+    return pd.Series(True, index=df.index)
+
+
+def fracao_secao(df: pd.DataFrame, por: list[str], secao: str) -> pd.Series:
+    """Fração das movimentações de cada grupo que está na seção CNAE `secao` (rótulo)."""
+    if COLUNA_SECAO_INDUSTRIAL not in df.columns or df.empty:
+        return pd.Series(dtype="float64")
+    mov = df[COLUNA_ADMISSOES] + df[COLUNA_DESLIGAMENTOS]
+    na_secao = mov.where(df[COLUNA_SECAO_INDUSTRIAL].astype(str) == secao, 0)
+    chave = [df[c] for c in por]
+    soma = mov.groupby(chave, observed=True).sum()
+    return (na_secao.groupby(chave, observed=True).sum() / soma.where(soma > 0)).fillna(0.0)
+
+
+def marcar_secao(m: pd.DataFrame, df: pd.DataFrame, por: list[str], secao: str,
+                 fracao_minima: float = FRACAO_CONSTRUCAO) -> pd.Series:
+    """Booleano por linha de `m`: ≥ `fracao_minima` das movimentações do grupo estão em `secao`."""
+    if m.empty:
+        return pd.Series(dtype=bool)
+    fracao = fracao_secao(df, por, secao)
+    chaves = list(zip(*(m[c] for c in por))) if len(por) > 1 else list(m[por[0]])
+    return pd.Series([float(fracao.get(k, 0.0)) >= fracao_minima for k in chaves], index=m.index, dtype=bool)
+
+
 def filtrar(df: pd.DataFrame, filtros: Filtros, *, ignorar: tuple[str, ...] = ()) -> pd.DataFrame:
     """Aplica os filtros globais; ``ignorar`` pula dimensões (ex.: território)."""
     if df is None or df.empty:
         return df
     selecoes: dict[str, object] = {}
-    if filtros.escopo == ESCOPO_INDUSTRIA and COLUNA_ESCOPO_INDUSTRIAL in df.columns:
-        selecoes[COLUNA_ESCOPO_INDUSTRIAL] = True
+    df = df[mascara_escopo(df, filtros.escopo)]
     if filtros.meses and "periodo" not in ignorar and COLUNA_MES in df.columns:
         meses = df[COLUNA_MES].astype(str)
         df = df[(meses >= filtros.meses[0]) & (meses <= filtros.meses[1])]
@@ -1191,7 +1230,7 @@ def _meses(df: pd.DataFrame) -> list[str]:
 
 
 def limpar_filtros(df: pd.DataFrame | None = None) -> None:
-    """Volta todos os filtros ao padrão (indústria, últimos 12 meses)."""
+    """Volta todos os filtros ao padrão (transformação, últimos 12 meses)."""
     import streamlit as st
 
     for chave in _CHAVES_FILTRO:
@@ -1208,7 +1247,9 @@ def barra_lateral(df: pd.DataFrame) -> Filtros:
 
     meses = _meses(df)
     estado = st.session_state
-    estado.setdefault("f_escopo", ESCOPO_INDUSTRIA)
+    estado.setdefault("f_escopo", ESCOPO_PADRAO)
+    if estado["f_escopo"] not in ESCOPOS:
+        estado["f_escopo"] = ESCOPO_PADRAO
     estado.setdefault("f_meses", periodo_padrao(meses))
     estado.setdefault("f_nivel", NIVEL_MESO)
     if tuple(estado["f_meses"])[0] not in meses or tuple(estado["f_meses"])[1] not in meses:
@@ -1216,14 +1257,12 @@ def barra_lateral(df: pd.DataFrame) -> Filtros:
 
     lateral = st.sidebar
     lateral.markdown("### Filtros")
-    lateral.radio("Escopo", [ESCOPO_INDUSTRIA, ESCOPO_ECONOMIA], key="f_escopo",
-                  help="Indústria = seções CNAE B a F (extrativa, transformação, "
-                       "eletricidade e gás, água e resíduos, construção).")
+    lateral.radio("Escopo", list(ESCOPOS), key="f_escopo", help=AJUDA_ESCOPO)
     lateral.select_slider("Período", options=meses, key="f_meses", format_func=rotulo_mes)
     lateral.radio("Nível territorial", [NIVEL_MESO, NIVEL_MICRO, NIVEL_MUNICIPIO], key="f_nivel",
                   horizontal=True, on_change=lambda: estado.update(f_terr=[]))
 
-    escopo_df = df[df[COLUNA_ESCOPO_INDUSTRIAL]] if estado["f_escopo"] == ESCOPO_INDUSTRIA else df
+    escopo_df = df[mascara_escopo(df, estado["f_escopo"])]
     coluna_terr = COLUNA_POR_NIVEL_TERRITORIAL[estado["f_nivel"]]
     for chave, coluna in (("f_terr", coluna_terr), ("f_setor", COLUNA_SETOR),
                           ("f_macro", COLUNA_MACROFAMILIA_CBO), ("f_niv", COLUNA_NIVEL_QUALIFICACAO)):
@@ -1403,12 +1442,12 @@ def cabecalho(ctx: Contexto) -> None:
 # Para elas o painel mostra a participação no total estadual (`participacao_estadual`);
 # o delta "vs estado" fica só para taxas e razões.
 METRICAS_ABSOLUTAS = {M_MOV, M_SALDO, M_ESTOQUE}
-_TOTAL_ESTADUAL = {M_MOV: "das movimentações do estado", M_SALDO: "do saldo estadual",
-                   M_ESTOQUE: "do estoque estadual"}
+# Curto de propósito: o texto cabe no rodapé dos cartões estreitos (3 por linha).
+_TOTAL_ESTADUAL = {M_MOV: "do estado", M_SALDO: "do estado", M_ESTOQUE: "do estado"}
 
 
 def participacao_estadual(nome: str, valor: float, referencia: float) -> str | None:
-    """"38,2% do saldo estadual" para métricas absolutas; com sinais opostos, só o valor do estado.
+    """"38,2% do estado" para métricas absolutas; com sinais opostos, só o valor do estado.
 
     Com sinais opostos (território fechou vagas, estado abriu) a fração seria
     negativa e sem leitura; mostramos o total do estado como referência.

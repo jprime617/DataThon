@@ -40,14 +40,18 @@ def unidades(df: pd.DataFrame, *, relevantes: bool = False) -> pd.DataFrame:
     movimentações é ruído demais para virar a manchete de um painel estadual.
     Os z-scores continuam calculados entre todas as unidades com amostra.
     """
-    m = c.matriz_diagnostico(df, [c.COLUNA_REGIAO, c.COLUNA_SETOR])
+    por = [c.COLUNA_REGIAO, c.COLUNA_SETOR]
+    m = c.matriz_diagnostico(df, por)
+    # NAR-03: transformação (seção C) e construção (seção F) identificadas.
+    m["transformacao"] = c.marcar_secao(m, df, por, c.SECAO_TRANSFORMACAO)
+    m["construcao"] = c.marcar_secao(m, df, por, c.SECAO_CONSTRUCAO)
     if relevantes and not m.empty:
         piso = max(c.MIN_MOVIMENTACOES, FRACAO_RELEVANCIA * float(m[c.M_MOV].sum()))
         m = m[m[c.M_MOV] >= piso]
     return m
 
 
-def resposta_principal(df: pd.DataFrame, escopo: str = c.ESCOPO_INDUSTRIA) -> str:
+def resposta_principal(df: pd.DataFrame, escopo: str = c.ESCOPO_PADRAO) -> str:
     """A pergunta de negócio respondida em Markdown: uma manchete e 4 tópicos.
 
     A manchete interpretativa ("o apagão é de retenção") só aparece quando os
@@ -57,7 +61,7 @@ def resposta_principal(df: pd.DataFrame, escopo: str = c.ESCOPO_INDUSTRIA) -> st
     if df is None or df.empty:
         return "Nenhuma movimentação na seleção atual — ajuste ou limpe os filtros."
     t = c.total(df)
-    nome = "A indústria catarinense" if escopo == c.ESCOPO_INDUSTRIA else "A economia catarinense"
+    nome = c.NOME_ESCOPO.get(escopo, c.NOME_ESCOPO[c.ESCOPO_PADRAO])
     if abs(t[c.M_SALDO_REL]) <= 0.05 and t[c.M_SAIDA_VOL] >= 0.4:
         manchete = (f"{nome} ({periodo(df)}) movimenta muito e cresce pouco: "
                     "o apagão é de retenção, não de falta de contratação.")
@@ -70,14 +74,43 @@ def resposta_principal(df: pd.DataFrame, escopo: str = c.ESCOPO_INDUSTRIA) -> st
     ]
     m = unidades(df, relevantes=True)
     if not m.empty:
-        tensa = m.iloc[0]
-        topicos.append(f"Maior tensão: **{tensa[c.COLUNA_SETOR]} – {tensa[c.COLUNA_REGIAO]}** ({tensa['motor']}).")
+        tensa, obra = mais_tensas(m)
+        if tensa is not None:
+            topicos.append(f"Maior tensão{rotulo_tensa(m)}: **{tensa[c.COLUNA_SETOR]} – {tensa[c.COLUNA_REGIAO]}** "
+                           f"({tensa['motor']}).")
+        if obra is not None:
+            topicos.append(f"{c.ROTULO_CONSTRUCAO}: **{obra[c.COLUNA_SETOR]} – {obra[c.COLUNA_REGIAO]}** "
+                           f"({obra['motor']}).")
         expansao = m[m[c.M_SALDO] > 0].sort_values("dinamismo", ascending=False)
         if not expansao.empty:
             e = expansao.iloc[0]
             topicos.append(f"Expansão mais acelerada: **{e[c.COLUNA_SETOR]} – {e[c.COLUNA_REGIAO]}** "
                            f"(saldo {c.fmt_int(e[c.M_SALDO])}).")
     return f"{manchete}\n\n" + "\n".join(f"- {t_}" for t_ in topicos)
+
+
+def mais_tensas(m: pd.DataFrame) -> tuple[pd.Series | None, pd.Series | None]:
+    """(grupo mais tenso da transformação, grupo mais tenso da construção) — NAR-03.
+
+    `m` vem ordenada por tensão. Sem grupo de transformação (ex.: filtro só de
+    serviços), o principal é o mais tenso fora da construção. A construção só
+    aparece quando está no recorte (escopo B–F ou toda a economia).
+    """
+    if m.empty:
+        return None, None
+    construcao = m["construcao"] if "construcao" in m else pd.Series(False, index=m.index)
+    transformacao = m["transformacao"] if "transformacao" in m else ~construcao
+    candidatos = m[transformacao] if transformacao.any() else m[~construcao]
+    principal = candidatos.iloc[0] if not candidatos.empty else None
+    obra = m[construcao].iloc[0] if construcao.any() else None
+    return principal, obra
+
+
+def rotulo_tensa(m: pd.DataFrame) -> str:
+    """" na transformação" quando o recorte mistura outras seções; "" quando é só transformação."""
+    if "transformacao" in m and m["transformacao"].any() and not m["transformacao"].all():
+        return " na transformação"
+    return ""
 
 
 def _filtro_unidade(regiao: str, setor: str | None = None, macro: str | None = None) -> dict:
@@ -107,13 +140,22 @@ def principais_achados(df: pd.DataFrame, limite: int = 5) -> list[Achado]:
     m = unidades(df, relevantes=True)
     achados: list[Achado] = []
     if not m.empty:
-        u = m.iloc[0]
-        achados.append(Achado(
-            "Maior tensão",
-            f"**{u[c.COLUNA_SETOR]}** em **{u[c.COLUNA_REGIAO]}**: {_sintomas(u, ref)}; quem entra ganha "
-            f"{c.fmt_gap(u[c.M_GAP_SAL])} de quem saiu ({c.fmt_int(u[c.M_MOV])} movimentações).",
-            _filtro_unidade(u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), float(u["tensao"]),
-        ))
+        u, obra = mais_tensas(m)
+        if u is not None:
+            achados.append(Achado(
+                "Maior tensão" + rotulo_tensa(m),
+                f"**{u[c.COLUNA_SETOR]}** em **{u[c.COLUNA_REGIAO]}**: {_sintomas(u, ref)}; quem entra ganha "
+                f"{c.fmt_gap(u[c.M_GAP_SAL])} de quem saiu ({c.fmt_int(u[c.M_MOV])} movimentações).",
+                _filtro_unidade(u[c.COLUNA_REGIAO], u[c.COLUNA_SETOR]), float(u["tensao"]),
+            ))
+        if obra is not None:
+            # A construção entra identificada e depois da transformação (força menor).
+            achados.append(Achado(
+                c.ROTULO_CONSTRUCAO,
+                f"**{obra[c.COLUNA_SETOR]}** em **{obra[c.COLUNA_REGIAO]}**: {_sintomas(obra, ref)}. "
+                "Parte da rotatividade é estrutural: a obra termina e a equipe sai.",
+                _filtro_unidade(obra[c.COLUNA_REGIAO], obra[c.COLUNA_SETOR]), float(obra["tensao"]) * 0.5,
+            ))
         exp = m[m[c.M_SALDO] > 0].sort_values("dinamismo", ascending=False)
         if not exp.empty:
             e = exp.iloc[0]
@@ -340,3 +382,11 @@ def legenda_quadrantes_alerta() -> str:
     """"Vermelho = Apagão: cresce, mas não retém (cresce muito e perde a equipe). Laranja = …"."""
     return " ".join(f"{c.QUADRANTES[q].nome_cor.capitalize()} = {q} ({c.QUADRANTES[q].eixos})."
                     for q in c.QUADRANTES_ALERTA)
+
+
+def rotulo_lista_principal(demais: pd.DataFrame, df: pd.DataFrame, por: list[str]) -> str:
+    """Título da lista de alertas fora da construção: "Transformação" quando é só isso."""
+    if demais.empty:
+        return "Transformação"
+    so_c = c.marcar_secao(demais, df, por, c.SECAO_TRANSFORMACAO).all()
+    return "Transformação" if so_c else "Transformação e demais seções (exceto construção)"

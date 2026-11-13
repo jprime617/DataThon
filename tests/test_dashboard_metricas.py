@@ -390,11 +390,11 @@ def test_delta_continua_em_taxas_e_razoes():
 
 
 def test_participacao_estadual_no_mesmo_sinal_e_com_sinais_opostos():
-    assert c.participacao_estadual(c.M_SALDO, 1000, 2726) == "36,7% do saldo estadual"
-    assert c.participacao_estadual(c.M_MOV, 50, 200) == "25,0% das movimentações do estado"
+    assert c.participacao_estadual(c.M_SALDO, 1000, 2726) == "36,7% do estado"
+    assert c.participacao_estadual(c.M_MOV, 50, 200) == "25,0% do estado"
     # Grande Florianópolis fechou vagas e o estado abriu: fração negativa não tem leitura.
     assert c.participacao_estadual(c.M_SALDO, -1913, 2726) == "estado: 2.726"
-    assert c.participacao_estadual(c.M_SALDO, 0, 2726) == "0,0% do saldo estadual"
+    assert c.participacao_estadual(c.M_SALDO, 0, 2726) == "0,0% do estado"
     assert c.participacao_estadual(c.M_SALDO, 10, 0) is None
     assert c.participacao_estadual(c.M_SAIDA_VOL, 0.5, 0.4) is None  # taxa: usa delta_texto
 
@@ -515,3 +515,57 @@ def test_contagem_por_quadrante_bate_com_a_matriz():
     assert texto == f"2 grupos em **{c.Q_APAGAO}** e 1 em **{c.Q_RETRACAO}**"
     todos = nar.contagem_quadrantes(m["quadrante"].value_counts(), tuple(c.QUADRANTES))
     assert f"1 em **{c.Q_EXPANSAO}**" in todos and f"0 em **{c.Q_ESTAGNACAO}**" in todos
+
+
+# --- NAR-03: transformação como padrão; construção identificada ---------------
+
+def test_escopo_padrao_e_transformacao():
+    assert c.ESCOPO_PADRAO == c.ESCOPO_TRANSFORMACAO == "Indústria de transformação (C)"
+    assert c.Filtros().escopo == c.ESCOPO_TRANSFORMACAO
+    assert c.ESCOPOS == (c.ESCOPO_TRANSFORMACAO, c.ESCOPO_INDUSTRIA, c.ESCOPO_ECONOMIA)
+    assert not c.inclui_construcao(c.ESCOPO_TRANSFORMACAO)
+    assert c.inclui_construcao(c.ESCOPO_INDUSTRIA) and c.inclui_construcao(c.ESCOPO_ECONOMIA)
+
+
+def _tres_secoes() -> pd.DataFrame:
+    return _df(
+        _celula(secao_industrial="Indústrias de Transformação", setor="Têxtil, confecção e calçados",
+                regiao="Vale do Itajaí", admissoes=100, desligamentos=90, desligamentos_a_pedido=30),
+        _celula(secao_industrial="Construção", setor="Construção", escopo_industrial=True,
+                regiao="Grande Florianópolis", admissoes=300, desligamentos=310, desligamentos_a_pedido=200),
+        _celula(secao_industrial="Comércio", setor="Comércio", escopo_industrial=False,
+                regiao="Oeste Catarinense", admissoes=50, desligamentos=40, desligamentos_a_pedido=10),
+    )
+
+
+@pytest.mark.parametrize("escopo, setores", [
+    (c.ESCOPO_TRANSFORMACAO, {"Têxtil, confecção e calçados"}),
+    (c.ESCOPO_INDUSTRIA, {"Têxtil, confecção e calçados", "Construção"}),
+    (c.ESCOPO_ECONOMIA, {"Têxtil, confecção e calçados", "Construção", "Comércio"}),
+])
+def test_filtro_de_escopo(escopo, setores):
+    df = c.filtrar(_tres_secoes(), c.Filtros(escopo=escopo))
+    assert set(df["setor"]) == setores
+
+
+def test_maior_tensao_e_da_transformacao_e_construcao_vem_a_parte():
+    m = pd.DataFrame({
+        c.COLUNA_SETOR: ["Construção", "Têxtil", "Eletricidade e Gás"],
+        c.COLUNA_REGIAO: ["Grande Florianópolis", "Vale do Itajaí", "Sul Catarinense"],
+        "tensao": [2.0, 1.0, 0.5], "motor": ["a", "b", "c"],
+        "construcao": [True, False, False], "transformacao": [False, True, False],
+    })
+    principal, obra = nar.mais_tensas(m)
+    assert principal[c.COLUNA_SETOR] == "Têxtil"          # não a construção, mesmo mais tensa
+    assert obra[c.COLUNA_SETOR] == "Construção"
+    assert nar.rotulo_tensa(m) == " na transformação"
+    so_c = m.iloc[[1]]
+    assert nar.mais_tensas(so_c)[1] is None and nar.rotulo_tensa(so_c) == ""
+
+
+def test_marcar_secao_por_fracao_das_movimentacoes():
+    df = _tres_secoes()
+    m = c.agregar_metricas(df, [c.COLUNA_REGIAO])
+    marca = c.marcar_secao(m, df, [c.COLUNA_REGIAO], c.SECAO_CONSTRUCAO)
+    assert dict(zip(m[c.COLUNA_REGIAO], marca)) == {
+        "Grande Florianópolis": True, "Vale do Itajaí": False, "Oeste Catarinense": False}

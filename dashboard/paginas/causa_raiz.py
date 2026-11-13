@@ -30,8 +30,7 @@ def perfil_filtrado(ctx: c.Contexto) -> tuple[pd.DataFrame | None, str]:
         if f.nivel_territorial != c.NIVEL_MESO:
             nota += f", pela(s) mesorregião(ões) da seleção: {', '.join(regioes)}"
     sel = perfil
-    if f.escopo == c.ESCOPO_INDUSTRIA:
-        sel = sel[sel[c.COLUNA_ESCOPO_INDUSTRIAL]]
+    sel = sel[c.mascara_escopo(sel, f.escopo)]
     sel = c.aplicar_filtros(sel, regiao=regioes, **{c.COLUNA_SETOR: f.setores,
                                                     c.COLUNA_MACROFAMILIA_CBO: f.macrofamilias,
                                                     c.COLUNA_NIVEL_QUALIFICACAO: f.niveis})

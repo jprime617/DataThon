@@ -51,7 +51,7 @@ O CAGED não mostra a causa.
 - `comum.delta_texto` agora devolve `None` para `METRICAS_ABSOLUTAS`
   (movimentações, saldo e estoque): nenhum absoluto de território é subtraído
   do absoluto do estado. O delta "vs estado/vs SC" fica só em taxas e razões.
-- Nova `comum.participacao_estadual`: mostra "36,7% do saldo estadual", em
+- Nova `comum.participacao_estadual`: mostra "36,7% do estado", em
   cinza e sem seta. Com sinais opostos (o território fechou vagas e o estado
   abriu), mostra só "estado: 2.726".
 - Onde se aplica: Ficha do território (cartão Saldo), cartões de alerta de
@@ -170,3 +170,40 @@ Contagens no recorte padrão (mesorregião × setor, 82 grupos):
 | Estagnação | 14 | Estagnação |
 
 Mesorregião × macrofamília (66 grupos): Apagão 19 · Retração 15 · Expansão 11 · Estagnação 21.
+
+---
+
+## NAR-03 · Transformação como escopo de abertura; construção à parte
+
+- Escopo novo **"Indústria de transformação (C)"**, padrão de abertura
+  (`regras.ESCOPO_PADRAO`). "Indústria (B–F)" e "Toda a economia" continuam
+  disponíveis. Uma só `comum.mascara_escopo` serve para agregado, perfil e
+  barra lateral (substitui os `if escopo == ESCOPO_INDUSTRIA` espalhados).
+- **Quem precisa de atenção:** quando o escopo inclui a seção F, os alertas
+  aparecem em duas listas: "Transformação (e demais seções)" e "Construção
+  (rotatividade estrutural de obra)". Um grupo conta como construção se tiver
+  ≥ 50% das movimentações na seção F (`regras.FRACAO_CONSTRUCAO`). Isso vale
+  por setor e por macrofamília. A tabela ganha a coluna "Grupo".
+- **Panorama:** "Maior tensão" é o grupo mais tenso **da transformação**.
+  Com a seção F no recorte, entra uma linha à parte para a construção, com o
+  aviso de estrutural (o mesmo vale para os achados).
+- Os z-scores são calculados dentro do escopo, então o grupo mais tenso muda
+  com ele.
+- Testes: `test_escopo_padrao_e_transformacao`, `test_filtro_de_escopo`,
+  `test_maior_tensao_e_da_transformacao_e_construcao_vem_a_parte`,
+  `test_marcar_secao_por_fracao_das_movimentacoes`.
+
+| Indicador na abertura do painel | Antes (Indústria B–F) | Depois (Transformação C) |
+|---|---|---|
+| Movimentações | 1.139.762 | 835.950 |
+| Saldo | 2.726 | 1.072 |
+| Saída voluntária | 47,7% | 50,9% |
+| Rotatividade descontada | 32,3% | 27,4% |
+| Salário de quem entra vs quem saiu | 6% abaixo | 7% abaixo |
+| Maior tensão | Construção – Vale do Itajaí (antes, sem separação) | Metalurgia e produtos de metal – Sul Catarinense |
+| Expansão mais acelerada | Veículos – Vale do Itajaí (saldo 2.530) | igual (ver TAX-01) |
+| Grupos analisados (meso × setor) | 82 | 59 |
+| Apagão / Retração / Expansão / Estagnação | 26 / 25 / 17 / 14 | 15 / 17 / 15 / 12 |
+
+No escopo B–F, a maior tensão fora da construção é Têxtil, confecção e
+calçados – Sul Catarinense, e a da construção é Construção – Vale do Itajaí.

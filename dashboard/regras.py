@@ -21,6 +21,36 @@ MIN_MOVIMENTACOES = 100   # taxas e matriz: grupos com menos que isso ficam fora
 MIN_SALARIOS = 30         # gaps salariais: mínimo de salários de cada lado
 
 # ---------------------------------------------------------------------------
+# Escopos (NAR-03)
+# ---------------------------------------------------------------------------
+# A banca e a Federação querem ver o parque de transformação (têxtil,
+# metalmecânica, alimentos, eletroeletrônico): é o escopo de abertura. A
+# construção (seção F) tem rotatividade estrutural de obra e fica identificada.
+
+ESCOPO_TRANSFORMACAO = "Indústria de transformação (C)"
+ESCOPO_INDUSTRIA = "Indústria (B–F)"
+ESCOPO_ECONOMIA = "Toda a economia"
+ESCOPOS = (ESCOPO_TRANSFORMACAO, ESCOPO_INDUSTRIA, ESCOPO_ECONOMIA)
+ESCOPO_PADRAO = ESCOPO_TRANSFORMACAO
+NOME_ESCOPO = {  # sujeito das frases do painel
+    ESCOPO_TRANSFORMACAO: "A indústria de transformação catarinense",
+    ESCOPO_INDUSTRIA: "A indústria catarinense",
+    ESCOPO_ECONOMIA: "A economia catarinense",
+}
+AJUDA_ESCOPO = ("Transformação = seção CNAE C (alimentos, têxtil, metalmecânica, eletroeletrônico…). "
+                "Indústria = seções B a F (soma extrativa, eletricidade e gás, água e resíduos e construção). "
+                "A construção tem rotatividade estrutural (fim de obra) e aparece separada nos alertas.")
+SECAO_TRANSFORMACAO = "Indústrias de Transformação"   # rótulo da seção C no dicionário do CAGED
+SECAO_CONSTRUCAO = "Construção"                       # seção F
+ROTULO_CONSTRUCAO = "Construção (rotatividade estrutural de obra)"
+FRACAO_CONSTRUCAO = 0.5   # grupo com ≥ 50% das movimentações na seção F conta como construção
+
+
+def inclui_construcao(escopo: str) -> bool:
+    return escopo != ESCOPO_TRANSFORMACAO
+
+
+# ---------------------------------------------------------------------------
 # Quadrantes da matriz Dinamismo × Tensão (NAR-01)
 # ---------------------------------------------------------------------------
 # O guia do Datathon define:
