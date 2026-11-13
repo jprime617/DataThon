@@ -623,6 +623,7 @@ M_PRECOCE = "precoce"
 M_ACEL = "aceleracao"
 M_AMOSTRA_OK = "amostra_ok"
 M_SALARIO_OK = "salario_ok"
+M_TAXA_ADM = "taxa_admissao"   # ANA-03: proxy de demanda
 
 
 @dataclass(frozen=True)
@@ -670,6 +671,12 @@ DEFINICOES: dict[str, Definicao] = {
         "pct",
     ),
     M_VAR_REL: Definicao("Variação do emprego", "saldo ÷ estoque em 31/12/2025 (RAIS)", "pct"),
+    M_TAXA_ADM: Definicao(
+        "Taxa de admissão",
+        "admissões ÷ estoque em 31/12/2025 (RAIS): quantas contratações para cada 100 empregos existentes. "
+        "É o proxy de demanda: com menos de 12 meses no filtro, a taxa cobre só o período.",
+        "pct",
+    ),
     M_ACEL: Definicao(
         "Aceleração",
         "(saldo set/25–ago/26 − saldo set/24–ago/25) ÷ estoque em 31/12/2025: quanto o emprego cresceu a "
@@ -703,6 +710,7 @@ EXPLICACAO: dict[str, str] = {
     M_ESTOQUE: "Quantos empregos formais existiam em 31/12/2025.",
     M_ROT_DESC: "Quanto da equipe foi trocada no período, sem contar quem pediu para sair, se aposentou ou morreu.",
     M_VAR_REL: "Quanto o emprego cresceu ou encolheu, em % dos empregos existentes.",
+    M_TAXA_ADM: "Quantas contratações houve para cada 100 empregos existentes: mede a demanda por gente.",
     M_ACEL: "Se o emprego está crescendo mais rápido (ou mais devagar) do que no ano anterior.",
     M_PRECOCE: "De cada 100 desligados, quantos saíram antes de completar 1 ano na empresa.",
     M_SAL_ADM: "Salário médio de quem foi contratado.",
@@ -808,6 +816,7 @@ def _derivar(somas: pd.DataFrame, populacao) -> pd.DataFrame:
     desl_desc = r[COLUNA_DESLIGAMENTOS_DESCONTADOS].astype("float64")
     r[M_ROT_DESC] = _divisao(pd.concat([adm, desl_desc], axis=1).min(axis=1), r[M_ESTOQUE])
     r[M_VAR_REL] = _divisao(r[M_SALDO], r[M_ESTOQUE])
+    r[M_TAXA_ADM] = _divisao(adm, r[M_ESTOQUE])
     r[M_ACEL] = (
         _divisao(r[COLUNA_SALDO_RECENTE] - r[COLUNA_SALDO_ANTERIOR], r[M_ESTOQUE]) * 100  # p.p.
         if COLUNA_SALDO_RECENTE in r else sem
@@ -1921,7 +1930,7 @@ METRICAS_INVERSAS = {M_SAIDA_VOL, M_ROT_DESC, M_PRECOCE}
 
 # Temas da coluna de indicadores (sanfona do Panorama): título, ícone e métricas.
 TEMAS_KPI = [
-    ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K, M_VAR_REL, M_ACEL]),
+    ("Movimentação", ":material/swap_horiz:", [M_MOV, M_SALDO, M_SALDO_10K, M_VAR_REL, M_ACEL, M_TAXA_ADM]),
     ("Renda", ":material/payments:", [M_GAP_SAL, M_SAL_ADM, M_SAL_DESL]),
     ("Escolaridade", ":material/school:", [M_GAP_ESC]),
     ("Perda de gente", ":material/crisis_alert:", [M_ROT_DESC, M_SAIDA_VOL, M_PRECOCE]),
@@ -1937,6 +1946,7 @@ UNIDADES = {
     M_SAIDA_VOL: "dos desligamentos, a pedido",
     M_ROT_DESC: "oficial (MTE): SC 33,6% · Brasil 34,2% · Transformação 27,6%",
     M_VAR_REL: "do estoque de 31/12/2025",
+    M_TAXA_ADM: "admissões por 100 empregos de 31/12/2025",
     M_ACEL: "vs o ano anterior (blocos de 12 meses)",
     M_PRECOCE: "dos desligados, com < 12 meses de casa",
     M_GAP_SAL: "do salário de quem saiu",

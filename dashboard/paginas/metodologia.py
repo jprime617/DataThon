@@ -225,6 +225,13 @@ def render(ctx: c.Contexto) -> None:
         "dezembro concentra desligamentos); ela voltou na forma de blocos de 12 meses."
     )
 
+    st.markdown(
+        "**Demanda: a taxa de admissão.** O CAGED não tem vagas abertas; o proxy de demanda é a **taxa de admissão** "
+        "(admissões ÷ estoque de 31/12/2025): quantas contratações o grupo fez para cada 100 empregos que tinha. "
+        f"No recorte, a do estado é {c.fmt_pct(c.total(ctx.ref)[c.M_TAXA_ADM])}. **Demanda alta + retenção baixa** "
+        "(contrata muito e perde a equipe) é o sinal de apagão do guia: o grupo precisa de gente e não consegue "
+        "segurá-la. A taxa aparece no tooltip da matriz e na tabela de alertas de Quem precisa de atenção.")
+
     st.markdown("**Os quatro quadrantes** (Dinamismo ≥ 0 = cresce mais que a média dos grupos; Tensão ≥ 0 = perde "
                 "a equipe mais que a média). Os eixos são relativos: um grupo pode estar do lado \"cresce\" com saldo "
                 "pequeno ou até negativo, se a média for baixa; por isso as frases do painel citam o saldo. "

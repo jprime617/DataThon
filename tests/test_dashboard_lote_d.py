@@ -212,3 +212,31 @@ def test_mapa_abre_em_mesorregiao_sem_volume():
     fonte = inspect.getsource(panorama._mapa)
     assert "default=c.NIVEL_MESO" in fonte
     assert 'toggle("Volume", value=False' in fonte
+
+
+# --- ANA-03: taxa de admissão (proxy de demanda) -------------------------------------
+
+
+def test_taxa_de_admissao_e_admissoes_sobre_estoque():
+    secao = {"secao_industrial": c.SECAO_TRANSFORMACAO}
+    df = _df(_celula(admissoes=150, desligamentos=50, estoque_31dez=300, **secao),
+             _celula(admissoes=50, desligamentos=50, setor="Têxtil", estoque_31dez=100, **secao))
+    t = c.total(df)
+    assert t[c.M_TAXA_ADM] == pytest.approx(200 / 400)
+    assert c.fmt_metrica(c.M_TAXA_ADM, t[c.M_TAXA_ADM]) == "50,0%"
+    assert pd.isna(c.total(_df(_celula(admissoes=10)))[c.M_TAXA_ADM])  # sem estoque, sem taxa
+
+
+def test_taxa_de_admissao_vai_para_a_tabela_de_alertas():
+    from dashboard.paginas import diagnostico
+
+    df = _df(*[_celula(regiao=rg, admissoes=a, desligamentos=d, desligamentos_a_pedido=p, estoque_31dez=e,
+                       municipio=mu, secao_industrial=c.SECAO_TRANSFORMACAO)
+               for rg, a, d, p, e, mu in (("R1", 300, 200, 150, 500, "1"), ("R2", 100, 300, 30, 800, "2"),
+                                          ("R3", 200, 200, 100, 600, "3"))])
+    por = ["regiao", "setor"]
+    m = c.matriz_diagnostico(df, por)
+    tabela = diagnostico.tabela_alertas(m, "setor", c.total(df), pd.Series(dtype=float))
+    assert {"Taxa de admissão", "Taxa de admissão no estado"} <= set(tabela.columns)
+    assert tabela["Taxa de admissão no estado"].iloc[0] == "31,6%"   # 600 ÷ 1.900
+    assert c.M_TAXA_ADM in c.DEFINICOES and c.M_TAXA_ADM in c.EXPLICACAO

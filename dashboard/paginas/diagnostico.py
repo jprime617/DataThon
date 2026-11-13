@@ -35,6 +35,8 @@ def tabela_alertas(m: pd.DataFrame, segunda: str, ref: pd.Series, frac_tecnica: 
             "Quadrante": u["quadrante"],
             "Causas": ", ".join(selos) or "—",
             "Movimentações": int(u[c.M_MOV]),
+            "Taxa de admissão": c.fmt_pct(u[c.M_TAXA_ADM]),
+            "Taxa de admissão no estado": c.fmt_pct(ref[c.M_TAXA_ADM]),
             "Rotatividade descontada": c.fmt_pct(u[c.M_ROT_DESC]),
             "Saída voluntária": c.fmt_pct(u[c.M_SAIDA_VOL]),
             "Desligamento precoce": c.fmt_pct(u[c.M_PRECOCE]),

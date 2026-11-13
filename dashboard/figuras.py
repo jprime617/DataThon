@@ -237,8 +237,10 @@ def construir_matriz(matriz: pd.DataFrame, rotulo: pd.Series) -> go.Figure:
             customdata=list(zip(rot, [c.fmt_int(v) for v in parte[c.M_MOV]],
                                 [c.fmt_pct(v) for v in parte[c.M_SAIDA_VOL]],
                                 [c.fmt_gap(v) for v in parte[c.M_GAP_SAL]],
-                                parte["motor"])),
+                                parte["motor"],
+                                [c.fmt_pct(v) for v in parte.get(c.M_TAXA_ADM, pd.Series(index=parte.index))])),
             hovertemplate=("<b>%{customdata[0]}</b><br>n = %{customdata[1]} movimentações"
+                           "<br>taxa de admissão (demanda): %{customdata[5]} do estoque"
                            "<br>saem a pedido: %{customdata[2]} · salário de entrada: %{customdata[3]} de quem saiu"
                            "<extra>%{fullData.name}</extra>"),
         )

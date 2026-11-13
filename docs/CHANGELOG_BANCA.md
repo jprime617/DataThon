@@ -692,3 +692,27 @@ CBO 766 (gráfica; o prefixo 76 sugere Têxtil).
 | Nível de abertura | Município, com círculos | Mesorregião, sem círculos |
 | "Pior situação" na abertura | Campo Alegre (−328,3) | Sul Catarinense (−10,0) |
 | Municípios elegíveis à "pior situação" | 251 (≥ 100 mov.) | 165 (≥ 500 mov.) |
+
+---
+
+## ANA-03 · Proxy de demanda: taxa de admissão
+
+- Nova métrica `M_TAXA_ADM` = **admissões ÷ estoque de 31/12/2025** (RAIS),
+  derivada em `comum._derivar` como as demais, com definição, tooltip e
+  unidade. Aparece no **tooltip da matriz**, na **tabela de alertas** (com a
+  do estado ao lado), no tema "Movimentação" dos indicadores e na
+  **Metodologia** ("Demanda: a taxa de admissão", com a leitura "demanda
+  alta + retenção baixa = apagão").
+- Testes: `test_taxa_de_admissao_e_admissoes_sobre_estoque`,
+  `test_taxa_de_admissao_vai_para_a_tabela_de_alertas`.
+
+| Transformação, set/25–ago/26 | Taxa de admissão |
+|---|---|
+| Estado | 56,4% (418.511 admissões ÷ 741.818 empregos) |
+| Mediana dos grupos em **Apagão** | 66,4% |
+| Mediana dos grupos em Retração com rotatividade | 61,1% |
+| Mediana dos grupos em Expansão acelerada | 54,4% |
+| Mediana dos grupos em Estagnação | 51,4% |
+
+**Leitura:** os grupos em Apagão contratam mais que o resto, em proporção ao
+emprego que têm. A demanda existe; o problema é reter.
