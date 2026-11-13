@@ -919,3 +919,31 @@ relação (−0,22).
 
 Os números do painel depois do reprocessamento estão em "TAX-03 + TAX-04
 (P1) · Reprocessamento".
+
+---
+
+## TAX-03 + TAX-04 (P1) · Reprocessamento do pipeline
+
+- **Uma execução** para os dois itens: `python -m src.rais --estoque` e o
+  notebook com `PULAR_UPLOAD=1`, com swap de 8 GB. Os microdados (72 `.7z`
+  do CAGED e a RAIS Sul) já estavam na máquina; não houve download.
+- **Regressão encontrada e corrigida antes de valer:** na 1ª execução, as
+  CBOs do grande grupo 0 ("10105" no CAGED × "010105" no mapeamento final)
+  ficaram sem família (201 movimentações). Correção no commit "TAX-04 P1
+  (correção)", com teste; o pipeline rodou de novo.
+- **Conferência:** 3.443.428 admissões, 3.328.264 desligamentos e estoque de
+  2.565.458, iguais aos de antes. `caged_cbo` e `caged_perfil` fecham com o
+  agregado. As 151 linhas sem macrofamília já existiam. `metadados.json`
+  aponta o commit `7245713`.
+- **O que mudou nos dados:** só o Frentista, Administrativo e comercial
+  Básico → Qualificado: 59.435 movimentações no CAGED (100 na indústria) e
+  13.974 vínculos no estoque da RAIS. Os artefatos agora trazem o nome novo
+  da família técnica de origem; antes, ele vinha pelo alias.
+- Novo artefato: `data_processed/cbo_classificacao_final.csv`
+  (2.206 CBOs, com a origem de cada decisão).
+
+| Transformação, set/25–ago/26 | Antes | Depois |
+|---|---|---|
+| Quadrantes (Apagão / Expansão / Retração / Estagnação) | 13 / 14 / 20 / 16 | 13 / 14 / 20 / 16 |
+| Top 3 | Retenção Oeste · Formação Oeste · Atração Vale | sem mudança |
+| "Renda" / "Escolaridade" | explica em parte / não explica | sem mudança |
