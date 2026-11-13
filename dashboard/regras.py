@@ -138,7 +138,8 @@ LIMIAR_DESTAQUE_GAP_ESC = -0.30
 
 ALAVANCA_SALARIO = "Revisar faixas salariais de entrada"
 ALAVANCA_FORMACAO = "Formação profissional direcionada"
-ALAVANCA_MOBILIDADE = "Recrutamento inter-regional e mobilidade"
+# REC-03: o CAGED não mede "sobra" de mão de obra; o nome diz só o que a regra sustenta.
+ALAVANCA_MOBILIDADE = "Atração de talentos de outras regiões"
 ALAVANCA_AUTOMACAO = "Automação e redesenho de postos"
 ALAVANCA_RETENCAO = "Retenção não salarial"
 
@@ -207,8 +208,11 @@ REGRA_ALAVANCA = {
         "Saída voluntária 5 p.p. ou mais acima da do estado, com salário de entrada não pior que o do estado "
         "(o salário não explica a saída)."),
     ALAVANCA_MOBILIDADE: (
-        "Grupo em Apagão (cresce e não retém) com saldo positivo e a mesma macrofamília em retração em outra "
-        "mesorregião."),
+        "Destino: grupo em Apagão (cresce e não retém) com saldo positivo. Origem: a mesma macrofamília e o mesmo "
+        "nível de qualificação em outra mesorregião, com saldo negativo e saída voluntária abaixo da do estado "
+        "(fecha vagas por iniciativa do empregador, não por pedido de saída). Mostra o par origem → destino. O CAGED "
+        "não mede vagas abertas nem desempregados: a origem indica onde há gente da mesma ocupação sendo "
+        "dispensada."),
     ALAVANCA_AUTOMACAO: "Nível Básico com 50% ou mais das movimentações do grupo e saldo ≤ 0.",
 }
 

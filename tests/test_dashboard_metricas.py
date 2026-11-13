@@ -715,3 +715,32 @@ def test_recomendacoes_e_csv_trazem_as_tres_colunas():
                                     **_salarios(2100, 2000)))
     recs = c.gerar_recomendacoes(df)
     assert recs and all(r.quem_age and r.horizonte and r.kpi for r in recs)
+
+
+# --- REC-03: atração de talentos com par origem → destino explícito ---------------
+
+def _mobilidade(nivel_origem: str = "Qualificado", pedidos_origem: int = 30) -> pd.DataFrame:
+    macro = "Metalmecânica e eletroeletrônica"
+    return _df(
+        _referencia(),
+        _celula(admissoes=400, desligamentos=250, desligamentos_a_pedido=200, **_salarios(1700, 2000)),
+        _celula(regiao="Sul Catarinense", municipio="420460", admissoes=100, desligamentos=300,
+                desligamentos_a_pedido=pedidos_origem, macrofamilia_cbo=macro, nivel_qualificacao=nivel_origem,
+                **_salarios(2000, 2000)),
+    )
+
+
+def test_atracao_exige_mesmo_nivel_na_origem():
+    assert c.ALAVANCA_MOBILIDADE in _alavancas(_mobilidade())
+    assert c.ALAVANCA_MOBILIDADE not in _alavancas(_mobilidade(nivel_origem="Técnico"))
+
+
+def test_atracao_exige_origem_com_saida_voluntaria_abaixo_do_estado():
+    # Origem fecha vagas, mas a maioria pede para sair: não é gente sendo dispensada.
+    assert c.ALAVANCA_MOBILIDADE not in _alavancas(_mobilidade(pedidos_origem=250))
+
+
+def test_atracao_mostra_o_par_e_nao_fala_em_sobra():
+    rec = next(r for r in c.gerar_recomendacoes(_mobilidade()) if r.alavanca == c.ALAVANCA_MOBILIDADE)
+    assert rec.evidencia.startswith("Sul Catarinense → Norte Catarinense")
+    assert "sobra" not in (rec.regra + rec.evidencia + c.REGRA_ALAVANCA[c.ALAVANCA_MOBILIDADE]).lower()

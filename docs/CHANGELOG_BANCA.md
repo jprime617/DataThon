@@ -392,3 +392,35 @@ Supervisor de produção da indústria alimentícia (840105).
 | Revisar faixas salariais | Empresa | 0–3 meses | salário de quem entra vs quem saiu: 17% abaixo → 12% abaixo |
 | Recrutamento inter-regional | Empresa + Poder público | 3–12 meses | saída voluntária / rotatividade, o que estiver pior |
 | Automação e redesenho | Empresa | 12+ meses | rotatividade descontada |
+
+---
+
+## REC-03 · "Recrutamento inter-regional" → "Atração de talentos de outras regiões"
+
+- **Antes:** a regra disparava num grupo em expansão quando a mesma
+  macrofamília tinha saldo negativo em qualquer outra mesorregião, e a tela
+  dizia "a mesma profissão sobra numa região e falta em outra". O CAGED não
+  mede sobra de mão de obra.
+- **Regra explícita** (`regras.REGRA_ALAVANCA`, na Metodologia):
+  - **destino:** grupo em Apagão (cresce e não retém) com saldo > 0;
+  - **origem:** a mesma macrofamília **e o mesmo nível**, em outra
+    mesorregião, com saldo < 0 **e saída voluntária abaixo da do estado**.
+    A origem fecha vagas por dispensa, não por pedido de saída: indica onde
+    há gente da mesma ocupação sendo dispensada.
+- **Nome honesto:** "Atração de talentos de outras regiões". A frase sobre
+  "sobra" saiu. A tela mostra os **pares origem → destino**, e a evidência
+  traz os números dos dois lados. Ação: "Atrair profissionais de X (nível Y)
+  de A para B".
+- Testes: `test_atracao_exige_mesmo_nivel_na_origem`,
+  `test_atracao_exige_origem_com_saida_voluntaria_abaixo_do_estado`,
+  `test_atracao_mostra_o_par_e_nao_fala_em_sobra`.
+
+| Recorte | Antes | Depois |
+|---|---|---|
+| Transformação | 9 recomendações | 5 (com par) |
+| Indústria B–F | 12 | 8 |
+
+Pares no recorte padrão (exemplos): Vale do Itajaí → Oeste Catarinense
+(Alimentos e bebidas, Qualificado: lá −332 com 43,8% a pedido; aqui +2.389)
+e Sul Catarinense → Vale do Itajaí (Metalmecânica, Qualificado: lá −783 com
+42,8% a pedido; aqui +138).

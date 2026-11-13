@@ -33,7 +33,8 @@ POR_QUE_ALAVANCA = {
     c.ALAVANCA_SALARIO: "Quem entra ganha menos do que quem saiu, e muita gente pede para sair.",
     c.ALAVANCA_FORMACAO: "O grupo cresce, mas repõe com gente menos qualificada ou o contratado não fica: "
                          "formar para as ocupações que mais giram.",
-    c.ALAVANCA_MOBILIDADE: "A mesma profissão sobra numa região e falta em outra.",
+    c.ALAVANCA_MOBILIDADE: "A mesma ocupação e nível fecha vagas noutra mesorregião, por dispensa e não por "
+                           "pedido de saída: há gente experiente para atrair de lá.",
     c.ALAVANCA_AUTOMACAO: "Muitos postos de nível básico, e o emprego não cresce.",
     c.ALAVANCA_RETENCAO: "Saem muitos a pedido mesmo sem salário menor: o problema não é só dinheiro.",
 }
@@ -111,7 +112,8 @@ def render(ctx: c.Contexto) -> None:
             with colunas[i % len(colunas)].container(border=True, height="stretch"):
                 st.markdown(f"**{alavanca}**")
                 st.caption(POR_QUE_ALAVANCA.get(alavanca, ""))
-                st.markdown("\n".join(f"- {r.macrofamilia} · {r.regiao}" for r in itens[:3])
+                st.markdown("\n".join(f"- {r.extras['origem']} → {r.regiao} · {r.macrofamilia}" if r.extras.get("origem")
+                                      else f"- {r.macrofamilia} · {r.regiao}" for r in itens[:3])
                             + (f"\n\n…e mais {len(itens) - 3}" if len(itens) > 3 else ""))
                 if itens[0].extras.get("cbos"):  # REC-01: o que formar, na recomendação mais prioritária
                     st.caption("O que formar (" + itens[0].regiao + "): "

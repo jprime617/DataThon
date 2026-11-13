@@ -1015,9 +1015,11 @@ def gerar_recomendacoes(
     precoce_ref = ref[M_PRECOCE] if M_PRECOCE in ref else float("nan")
     nivel_dominante = _nivel_dominante(df, por)
 
-    # Saldo por região × macrofamília, só de unidades com amostra (mobilidade).
-    saldo_por = {(str(r_), str(m_)): float(s_) for r_, m_, s_ in
-                 zip(m[COLUNA_REGIAO], m[COLUNA_MACROFAMILIA_CBO], m[M_SALDO])}
+    # REC-03: origens possíveis da atração de talentos = mesorregião × macrofamília
+    # × nível com amostra, saldo < 0 e saída voluntária abaixo da do estado.
+    por_nivel = agregar_metricas(df, por + [COLUNA_NIVEL_QUALIFICACAO])
+    origens = por_nivel[por_nivel[M_AMOSTRA_OK] & (por_nivel[M_SALDO] < 0)
+                        & (por_nivel[M_SAIDA_VOL] < saida_ref)]
     recs: list[Recomendacao] = []
     for _, u in m.iterrows():
         chave = (u[COLUNA_REGIAO], u[COLUNA_MACROFAMILIA_CBO])
@@ -1066,13 +1068,18 @@ def gerar_recomendacoes(
                     peso, acao=f"Turmas de qualificação/aprendizagem industrial para {ocupacoes} na mesorregião {regiao}",
                     cbos=lista)
         if u["quadrante"] == Q_APAGAO and u[M_SALDO] > 0:
-            retracao = {r_: s_ for (r_, m_), s_ in saldo_por.items() if m_ == macro and r_ != regiao and s_ < 0}
-            if retracao:
-                origem = min(retracao, key=retracao.get)
-                add(ALAVANCA_MOBILIDADE,
-                    f"grupo em {Q_APAGAO} aqui e retração da mesma macrofamília em outra mesorregião",
-                    f"saldo {fmt_int(u[M_SALDO])} aqui; {origem} com saldo {fmt_int(retracao[origem])} na mesma macrofamília",
-                    float(u[M_SALDO_REL]), origem=origem)
+            cand = origens[(origens[COLUNA_MACROFAMILIA_CBO].astype(str) == macro)
+                           & (origens[COLUNA_NIVEL_QUALIFICACAO].astype(str) == str(nivel))
+                           & (origens[COLUNA_REGIAO].astype(str) != regiao)]
+            if not cand.empty:
+                o = cand.sort_values(M_SALDO).iloc[0]
+                origem = str(o[COLUNA_REGIAO])
+                add(ALAVANCA_MOBILIDADE, REGRA_ALAVANCA[ALAVANCA_MOBILIDADE],
+                    f"{origem} → {regiao} ({macro}, nível {nivel}): lá, saldo {fmt_int(o[M_SALDO])} com saída voluntária "
+                    f"{fmt_pct(o[M_SAIDA_VOL])} (estado: {fmt_pct(saida_ref)}); aqui, saldo {fmt_int(u[M_SALDO])} "
+                    f"em {Q_APAGAO}",
+                    float(u[M_SALDO_REL]), origem=origem,
+                    acao=f"Atrair profissionais de {macro.lower()} (nível {nivel}) de {origem} para {regiao}")
         f_bas = float(frac_basico.get(chave, 0.0))
         # Sem a taxa de reposição (função exata do saldo relativo, M1.C2), a
         # regra fica com o que ela media: mão de obra básica sem expansão.
