@@ -990,6 +990,29 @@ def fmt_brl(valor) -> str:
     return "—" if _vazio(valor) else f"R$ {fmt_num(valor, 0)}"
 
 
+# BUG-04: escala monetária única do painel (mil / mi / bi, uma casa decimal).
+_ESCALAS_BRL = [(1e9, "bi"), (1e6, "mi"), (1e3, "mil")]
+
+
+def fmt_brl_escala(valor) -> str:
+    """Valor monetário grande em escala pt-BR: 2_174_600_000 → "R$ 2,2 bi".
+
+    Usa a maior escala em que o valor arredondado fica ≥ 1 (nunca "2.174,6 mi");
+    abaixo de mil, cai em `fmt_brl`. NaN → "—".
+    """
+    if _vazio(valor):
+        return "—"
+    v = float(valor)
+    sinal = "−" if v < 0 else ""
+    for base, sufixo in _ESCALAS_BRL:
+        if round(abs(v) / base, 1) >= 1:
+            # Arredondar 999,96 mi para "1.000,0 mi" vira a escala de cima.
+            if sufixo != "bi" and round(abs(v) / base, 1) >= 1000:
+                continue
+            return f"{sinal}R$ {fmt_num(abs(v) / base, 1)} {sufixo}"
+    return f"{sinal}R$ {fmt_num(abs(v), 0)}"
+
+
 def fmt_razao(valor, casas: int = 2) -> str:
     """0.951 → "0,95"."""
     return fmt_num(valor, casas)

@@ -444,3 +444,25 @@ def test_legenda_serie_cita_dezembro_quando_ele_e_o_pior_mes():
 ])
 def test_legenda_serie_nao_cita_dezembro_quando_o_pior_mes_e_outro(saldos):
     assert "Dezembro" not in nar.legenda_serie(_mensal(saldos))
+
+
+# --- BUG-04: formatador monetário único em escala -----------------------------
+
+@pytest.mark.parametrize("valor, esperado", [
+    (2_174_600_000, "R$ 2,2 bi"),
+    (1_000_000_000, "R$ 1,0 bi"),
+    (999_960_000, "R$ 1,0 bi"),      # arredondaria para 1.000,0 mi
+    (850_300_000, "R$ 850,3 mi"),
+    (1_500_000, "R$ 1,5 mi"),
+    (12_480, "R$ 12,5 mil"),
+    (950, "R$ 950"),
+    (-3_400_000, "−R$ 3,4 mi"),
+    (float("nan"), "—"),
+])
+def test_fmt_brl_escala(valor, esperado):
+    assert c.fmt_brl_escala(valor) == esperado
+
+
+def test_nenhum_valor_de_bilhao_aparece_em_mi():
+    for v in (1e9, 1.2e9, 2.1746e9, 9.99e11):
+        assert c.fmt_brl_escala(v).endswith(" bi")

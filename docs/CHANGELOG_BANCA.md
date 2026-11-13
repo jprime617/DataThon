@@ -106,3 +106,17 @@ O CAGED não mostra a causa.
 |---|---|---|
 | Itajaí (micro) · Veículos | "…pior: out/25 (saldo −204). Dezembro concentra…" | "…pior: out/25 (saldo −204)." |
 | SC · indústria | "…pior: dez/25 (saldo −27.379). Dezembro concentra…" | igual (a frase vale) |
+
+---
+
+## BUG-04 · Formatação monetária
+
+- Novo formatador único `comum.fmt_brl_escala` (mil / mi / bi, uma casa
+  decimal, sinal tipográfico). Ele escolhe a maior escala em que o valor fica
+  ≥ 1 e nunca mostra "1.000,0 mi". Usado no custo de reposição de "O que
+  fazer", o único valor em escala do painel (busca por `1e6`/`mi`).
+- Testes em todas as faixas, mais `test_nenhum_valor_de_bilhao_aparece_em_mi`.
+
+| Indicador (recorte padrão, 3 salários) | Antes | Depois |
+|---|---|---|
+| Custo estimado de reposição | R$ 2.174,6 mi | R$ 2,2 bi |

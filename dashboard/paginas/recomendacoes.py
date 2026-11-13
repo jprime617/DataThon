@@ -145,6 +145,6 @@ def render(ctx: c.Contexto) -> None:
     col1, col2, col3 = st.columns(3)
     col1.metric("Desligamentos a pedido", c.fmt_int(t[c.COLUNA_DESLIGAMENTOS_A_PEDIDO]), border=True)
     col2.metric("Salário médio de quem sai", c.fmt_brl(t[c.M_SAL_DESL]), border=True)
-    col3.metric("Custo estimado de reposição", f"R$ {c.fmt_num(custo / 1e6, 1)} mi", border=True,
+    col3.metric("Custo estimado de reposição", c.fmt_brl_escala(custo), border=True,
                 help="desligamentos a pedido × salário médio de desligamento × N salários")
     st.caption("Estimativa de ordem de grandeza para a seleção atual, não um valor contábil.")
