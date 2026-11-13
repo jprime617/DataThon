@@ -47,8 +47,9 @@ A ordem dos lotes não importa, porque o sistema junta todos pelo código.
    - A concordância compara a IA paga com a classificação anterior do Gemini (`data_processed/cbo_macrofamilias_gemini.csv`). A página "Que profissional falta" mostra o resultado.
    - Confira em `data_processed/cbo_macrofamilias.csv.meta.json`: `provedor` = `ClienteArquivo`, o modelo informado e `cbos_comparados` perto de 2.206.
 
-6. **Revisão humana (M2.C4):** abra `data_processed/cbo_divergencias.csv`, que já vem ordenado por volume, e revise as 20 primeiras linhas.
-   - Para corrigir um código, edite o `respostas/lote_NN.json` que o contém. Mude `macrofamilia` e/ou `nivel` e escreva uma `justificativa` começando com `Revisão humana:`.
+6. **Revisão humana (M2.C4, TAX-03):** abra `data_processed/cbo_divergencias.csv`, que já vem ordenado por volume, e revise as primeiras linhas.
+   - Para corrigir um código, **não edite as respostas da IA**: acrescente uma linha em `ia_cbo/overrides.csv` (`cbo, macrofamilia, nivel, justificativa, autor`). O pipeline aplica os overrides depois da IA e da regra de desempate, e eles são a palavra final.
+   - Para repetir a classificação pela API com os mesmos prompts, use `python ia_cbo/classificar.py --help`.
    - Depois, rode o passo 5 de novo.
 
 7. Faça commit de `ia_cbo/respostas/`, `data_processed/` e do notebook. Atualize o Estado do M2 no `PLANO_RETA_FINAL.md`.

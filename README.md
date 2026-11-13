@@ -127,7 +127,7 @@ Para usar uma IA paga sem acesso à API, os prompts já estão gerados em `ia_cb
 - Se faltar a resposta de algum lote, o pipeline para e lista os lotes que faltam. Se um arquivo vier sem JSON válido, ele diz qual.
 - A concordância deixa de ser "a mesma IA com a ordem embaralhada", que daria 100% ao reler os mesmos arquivos. Ela passa a comparar a IA paga com a classificação anterior do Gemini, guardada em `data_processed/cbo_macrofamilias_gemini.csv`. As divergências vão para `data_processed/cbo_divergencias.csv`.
 - O `cbo_macrofamilias.csv.meta.json` registra o provedor (`ClienteArquivo`), o modelo informado e a nota "classificação via chat; prompts e respostas em `ia_cbo/`".
-- Para corrigir uma classificação após revisão humana, edite o `lote_NN.json` com uma justificativa começando por "Revisão humana:" e rode de novo.
+- Para corrigir uma classificação após revisão humana, **não edite as respostas da IA**: acrescente uma linha em `ia_cbo/overrides.csv` (ver abaixo) e rode de novo.
 
 #### Como a classificação oficial foi feita, e como repeti-la pela API
 
@@ -150,6 +150,21 @@ python ia_cbo/classificar.py --provedor gemini --lotes 01 02 --saida /tmp/teste
   respostas oficiais.
 - Para o pipeline usar essas respostas, copie-as para `ia_cbo/respostas/` (ou rode com
   `--saida ia_cbo/respostas --sobrescrever`) e siga o passo 2 da Opção C.
+
+#### Correções pontuais: `ia_cbo/overrides.csv` (sem rodar a IA de novo)
+
+Depois da saída da IA, o pipeline aplica, nesta ordem (`src.cbo_ia.mapeamento_final`):
+
+1. **a regra explícita de desempate** entre a 1ª rodada (a que vale) e a 2ª (auditoria): vale a que concorda com o
+   prefixo da CBO; se a 1ª fugiu do prefixo com justificativa, vale a 1ª; se o prefixo não resolve, o caso vai para
+   revisão manual;
+2. **os overrides manuais** de `ia_cbo/overrides.csv` (colunas `cbo, macrofamilia, nivel, justificativa, autor`),
+   que são a palavra final. Família e nível precisam estar nos conjuntos fechados, e justificativa e autor são
+   obrigatórios: o pipeline para se não estiverem.
+
+O resultado, com a origem de cada decisão, fica em `data_processed/cbo_classificacao_final.csv`, e a aba
+"Revisão manual" da auditoria em "Que profissional falta" lista os overrides. A mesma classificação vale para o
+CAGED e para o estoque da RAIS (`python -m src.rais --estoque`).
 
 #### Dois comportamentos que evitam o fracasso silencioso
 

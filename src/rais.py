@@ -263,9 +263,10 @@ if __name__ == "__main__":
     import sys
 
     if "--estoque" in sys.argv:
-        from src.cbo_ia import NOME_CSV_REFERENCIA
+        from src.cbo_ia import CAMINHO_OVERRIDES, NOME_CSV_REFERENCIA
 
         estoque_rais(pd.read_parquet(DESTINO_PADRAO),
-                     caminho_referencia=Path(CAMINHO_CSV_PADRAO).with_name(NOME_CSV_REFERENCIA))
+                     caminho_referencia=Path(CAMINHO_CSV_PADRAO).with_name(NOME_CSV_REFERENCIA),
+                     caminho_overrides=CAMINHO_OVERRIDES)
     else:
         ler_rais_sc()

@@ -454,3 +454,65 @@ def test_auditoria_descreve_a_regra_e_conta_os_caminhos(tmp_path):
     assert "regra explícita" in texto and "prefixo" in texto and "overrides.csv" in texto
     assert "1 pelo prefixo" in texto and "1 aguardando revisão manual" in texto
     assert "difere da que a IA deu em 1 CBO." in texto
+
+
+# --- TAX-03 (P1): overrides manuais depois da IA -------------------------------------------
+
+
+def test_overrides_do_repositorio_sao_validos_e_trazem_o_frentista():
+    from src.cbo_ia import CAMINHO_OVERRIDES, ler_overrides
+
+    o = ler_overrides(CAMINHO_OVERRIDES).set_index("cbo")
+    assert len(o) >= 10 and o.index.is_unique
+    assert o.loc["521135", "macrofamilia"] == "Administrativo e comercial" and o.loc["521135", "nivel"] == "Qualificado"
+    assert (o["justificativa"].str.len() > 20).all() and (o["autor"] != "").all()
+
+
+@pytest.mark.parametrize("linha, erro", [
+    ("784205,Família inventada,Básico,justificativa,autor", "macrofamília fora do conjunto"),
+    ("784205,Operação de linha e processo,Médio,justificativa,autor", "nível fora do conjunto"),
+    ("784205,Operação de linha e processo,Básico,,autor", "justificativa e autor"),
+])
+def test_override_invalido_para_o_pipeline(tmp_path, linha, erro):
+    from src.cbo_ia import ler_overrides
+    from src.erros import ErroDeValidacao
+
+    arquivo = tmp_path / "overrides.csv"
+    arquivo.write_text("cbo,macrofamilia,nivel,justificativa,autor\n" + linha + "\n", encoding="utf-8")
+    with pytest.raises(ErroDeValidacao, match=erro):
+        ler_overrides(arquivo)
+
+
+def test_override_e_aplicado_depois_do_desempate_e_aceita_nome_antigo(tmp_path):
+    from src.cbo_ia import ORIGEM_OVERRIDE, aplicar_mapeamento, mapeamento_final
+
+    r1, r2 = _csvs_ia(tmp_path)
+    over = tmp_path / "overrides.csv"
+    over.write_text("cbo,macrofamilia,nivel,justificativa,autor\n"
+                    "766315,Operação de linha e processo,Técnico,766 é gráfica.,Equipe\n"
+                    "141510,\"Engenharia, técnicos industriais e TI\",Superior,teste do alias,Equipe\n", encoding="utf-8")
+    final = mapeamento_final(r1, caminho_referencia=r2, caminho_overrides=over).set_index("cbo")
+    assert final.loc["766315", "macrofamilia"] == OPERACAO and final.loc["766315", "nivel_qualificacao"] == "Técnico"
+    assert final.loc["766315", "origem"] == ORIGEM_OVERRIDE                 # vence o desempate (que daria Têxtil)
+    assert final.loc["141510", "macrofamilia"] == "Técnicos industriais, engenharia e TI"
+    df = pd.DataFrame({"cbo2002ocupação": ["766315"]})
+    assert aplicar_mapeamento(df, str(r1), caminho_referencia=r2,
+                              caminho_overrides=over)["nivel_qualificacao"].tolist() == ["Técnico"]
+
+
+def test_auditoria_lista_os_overrides():
+    from dashboard.paginas.ocupacoes import explorador, tabela_overrides
+    from src.cbo_ia import ORIGEM_OVERRIDE
+
+    final = pd.DataFrame({"cbo": ["521135", "784205"], "descricao": ["Frentista", "Alimentador"],
+                          "macrofamilia_ia": ["Administrativo e comercial", OPERACAO], "nivel_ia": ["Básico", "Básico"],
+                          "macrofamilia": ["Administrativo e comercial", OPERACAO],
+                          "nivel_qualificacao": ["Qualificado", "Básico"],
+                          "origem": [ORIGEM_OVERRIDE, "IA (1ª rodada; as rodadas concordam)"],
+                          "justificativa_override": ["não é elementar", ""], "autor_override": ["Equipe", ""]})
+    t = tabela_overrides(final)
+    assert len(t) == 1 and t.iloc[0]["Nível da IA"] == "Básico" and t.iloc[0]["Nível final"] == "Qualificado"
+    mapa = pd.DataFrame({"cbo2002ocupação": ["521135"], "descricao": ["Frentista"],
+                         "macrofamilia": ["Administrativo e comercial"], "nivel_qualificacao": ["Básico"]})
+    assert explorador(mapa, final).iloc[0]["nivel_qualificacao"] == "Qualificado"
+    assert tabela_overrides(None).empty and explorador(mapa, None) is mapa

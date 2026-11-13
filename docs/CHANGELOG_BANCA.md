@@ -874,3 +874,48 @@ relação (−0,22).
 - Testes: `test_regra_de_desempate`,
   `test_mapeamento_final_aplica_o_desempate_e_sem_referencia_nao_muda`,
   `test_auditoria_descreve_a_regra_e_conta_os_caminhos`.
+
+---
+
+## TAX-03 (P1) · Overrides manuais da classificação
+
+- **`ia_cbo/overrides.csv`** (colunas `cbo, macrofamilia, nivel,
+  justificativa, autor`), aplicado **depois** da saída da IA e do
+  desempate (`src.cbo_ia.mapeamento_final`), no CAGED e no estoque da RAIS.
+  `ler_overrides` valida família e nível nos conjuntos fechados, a CBO
+  única, a justificativa e o autor; com qualquer erro, o pipeline para.
+- **Revisão feita** (autor: "Claude Code (revisão assistida; a validar pela
+  equipe)"):
+  - **As 30 CBOs de maior volume** (economia toda e indústria): nenhuma
+    família claramente incoerente. As "exceções" seguem a taxonomia; por
+    exemplo, Engenheiro agrônomo está em apoio porque o agro fica em apoio
+    por regra.
+  - **521135 Frentista: hipótese do plano não confirmada na família.** A CBO
+    o põe na família 5211 (operadores do comércio em lojas e mercados), com
+    o vendedor do varejo, então "Administrativo e comercial" é coerente. O
+    que destoava era o **nível**: a IA o rebaixou para Básico, mas a 2ª
+    rodada e o grande grupo 5 dão Qualificado. **Override: nível
+    Qualificado.**
+  - **11 divergências em que o prefixo não resolve, todas com ≥ 600
+    movimentações:** 262410, 141510, 271105, 262425, 374405, 141515, 325205,
+    341220, 142360, 374110 e 766120. Todas **confirmam a 1ª rodada**, pelas
+    regras A (ofício) e D (liderança), e ficam registradas como override,
+    com a justificativa.
+- Na tela: aba **"Revisão manual (12)"** na auditoria de "Que profissional
+  falta", com o que a IA disse, o que ficou, a justificativa e o autor. O
+  explorador de ocupações mostra a classificação final e a coluna
+  "Decisão" (origem).
+- Testes: `test_overrides_do_repositorio_sao_validos_e_trazem_o_frentista`,
+  `test_override_invalido_para_o_pipeline`,
+  `test_override_e_aplicado_depois_do_desempate_e_aceita_nome_antigo`,
+  `test_auditoria_lista_os_overrides`.
+
+| Classificação (2.206 CBOs) | Antes | Depois |
+|---|---|---|
+| Overrides manuais | 0 | 12 (1 muda o nível; 11 confirmam a 1ª rodada) |
+| Pendentes de revisão manual (desempate) | 61 | 50 (todas com < 600 movimentações) |
+| Famílias diferentes da IA | 0 | 0 |
+| Níveis diferentes da IA | 0 | 1 (Frentista: Básico → Qualificado) |
+
+Os números do painel depois do reprocessamento estão em "TAX-03 + TAX-04
+(P1) · Reprocessamento".

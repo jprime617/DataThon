@@ -10,6 +10,7 @@ import streamlit as st
 from dashboard import comum as c
 from dashboard import figuras as fig
 from dashboard import narrativa as nar
+from src.cbo_ia import ORIGEM_OVERRIDE
 from src.mapeamentos import FAMILIA_POR_PREFIXO_CBO, MACROFAMILIAS
 
 REGRAS = """
@@ -36,6 +37,33 @@ def buscar_cbo(mapa: pd.DataFrame, termo: str) -> pd.DataFrame:
                 | mapa["descricao"].map(_normalizar).str.contains(alvo, regex=False)]
 
 
+def tabela_overrides(final: pd.DataFrame | None) -> pd.DataFrame:
+    """TAX-03: as CBOs com override manual, o que a IA tinha dito e o que ficou, com justificativa e autor."""
+    if final is None or final.empty:
+        return pd.DataFrame()
+    o = final[final["origem"] == ORIGEM_OVERRIDE]
+    return pd.DataFrame({
+        "CBO": o["cbo"].values, "Descrição": o["descricao"].values,
+        "Família da IA": o["macrofamilia_ia"].values, "Nível da IA": o["nivel_ia"].values,
+        "Família final": o["macrofamilia"].values, "Nível final": o["nivel_qualificacao"].values,
+        "Justificativa": o["justificativa_override"].values, "Autor": o["autor_override"].values,
+    })
+
+
+def _revisao_manual(final: pd.DataFrame | None) -> None:
+    """TAX-03: overrides de `ia_cbo/overrides.csv`, aplicados depois da IA e do desempate."""
+    tabela = tabela_overrides(final)
+    if tabela.empty:
+        st.caption("Nenhum override manual aplicado nesta versão dos dados.")
+        return
+    mudou = int(((tabela["Família da IA"] != tabela["Família final"])
+                 | (tabela["Nível da IA"] != tabela["Nível final"])).sum())
+    st.markdown(f"**{len(tabela)} CBOs** revisadas à mão em `ia_cbo/overrides.csv`, aplicado depois da saída da IA e "
+                f"do desempate. Em **{mudou}** o override mudou a família ou o nível; nas demais, confirmou a 1ª "
+                "rodada onde o prefixo da CBO não resolvia a divergência entre as rodadas.")
+    st.dataframe(tabela, hide_index=True, width="stretch")
+
+
 def _alem_do_prefixo(ctx: c.Contexto, mapa: pd.DataFrame | None) -> None:
     """TAX-05: por que usar IA se a CBO já tem hierarquia? As decisões da IA além do prefixo, contadas."""
     dec = c.decisoes_ia(mapa, c.filtrar_cbo(ctx))
@@ -53,6 +81,19 @@ def _alem_do_prefixo(ctx: c.Contexto, mapa: pd.DataFrame | None) -> None:
         column_config={"Movimentações": st.column_config.NumberColumn(format="localized")})
     st.caption("Prefixo = a família que a tabela de desempate da regra B sugere pelos primeiros dígitos da CBO. "
                "Movimentações no recorte atual (escopo, período e filtros de setor, macrofamília e nível).")
+
+
+def explorador(mapa: pd.DataFrame, final: pd.DataFrame | None) -> pd.DataFrame:
+    """A classificação que o painel usa (com desempate e overrides) e a origem de cada decisão."""
+    if final is None or final.empty:
+        return mapa
+    f = final.set_index("cbo")
+    codigos = mapa["cbo2002ocupação"].astype(str).str.strip().str.zfill(6)
+    resultado = mapa.copy()
+    resultado["macrofamilia"] = codigos.map(f["macrofamilia"]).fillna(mapa["macrofamilia"]).values
+    resultado["nivel_qualificacao"] = codigos.map(f["nivel_qualificacao"]).fillna(mapa["nivel_qualificacao"]).values
+    resultado["origem"] = codigos.map(f["origem"]).fillna("").values
+    return resultado
 
 
 def render(ctx: c.Contexto) -> None:
@@ -83,22 +124,28 @@ def render(ctx: c.Contexto) -> None:
         st.info("Classificação da IA (cbo_macrofamilias.csv) indisponível neste ambiente.")
     else:
         termo = st.text_input("Buscar por código ou descrição", placeholder="ex.: soldador, 784205, costureira")
-        achados = buscar_cbo(mapa, termo).fillna({"justificativa": ""})
+        achados = buscar_cbo(explorador(mapa, c.cbo_final_cache()), termo).fillna({"justificativa": ""})
         st.dataframe(
             achados.rename(columns={"cbo2002ocupação": "CBO", "descricao": "Descrição", "macrofamilia": "Macrofamília",
                                     "nivel_qualificacao": "Nível", "lideranca": "Liderança",
-                                    "justificativa": "Justificativa da IA"}),
+                                    "justificativa": "Justificativa da IA", "origem": "Decisão"}),
             hide_index=True, width="stretch", height=320,
         )
         st.caption(f"{c.fmt_int(len(achados))} de {c.fmt_int(len(mapa))} ocupações. Justificativa vazia = a IA "
-                   "seguiu a família sugerida pelo prefixo e o nível do grande grupo.")
+                   "seguiu a família sugerida pelo prefixo e o nível do grande grupo. Macrofamília e nível são os "
+                   "finais, depois do desempate e da revisão manual; a coluna Decisão diz de onde veio cada um.")
 
     # Auditoria da IA é assunto técnico: fica recolhida (M3.C8).
     with st.expander("Aprofundar: como a IA classificou as ocupações (auditoria)"):
-        aba_conc, aba_alem, regras, aba_prompt = st.tabs(
-            ["Concordância", "O que a IA acrescentou", "Regras da taxonomia", "Prompt enviado à IA"])
+        final = c.cbo_final_cache()
+        n_over = int((final["origem"] == ORIGEM_OVERRIDE).sum()) if final is not None else 0
+        aba_conc, aba_alem, aba_rev, regras, aba_prompt = st.tabs(
+            ["Concordância", "O que a IA acrescentou", f"Revisão manual ({n_over})", "Regras da taxonomia",
+             "Prompt enviado à IA"])
         with aba_alem:
             _alem_do_prefixo(ctx, mapa)
+        with aba_rev:
+            _revisao_manual(final)
         with aba_conc:
             meta = (ctx.art.metadados or {}).get("ia", {})
             col1, col2, col3, col4 = st.columns(4)
