@@ -176,3 +176,39 @@ def test_texto_das_decisoes_da_ia_e_calculado():
     assert "sempre com justificativa" in texto
     assert "**Alimentador de Linha de Producao** (Qualificado → Básico, 900 movimentações)" in texto
     assert "Sem ocupações" in nar.texto_decisoes_ia(c.decisoes_ia(_mapa_ia(), _cbos_recorte().iloc[0:0]))
+
+
+# --- NAR-05: mapa em mesorregião e "pior situação" com volume mínimo ---------------------
+
+
+def _metricas_mapa() -> pd.DataFrame:
+    df = _df(_celula(municipio_nome="Campo Alegre", municipio="420320", populacao_2026=12_000.0,
+                     admissoes=60, desligamentos=340),
+             _celula(municipio_nome="Joinville", admissoes=4_000, desligamentos=4_500))
+    m = c.agregar_metricas(df, ["municipio_nome"])
+    return m.assign(rotulo=m["municipio_nome"])
+
+
+def test_pior_municipio_exige_volume_minimo():
+    m = _metricas_mapa()  # Campo Alegre: 400 movimentações, saldo −280 em 12 mil hab.
+    sem_nivel = nar.legenda_mapa(m, c.M_SALDO_10K, "rotulo")
+    assert "**Campo Alegre**" in sem_nivel
+    texto = nar.legenda_mapa(m, c.M_SALDO_10K, "rotulo", c.NIVEL_MUNICIPIO)
+    assert "**Joinville**" in texto and f"≥ {c.fmt_int(c.MIN_MOV_PIOR_MUNICIPIO)} movimentações" in texto
+
+
+def test_pior_situacao_diz_o_nivel_pintado():
+    m = _metricas_mapa()
+    assert "Pior situação entre as mesorregiões:" in nar.legenda_mapa(m, c.M_SALDO_10K, "rotulo", c.NIVEL_MESO)
+    assert nar.minimo_pior_situacao(c.NIVEL_MESO) == c.MIN_MOVIMENTACOES
+    assert nar.minimo_pior_situacao(c.NIVEL_MUNICIPIO) == c.MIN_MOV_PIOR_MUNICIPIO == 500
+
+
+def test_mapa_abre_em_mesorregiao_sem_volume():
+    import inspect
+
+    from dashboard.paginas import panorama
+
+    fonte = inspect.getsource(panorama._mapa)
+    assert "default=c.NIVEL_MESO" in fonte
+    assert 'toggle("Volume", value=False' in fonte

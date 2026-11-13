@@ -671,3 +671,24 @@ terço delas. O maior caso é o Alimentador de linha de produção
 alavancas de formação e de automação. Exemplos de família: Técnico em
 segurança do trabalho (prefixo: Administrativo → IA: Técnicos industriais) e
 CBO 766 (gráfica; o prefixo 76 sugere Têxtil).
+
+---
+
+## NAR-05 · O mapa abre em mesorregião
+
+- O Panorama abre o mapa em **Mesorregião**, com o **volume (círculos)
+  desligado**. Os dois continuam a um clique.
+- "Pior situação" diz o nível pintado ("entre as mesorregiões") e, em
+  município, só considera quem tem **≥ 500 movimentações**
+  (`regras.MIN_MOV_PIOR_MUNICIPIO`; `narrativa.minimo_pior_situacao`). O
+  modo apresentação usa a mesma regra no nível de microrregião.
+- **Hipótese parcialmente confirmada:** Campo Alegre não é um município de
+  pouco volume (4.683 movimentações, saldo −427 para 13.007 habitantes). Com
+  o mínimo de 500 ele continua sendo a pior situação **no nível de
+  município**; o que muda a abertura é o nível padrão.
+
+| Mapa, saldo por 10 mil hab. (transformação) | Antes | Depois |
+|---|---|---|
+| Nível de abertura | Município, com círculos | Mesorregião, sem círculos |
+| "Pior situação" na abertura | Campo Alegre (−328,3) | Sul Catarinense (−10,0) |
+| Municípios elegíveis à "pior situação" | 251 (≥ 100 mov.) | 165 (≥ 500 mov.) |

@@ -19,6 +19,9 @@ from dataclasses import dataclass
 
 MIN_MOVIMENTACOES = 100   # taxas e matriz: grupos com menos que isso ficam fora
 MIN_SALARIOS = 30         # gaps salariais: mínimo de salários de cada lado
+# NAR-05: "Pior situação" do mapa por município só entre os que têm volume (um
+# município de 120 movimentações não vira a manchete do estado).
+MIN_MOV_PIOR_MUNICIPIO = 500
 
 # ---------------------------------------------------------------------------
 # Escopos (NAR-03)

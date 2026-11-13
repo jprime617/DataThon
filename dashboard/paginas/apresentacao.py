@@ -46,7 +46,7 @@ def _gancho(ctx: c.Contexto) -> None:
 
 def _onde(ctx: c.Contexto) -> None:
     dados = panorama.metricas_mapa(ctx.df, c.NIVEL_MICRO)
-    st.markdown(nar.legenda_mapa(dados.drop_duplicates("rotulo"), c.M_SAIDA_VOL, "rotulo"))
+    st.markdown(nar.legenda_mapa(dados.drop_duplicates("rotulo"), c.M_SAIDA_VOL, "rotulo", c.NIVEL_MICRO))
     st.plotly_chart(fig.construir_mapa(dados, c.geojson_cache(), c.M_SAIDA_VOL, rotulo_territorio="rotulo"),
                     width="stretch")
 

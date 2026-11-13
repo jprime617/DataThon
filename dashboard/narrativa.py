@@ -306,16 +306,30 @@ LEITURA_MAPA = {
 _MENOR_E_PIOR = {c.M_GAP_SAL, c.M_GAP_ESC, c.M_SALDO_10K, c.M_SALDO_REL}
 
 
-def legenda_mapa(metricas: pd.DataFrame, metrica: str, rotulo: str) -> str:
-    """Legenda do mapa: como ler a cor e a unidade em pior situação (com amostra)."""
+def minimo_pior_situacao(nivel: str) -> int:
+    """NAR-05: movimentações mínimas para uma unidade do nível ser a "pior situação" do mapa."""
+    return c.MIN_MOV_PIOR_MUNICIPIO if nivel == c.NIVEL_MUNICIPIO else c.MIN_MOVIMENTACOES
+
+
+def legenda_mapa(metricas: pd.DataFrame, metrica: str, rotulo: str, nivel: str | None = None) -> str:
+    """Legenda do mapa: como ler a cor e a unidade em pior situação, no nível pintado (NAR-05).
+
+    Com `nivel`, a pior situação é a do nível escolhido; em município, só entre
+    os que têm ≥ `MIN_MOV_PIOR_MUNICIPIO` movimentações.
+    """
     leitura = LEITURA_MAPA.get(metrica, "")
-    validas = metricas[metricas[c.M_AMOSTRA_OK]].dropna(subset=[metrica])
+    minimo = minimo_pior_situacao(nivel) if nivel else c.MIN_MOVIMENTACOES
+    validas = metricas[metricas[c.M_AMOSTRA_OK] & (metricas[c.M_MOV] >= minimo)].dropna(subset=[metrica])
     if validas.empty:
         return f"{leitura} Nenhuma região com dados suficientes nesta seleção.".strip()
     pior = metrica in _MENOR_E_PIOR
     extremo = validas.loc[validas[metrica].idxmin() if pior else validas[metrica].idxmax()]
     definicao = c.DEFINICOES[metrica]
-    return (f"{leitura} Pior situação: **{extremo[rotulo]}** "
+    entre = ""
+    if nivel:
+        entre = f" entre as {c.plural_nivel(nivel)}" if nivel != c.NIVEL_MUNICIPIO else \
+            f" entre os municípios com ≥ {c.fmt_int(minimo)} movimentações"
+    return (f"{leitura} Pior situação{entre}: **{extremo[rotulo]}** "
             f"({definicao.rotulo.lower()}: {c.fmt_metrica(metrica, extremo[metrica])}). "
             f"Cinza = poucos dados.")
 

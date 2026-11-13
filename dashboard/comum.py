@@ -132,6 +132,7 @@ from dashboard.regras import (  # noqa: F401
     FAIXAS_MEDIO_OU_MAIS,
     FATOR_PREMIO_BAIXO,
     premio_baixo,
+    MIN_MOV_PIOR_MUNICIPIO,
 )
 
 _ETAPA = "dashboard"

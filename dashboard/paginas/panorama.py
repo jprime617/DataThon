@@ -73,8 +73,8 @@ def _mapa(ctx: c.Contexto) -> None:
         metrica = escolha.selectbox("O que mostrar no mapa", METRICAS_MAPA,
                                     format_func=lambda m: c.DEFINICOES[m].rotulo, key="mapa_metrica")
         nivel = nivel_col.segmented_control("Pintar por", [c.NIVEL_MESO, c.NIVEL_MICRO, c.NIVEL_MUNICIPIO],
-                                            default=c.NIVEL_MUNICIPIO, key="mapa_nivel") or c.NIVEL_MUNICIPIO
-        bolhas = bolha_col.toggle("Volume", value=True, key="mapa_bolhas",
+                                            default=c.NIVEL_MESO, key="mapa_nivel") or c.NIVEL_MESO
+        bolhas = bolha_col.toggle("Volume", value=False, key="mapa_bolhas",
                                   help="Círculo em cada município, do tamanho das suas movimentações.")
         dados_mapa = metricas_mapa(ctx.df, nivel)
         destaque = ctx.filtros.territorios if ctx.filtros.nivel_territorial == nivel else ()
@@ -87,7 +87,7 @@ def _mapa(ctx: c.Contexto) -> None:
                 width="stretch", on_select="rerun", selection_mode="points", key="mapa")
         with lado:
             c.cartao_destaque(ctx, metrica)
-            st.caption(nar.legenda_mapa(dados_mapa.drop_duplicates("rotulo"), metrica, "rotulo")
+            st.caption(nar.legenda_mapa(dados_mapa.drop_duplicates("rotulo"), metrica, "rotulo", nivel)
                        + " Clique num território para abrir a ficha.")
     pontos = getattr(getattr(evento, "selection", None), "points", None) or []
     if pontos:
