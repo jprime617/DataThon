@@ -27,7 +27,11 @@ para este documento ficar visível.
     `test_dashboard_metricas` e `test_dashboard_lote_d` (183 verdes).
   - **Rollback:** `bash ~/Documentos/DataThon-rollback/20261113-0825/VOLTAR.sh`
     (blobs de 12/11 + pacote da tag `entrega-v2`).
-- **Falta, nesta ordem (itens 1–3 feitos acima):**
+- **ENT-04 feito (13/11):** os 17 números da seção 5 do `PITCH_APOIO.md`
+    conferidos na URL pública (e, nos que dependem de filtro ou aba, com o
+    código do painel sobre os mesmos artefatos); prints 1920×1080 e QR em
+    `docs/prints/`. Faltam só os placeholders da equipe.
+- **Falta, nesta ordem (itens 1–4 feitos acima):**
   1. **ENT-01:** link do repositório (público) na barra lateral e na
      Metodologia, com o commit linkado.
   2. **ENT-02:** Always On no App Service, ou o checklist "abrir 10 minutos
